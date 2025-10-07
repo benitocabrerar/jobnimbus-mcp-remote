@@ -91,16 +91,8 @@ export const ALL_TOOLS_CONFIG = [
   },
 
   // Performance & Revenue
-  {
-    name: 'get_sales_rep_performance',
-    description: 'Detailed performance analytics per sales representative',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        period: { type: 'string', description: 'Analysis period' },
-      },
-    },
-  },
+  // NOTE: get_sales_rep_performance, get_performance_metrics, and get_automated_followup
+  // have dedicated implementations in src/tools/analytics/
   {
     name: 'get_revenue_report',
     description: 'Comprehensive revenue reporting and analysis',
@@ -122,10 +114,6 @@ export const ALL_TOOLS_CONFIG = [
         dashboard_type: { type: 'string', enum: ['executive', 'operational', 'detailed'] },
       },
     },
-  },
-  {
-    name: 'get_performance_metrics',
-    description: 'Comprehensive performance metrics dashboard',
   },
 
   // Advanced Analytics
@@ -214,16 +202,7 @@ export const ALL_TOOLS_CONFIG = [
   },
 
   // Automation
-  {
-    name: 'get_automated_followup',
-    description: 'Smart follow-up scheduling and automation',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        priority_level: { type: 'string', enum: ['high', 'medium', 'low'] },
-      },
-    },
-  },
+  // NOTE: get_automated_followup has dedicated implementation in src/tools/analytics/
   {
     name: 'get_smart_scheduling',
     description: 'AI-powered appointment optimization',

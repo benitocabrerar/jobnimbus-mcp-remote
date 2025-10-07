@@ -23,6 +23,9 @@ import { ValidateApiKeyTool } from './system/validateApiKey.js';
 // Analytics tools
 import { AnalyzeInsurancePipelineTool } from './analytics/analyzeInsurancePipeline.js';
 import { AnalyzeRetailPipelineTool } from './analytics/analyzeRetailPipeline.js';
+import { GetSalesRepPerformanceTool } from './analytics/getSalesRepPerformance.js';
+import { GetPerformanceMetricsTool } from './analytics/getPerformanceMetrics.js';
+import { GetAutomatedFollowupTool } from './analytics/getAutomatedFollowup.js';
 
 // Generic tool generator for remaining tools
 import { createGenericTool, ALL_TOOLS_CONFIG } from './allToolsGenerator.js';
@@ -50,6 +53,9 @@ export class ToolRegistry {
     this.registerTool(new GetTimelineData());
     this.registerTool(new AnalyzeInsurancePipelineTool());
     this.registerTool(new AnalyzeRetailPipelineTool());
+    this.registerTool(new GetSalesRepPerformanceTool());
+    this.registerTool(new GetPerformanceMetricsTool());
+    this.registerTool(new GetAutomatedFollowupTool());
 
     // Register all generic tools
     for (const config of ALL_TOOLS_CONFIG) {
