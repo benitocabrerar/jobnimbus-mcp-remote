@@ -280,7 +280,7 @@ export const ALL_TOOLS_CONFIG = [
   {
     name: 'bulk_import_contacts',
     description: 'Import multiple contacts efficiently',
-    method: 'POST',
+    method: 'POST' as const,
     inputSchema: {
       type: 'object',
       properties: {

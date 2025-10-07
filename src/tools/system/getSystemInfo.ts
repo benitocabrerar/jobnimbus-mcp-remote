@@ -17,7 +17,7 @@ export class GetSystemInfoTool extends BaseTool<{}, any> {
     };
   }
 
-  async execute(input: {}, context: ToolContext): Promise<any> {
+  async execute(_input: {}, context: ToolContext): Promise<any> {
     // Return server and instance info
     return {
       instance: context.instance,

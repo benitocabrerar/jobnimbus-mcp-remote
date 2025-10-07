@@ -45,7 +45,7 @@ app.use((req, res, next) => {
 /**
  * Health check endpoint (no auth required)
  */
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   const uptime = Date.now() - startTime;
 
   const health: HealthCheckResponse = {
@@ -70,12 +70,12 @@ app.use(rateLimiter);
 import toolRegistry from '../tools/index.js';
 import { AuthenticatedRequest } from '../types/index.js';
 
-app.post('/mcp/tools/list', async (req, res, next) => {
+app.post('/mcp/tools/list', async (_req, res, next) => {
   try {
     const tools = toolRegistry.getAllDefinitions();
-    res.json({ tools });
+    return res.json({ tools });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 });
 
@@ -108,19 +108,19 @@ app.post('/mcp/tools/call', async (req: AuthenticatedRequest, res, next) => {
 
     const result = await tool.execute(args || {}, context);
 
-    res.json({
+    return res.json({
       success: true,
       data: result,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 });
 
 /**
  * 404 handler
  */
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({
     error: 'Not Found',
     message: 'The requested endpoint does not exist',

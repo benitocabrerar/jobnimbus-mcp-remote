@@ -20,7 +20,7 @@ export class AnalyzeRetailPipelineTool extends BaseTool<any, any> {
     };
   }
 
-  async execute(input: any, context: ToolContext): Promise<any> {
+  async execute(_input: any, context: ToolContext): Promise<any> {
     const jobs = await this.client.get(context.apiKey, 'jobs', { size: 100 });
     return { summary: 'Retail pipeline analysis', data: jobs.data };
   }

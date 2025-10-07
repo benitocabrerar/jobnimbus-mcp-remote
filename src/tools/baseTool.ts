@@ -19,7 +19,7 @@ export abstract class BaseTool<TInput = any, TOutput = any> {
   /**
    * Validate input (override if needed)
    */
-  protected validateInput(input: TInput): void {
+  protected validateInput(_input: TInput): void {
     // Default: no validation
   }
 
