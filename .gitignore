@@ -40,6 +40,17 @@ temp/
 *.tmp
 
 # CRITICAL: Never commit API keys
-**/*api*key*
-**/*secret*
-**/*password*
+# But allow source code files (*.ts, *.js with these names)
+**/*api*key*.txt
+**/*api*key*.json
+**/*api*key*.env
+**/*secret*.txt
+**/*secret*.json
+**/*secret*.env
+**/*password*.txt
+**/*password*.json
+**/*password*.env
+*.key
+*.pem
+*.p12
+*.pfx
