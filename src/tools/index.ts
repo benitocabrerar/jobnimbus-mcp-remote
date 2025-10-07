@@ -40,18 +40,22 @@ import {
   GetUpsellOpportunitiesTool,
 } from './analytics/batchAnalyticsTools.js';
 
-// New comprehensive analytics tools
+// Comprehensive analytics tools (Batch 1 - 5 tools)
 import { AnalyzeServicesRepairPipelineTool } from './analytics/analyzeServicesRepairPipeline.js';
 import { AnalyzePublicAdjusterPipelineTool } from './analytics/analyzePublicAdjusterPipeline.js';
 import { GetSeasonalTrendsTool } from './analytics/getSeasonalTrends.js';
 import { GetPipelineForecastingTool } from './analytics/getPipelineForecasting.js';
 import { GetSmartSchedulingTool } from './analytics/getSmartScheduling.js';
 
+// Comprehensive analytics tools (Batch 2 - 5 tools)
+import { GetJobSummaryTool } from './analytics/getJobSummary.js';
+import { GetOptimalDoorRoutesTool } from './analytics/getOptimalDoorRoutes.js';
+import { GetTerritoryHeatMapsTool } from './analytics/getTerritoryHeatMaps.js';
+import { GetActivitiesAnalyticsTool } from './analytics/getActivitiesAnalytics.js';
+import { BulkImportContactsTool } from './analytics/getBulkImportContacts.js';
+
 import {
-  GetJobSummaryTool,
   GetJobsDistributionTool,
-  GetOptimalDoorRoutesTool,
-  GetTerritoryHeatMapsTool,
   GetDoorKnockingScriptsByAreaTool,
   GetSeasonalDoorTimingTool,
   GetEstimatesWithAddressesTool,
@@ -59,8 +63,6 @@ import {
   GetUsersTool,
   GetWebhooksTool,
   GetAttachmentsTool,
-  BulkImportContactsTool,
-  GetActivitiesAnalyticsTool,
   ValidateContactInformationTool,
   GetTimelineDataTool2,
   GetCalendarActivitiesTool2,

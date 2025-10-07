@@ -1,6 +1,17 @@
 /**
- * Simplified Batch Tools - 25 herramientas funcionales
- * Todas retornan datos reales de JobNimbus API
+ * Simplified Batch Tools - Functional tools con datos reales de JobNimbus API
+ *
+ * NOTA: Las siguientes herramientas tienen implementaciones comprehensivas en archivos dedicados:
+ * - GetJobSummaryTool → getJobSummary.ts (340+ líneas)
+ * - GetOptimalDoorRoutesTool → getOptimalDoorRoutes.ts (290+ líneas)
+ * - GetTerritoryHeatMapsTool → getTerritoryHeatMaps.ts (320+ líneas)
+ * - GetActivitiesAnalyticsTool → getActivitiesAnalytics.ts (360+ líneas)
+ * - BulkImportContactsTool → getBulkImportContacts.ts (330+ líneas)
+ * - AnalyzeServicesRepairPipelineTool → analyzeServicesRepairPipeline.ts (310+ líneas)
+ * - AnalyzePublicAdjusterPipelineTool → analyzePublicAdjusterPipeline.ts (320+ líneas)
+ * - GetSeasonalTrendsTool → getSeasonalTrends.ts (280+ líneas)
+ * - GetPipelineForecastingTool → getPipelineForecasting.ts (290+ líneas)
+ * - GetSmartSchedulingTool → getSmartScheduling.ts (300+ líneas)
  */
 
 import { BaseTool } from '../baseTool.js';
@@ -45,32 +56,9 @@ class GenericAnalyticsTool extends BaseTool<any, any> {
   }
 }
 
-// 20 TOOLS EXPORT (5 moved to dedicated implementations)
-// Note: AnalyzeServicesRepairPipelineTool, AnalyzePublicAdjusterPipelineTool,
-// GetSeasonalTrendsTool, GetPipelineForecastingTool, GetSmartSchedulingTool
-// now have comprehensive implementations in separate files
-
-export class GetJobSummaryTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_job_summary', 'Detailed job summary analytics');
-  }
-}
-
 export class GetJobsDistributionTool extends GenericAnalyticsTool {
   constructor() {
     super('get_jobs_distribution', 'Geographic distribution analysis of jobs');
-  }
-}
-
-export class GetOptimalDoorRoutesTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_optimal_door_routes', 'Calculate optimal door-to-door sales routes');
-  }
-}
-
-export class GetTerritoryHeatMapsTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_territory_heat_maps', 'Generate territory heat maps');
   }
 }
 
@@ -113,18 +101,6 @@ export class GetWebhooksTool extends GenericAnalyticsTool {
 export class GetAttachmentsTool extends GenericAnalyticsTool {
   constructor() {
     super('get_attachments', 'Get file attachments');
-  }
-}
-
-export class BulkImportContactsTool extends GenericAnalyticsTool {
-  constructor() {
-    super('bulk_import_contacts', 'Bulk import contacts');
-  }
-}
-
-export class GetActivitiesAnalyticsTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_activities_analytics', 'Enhanced activity analysis');
   }
 }
 
