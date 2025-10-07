@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía Completa: Deploy JobNimbus MCP Server en Render.com</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .intro {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+
+        .intro h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .step {
+            margin-bottom: 40px;
+            padding: 25px;
+            background: #fff;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .step-number {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .step h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            margin-top: 10px;
+            font-size: 1.5em;
+        }
+
+        .step p {
+            margin-bottom: 15px;
+            line-height: 1.8;
+        }
+
+        .screenshot {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px dashed #dee2e6;
+            text-align: center;
+        }
+
+        .screenshot-placeholder {
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .screenshot p {
+            color: #6c757d;
+            font-size: 0.95em;
+        }
+
+        .important {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .important strong {
+            color: #856404;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left: 5px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .success strong {
+            color: #155724;
+        }
+
+        .warning {
+            background: #f8d7da;
+            border-left: 5px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .warning strong {
+            color: #721c24;
+        }
+
+        .code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        .code pre {
+            margin: 0;
+        }
+
+        .checklist {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .checklist li {
+            padding: 10px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+            position: relative;
+            padding-left: 40px;
+        }
+
+        .checklist li:before {
+            content: "✓";
+            position: absolute;
+            left: 12px;
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+
+        .timeline {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .timeline h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .timeline-item {
+            display: flex;
+            margin: 10px 0;
+        }
+
+        .timeline-time {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-right: 15px;
+            font-size: 0.9em;
+            white-space: nowrap;
+        }
+
+        .timeline-text {
+            flex: 1;
+        }
+
+        .button-demo {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+
+        .button-demo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .url-box {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 15px 0;
+            border: 2px solid #dee2e6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .footer {
+            background: #2d2d2d;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Guía de Deployment a Render.com</h1>
+            <p>JobNimbus MCP Remote Server - Paso a Paso Completo</p>
+        </div>
+
+        <div class="content">
+            <div class="intro">
+                <h2>📋 Antes de Comenzar</h2>
+                <p><strong>Requisitos previos:</strong></p>
+                <ul class="checklist">
+                    <li>Código subido a GitHub: ✅ https://github.com/benitocabrerar/jobnimbus-mcp-remote</li>
+                    <li>Cuenta de GitHub activa: ✅</li>
+                    <li>Navegador web actualizado</li>
+                    <li>15-20 minutos de tiempo disponible</li>
+                </ul>
+
+                <p style="margin-top: 20px;"><strong>¿Qué vamos a hacer?</strong></p>
+                <p>Vamos a deployar tu servidor MCP JobNimbus en Render.com, que lo hará accesible desde internet de forma permanente y automática.</p>
+
+                <div class="timeline">
+                    <h4>⏱️ Timeline estimado:</h4>
+                    <div class="timeline-item">
+                        <span class="timeline-time">2-3 min</span>
+                        <span class="timeline-text">Crear cuenta y conectar GitHub</span>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-time">1-2 min</span>
+                        <span class="timeline-text">Crear Blueprint</span>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-time">6-8 min</span>
+                        <span class="timeline-text">Render construye y deploya (automático)</span>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-time">2-3 min</span>
+                        <span class="timeline-text">Verificación y pruebas</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 1 -->
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Crear Cuenta en Render.com</h3>
+
+                <p><strong>1.1. Ir a Render.com</strong></p>
+                <div class="url-box">https://render.com</div>
+
+                <p><strong>1.2. Hacer clic en "Get Started" o "Sign Up"</strong></p>
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        [Página principal de Render.com con botones "Get Started" y "Sign Up" visibles]
+                    </div>
+                    <p>Verás la página principal de Render.com con opciones para crear cuenta</p>
+                </div>
+
+                <p><strong>1.3. Seleccionar "Sign up with GitHub" (RECOMENDADO)</strong></p>
+                <div class="important">
+                    <strong>⭐ MUY IMPORTANTE:</strong> Usa "Sign up with GitHub" en lugar de email/password. Esto permitirá que Render acceda automáticamente a tu repositorio y haga auto-deploys cuando hagas push.
+                </div>
+
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        [Botón grande "Sign up with GitHub" junto a opciones de Google y GitLab]
+                    </div>
+                    <p>Selecciona la opción de GitHub para integración automática</p>
+                </div>
+
+                <p><strong>1.4. Autorizar Render en GitHub</strong></p>
+                <p>GitHub te pedirá que autorices a Render.com. Haz clic en "Authorize Render".</p>
+
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        [Página de autorización de GitHub mostrando permisos que Render solicita]
+                    </div>
+                    <p>GitHub te mostrará los permisos que Render necesita - son seguros</p>
+                </div>
+
+                <div class="success">
+                    <strong>✅ Éxito:</strong> Ahora tienes cuenta en Render.com conectada a GitHub
+                </div>
+            </div>
+
+            <!-- PASO 2 -->
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Crear Nuevo Blueprint</h3>
+
+                <p><strong>2.1. Acceder al Dashboard</strong></p>
+                <p>Después de crear la cuenta, llegarás al Dashboard de Render. Si no estás ahí, ve a:</p>
+                <div class="url-box">https://dashboard.render.com</div>
+
+                <p><strong>2.2. Hacer clic en "New +" (esquina superior derecha)</strong></p>
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        [Dashboard de Render con botón "New +" en la esquina superior derecha]
+                    </div>
+                    <p>El botón "New +" está en la barra superior, esquina derecha</p>
+                </div>
+
+                <p><strong>2.3. Seleccionar "Blueprint"</strong></p>
+                <p>Se desplegará un menú con varias opciones. Selecciona "Blueprint".</p>
+
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        [Menú desplegable mostrando: Web Service, Private Service, Static Site, Cron Job, Background Worker, Blueprint]
+                    </div>
+                    <p>Blueprint permite deployar desde un archivo render.yaml (que ya tienes)</p>
+                </div>
+
+                <div class="important">
+                    <strong>💡 ¿Por qué Blueprint?</strong> Porque tu proyecto ya incluye un archivo <code>render.yaml</code> que configura todo automáticamente. Blueprint lo detecta y configura el servicio por ti.
+                </div>
+
+                <p><strong>2.4. Conectar repositorio de GitHub</strong></p>
+                <p>Render te mostrará una página para conectar tu repositorio.</p>
+
+                <p><strong>Opción A: Si ves tu repositorio listado</strong></p>
+                <ul>
+                    <li>Busca "jobnimbus-mcp-remote" en la lista</li>
+                    <li>Haz clic en "Connect"</li>
+                </ul>
+
+                <p><strong>Opción B: Si NO ves tu repositorio</strong></p>
+                <ul>
+                    <li>Haz clic en "Configure account" o "Add repositories"</li>
+                    <li>Esto abrirá GitHub para que autorices acceso a repositorios específicos</li>
+                    <li>Selecciona "benitocabrerar/jobnimbus-mcp-remote"</li>
+                    <li>Guarda los cambios en GitHub</li>
+                    <li>Regresa a Render y refresca la página</li>
+                </ul>
+
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        [Lista de repositorios de GitHub con botones "Connect" al lado de cada uno]
+                    </div>
+                    <p>Render muestra tus repositorios de GitHub disponibles</p>
+                </div>
+            </div>
+
+            <!-- PASO 3 -->
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Configurar y Aplicar Blueprint</h3>
+
+                <p><strong>3.1. Render detecta render.yaml automáticamente</strong></p>
+                <p>Una vez que conectes el repositorio, Render escaneará el código y detectará el archivo <code>render.yaml</code>.</p>
+
+                <div class="success">
+                    <strong>✅ Detección automática:</strong> Verás un mensaje como "Blueprint detected" o verás la configuración del servicio pre-llenada.
+                </div>
+
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        [Pantalla mostrando "Blueprint detected" con preview de la configuración]
+                    </div>
+                    <p>Render muestra un preview de lo que va a crear según tu render.yaml</p>
+                </div>
+
+                <p><strong>3.2. Revisar configuración del servicio</strong></p>
+                <p>Render te mostrará un resumen de lo que va a crear:</p>
+
+                <table>
+                    <tr>
+                        <th>Campo</th>
+                        <th>Valor</th>
+                        <th>Descripción</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Name</strong></td>
+                        <td>jobnimbus-mcp-remote</td>
+                        <td>Nombre del servicio (del render.yaml)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Type</strong></td>
+                        <td>Web Service</td>
+                        <td>Servidor web público</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Environment</strong></td>
+                        <td>Node</td>
+                        <td>Runtime de Node.js</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Build Command</strong></td>
+                        <td>npm ci && npm run build</td>
+                        <td>Comando para construir</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Start Command</strong></td>
+                        <td>npm run start:prod</td>
+                        <td>Comando para iniciar</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Plan</strong></td>
+                        <td>Starter ($7/mes)</td>
+                        <td>Plan de pago (puedes cambiar)</td>
+                    </tr>
+                </table>
+
+                <div class="important">
+                    <strong>💰 Sobre el Plan:</strong>
+                    <ul>
+                        <li><strong>Free Plan:</strong> 750 horas/mes gratis (suficiente para pruebas, pero duerme después de inactividad)</li>
+                        <li><strong>Starter ($7/mes):</strong> Siempre activo, mejor para uso regular</li>
+                        <li><strong>Standard ($25/mes):</strong> Más RAM y CPU, recomendado para producción</li>
+                    </ul>
+                    <p>Puedes empezar con Free o Starter y cambiar después.</p>
+                </div>
+
+                <p><strong>3.3. Seleccionar el Plan</strong></p>
+                <p>Si te pregunta por el plan:</p>
+                <ul>
+                    <li>Para pruebas: Selecciona "Free"</li>
+                    <li>Para uso regular: Selecciona "Starter" ($7/mes)</li>
+                    <li>Para producción seria: Selecciona "Standard" ($25/mes)</li>
+                </ul>
+
+                <p><strong>3.4. Hacer clic en "Apply" o "Create"</strong></p>
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        [Botón grande "Apply" o "Create Blueprint" en la parte inferior]
+                    </div>
+                    <p>El botón final para iniciar el deployment</p>
+                </div>
+
+                <div class="success">
+                    <strong>🎉 ¡Deployment iniciado!</strong> Render comenzará a construir y deployar tu servidor.
+                </div>
+            </div>
+
+            <!-- PASO 4 -->
+            <div class="step">
+                <div class="step-number">4</div>
+                <h3>Esperar el Deployment (6-8 minutos)</h3>
+
+                <p><strong>4.1. Ver el progreso en tiempo real</strong></p>
+                <p>Render te llevará automáticamente a la página de logs del deployment. Verás algo como esto:</p>
+
+                <div class="code">
+<pre>==> Cloning from https://github.com/benitocabrerar/jobnimbus-mcp-remote...
+==> Checking out commit abc123...
+==> Downloading cache...
+==> Installing dependencies with npm ci...
+==> Running build command: npm run build
+    > jobnimbus-mcp-remote@1.0.0 build
+    > tsc
+==> Build successful
+==> Starting service with: npm run start:prod
+==> Service is live 🎉</pre>
+                </div>
+
+                <p><strong>4.2. Fases del deployment</strong></p>
+                <div class="timeline">
+                    <h4>Fases automáticas:</h4>
+                    <div class="timeline-item">
+                        <span class="timeline-time">~30 seg</span>
+                        <span class="timeline-text"><strong>Clone:</strong> Render descarga tu código de GitHub</span>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-time">~2 min</span>
+                        <span class="timeline-text"><strong>Dependencies:</strong> npm ci instala dependencias</span>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-time">~1 min</span>
+                        <span class="timeline-text"><strong>Build:</strong> TypeScript compila a JavaScript</span>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-time">~30 seg</span>
+                        <span class="timeline-text"><strong>Start:</strong> Servidor inicia y pasa health check</span>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-time">~2 min</span>
+                        <span class="timeline-text"><strong>Health Check:</strong> Render verifica que /health responde</span>
+                    </div>
+                </div>
+
+                <div class="important">
+                    <strong>⏳ ESPERA:</strong> NO cierres esta página. El proceso es automático pero toma 6-8 minutos. Puedes ver todo el progreso en los logs.
+                </div>
+
+                <p><strong>4.3. Indicadores de progreso</strong></p>
+                <p>Durante el deployment verás:</p>
+                <ul>
+                    <li>🟡 <strong>Amarillo/Naranja:</strong> "Building..." - en progreso</li>
+                    <li>🔵 <strong>Azul:</strong> "Deploying..." - iniciando servidor</li>
+                    <li>🟢 <strong>Verde:</strong> "Live" - ¡funcionando!</li>
+                    <li>🔴 <strong>Rojo:</strong> "Failed" - error (ver troubleshooting abajo)</li>
+                </ul>
+
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        [Dashboard mostrando servicio con estado "Live" en verde]
+                    </div>
+                    <p>Cuando veas "Live" en verde, tu servidor está funcionando</p>
+                </div>
+            </div>
+
+            <!-- PASO 5 -->
+            <div class="step">
+                <div class="step-number">5</div>
+                <h3>Obtener la URL de tu Servidor</h3>
+
+                <p><strong>5.1. Encontrar tu URL</strong></p>
+                <p>Una vez que el deployment esté "Live", Render te asignará una URL automáticamente. La encontrarás en dos lugares:</p>
+
+                <p><strong>Ubicación 1: En la parte superior del dashboard del servicio</strong></p>
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        [Barra superior mostrando: jobnimbus-mcp-remote.onrender.com con botón de copiar]
+                    </div>
+                    <p>Tu URL estará en formato: tu-nombre-servicio.onrender.com</p>
+                </div>
+
+                <p><strong>Ubicación 2: En la sección "Settings" → "Domains"</strong></p>
+
+                <p><strong>5.2. Copiar la URL</strong></p>
+                <p>Tu URL será algo como:</p>
+                <div class="url-box">
+                    https://jobnimbus-mcp-remote-XXXXX.onrender.com
+                </div>
+
+                <div class="important">
+                    <strong>📋 GUARDA ESTA URL:</strong> La necesitarás para:
+                    <ul>
+                        <li>Configurar Claude Desktop</li>
+                        <li>Configurar GitHub Secrets (opcional, para CI/CD)</li>
+                        <li>Hacer pruebas</li>
+                    </ul>
+                </div>
+
+                <p><strong>5.3. Hacer clic en la URL para verificar</strong></p>
+                <p>Haz clic en la URL. Debería abrirse en una nueva pestaña y mostrar:</p>
+                <div class="code">
+<pre>{
+  "status": "healthy",
+  "service": "JobNimbus MCP Remote Server",
+  "version": "1.0.0",
+  "timestamp": "2025-10-06T..."
+}</pre>
+                </div>
+
+                <div class="success">
+                    <strong>✅ Si ves esto:</strong> ¡Tu servidor está funcionando correctamente!
+                </div>
+            </div>
+
+            <!-- PASO 6 -->
+            <div class="step">
+                <div class="step-number">6</div>
+                <h3>Verificar que Funciona</h3>
+
+                <p><strong>6.1. Test 1: Health Check</strong></p>
+                <p>Abre tu navegador y ve a:</p>
+                <div class="url-box">
+                    https://TU-URL.onrender.com/health
+                </div>
+
+                <p>Deberías ver la respuesta JSON con status "healthy".</p>
+
+                <p><strong>6.2. Test 2: Listar herramientas (usando cURL o Postman)</strong></p>
+                <p>Abre PowerShell y ejecuta:</p>
+                <div class="code">
+<pre>curl -X POST https://TU-URL.onrender.com/mcp/tools/list `
+  -H "X-JobNimbus-Api-Key: meax4gxgz5zfgzrwu19b73g3il" `
+  -H "Content-Type: application/json"</pre>
+                </div>
+
+                <div class="success">
+                    <strong>✅ Respuesta esperada:</strong> JSON con un array de 48 herramientas
+                </div>
+
+                <p><strong>6.3. Test 3: Ejecutar una herramienta simple</strong></p>
+                <div class="code">
+<pre>curl -X POST https://TU-URL.onrender.com/mcp/tools/call `
+  -H "X-JobNimbus-Api-Key: meax4gxgz5zfgzrwu19b73g3il" `
+  -H "Content-Type: application/json" `
+  -d '{"name":"get_system_info","arguments":{}}'</pre>
+                </div>
+
+                <div class="success">
+                    <strong>✅ Si funciona:</strong> Verás información del sistema JobNimbus
+                </div>
+            </div>
+
+            <!-- PASO 7 -->
+            <div class="step">
+                <div class="step-number">7</div>
+                <h3>Configurar Auto-Deploy desde GitHub (Opcional)</h3>
+
+                <p><strong>7.1. ¿Qué es auto-deploy?</strong></p>
+                <p>Cada vez que hagas <code>git push</code> a tu repositorio, Render automáticamente:</p>
+                <ul>
+                    <li>Detecta el cambio</li>
+                    <li>Descarga el nuevo código</li>
+                    <li>Hace build</li>
+                    <li>Deploya la nueva versión</li>
+                </ul>
+
+                <div class="important">
+                    <strong>🎯 BUENAS NOTICIAS:</strong> ¡Ya está configurado! Como conectaste vía GitHub y usaste Blueprint, el auto-deploy YA está activo.
+                </div>
+
+                <p><strong>7.2. Verificar configuración de auto-deploy</strong></p>
+                <p>En Render Dashboard → Tu servicio → Settings:</p>
+                <ul>
+                    <li>Busca sección "Build & Deploy"</li>
+                    <li>Debería decir: <strong>"Auto-Deploy: Yes"</strong></li>
+                    <li>Branch: <strong>main</strong></li>
+                </ul>
+
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        [Settings mostrando "Auto-Deploy: Yes" y "Branch: main"]
+                    </div>
+                    <p>Auto-deploy debe estar activado para el branch main</p>
+                </div>
+
+                <p><strong>7.3. Probar el auto-deploy (opcional)</strong></p>
+                <p>Para probar que funciona, haz un pequeño cambio:</p>
+                <div class="code">
+<pre># En tu proyecto local
+cd C:\Users\benito\poweria\jobnimbus\jobnimbus-mcp-remote
+
+# Editar README.md (cualquier cambio pequeño)
+# Guardar el archivo
+
+git add .
+git commit -m "test: verificar auto-deploy"
+git push origin main</pre>
+                </div>
+
+                <p>Luego ve a Render Dashboard. En unos segundos verás que inicia un nuevo deployment automáticamente.</p>
+            </div>
+
+            <!-- PASO 8 -->
+            <div class="step">
+                <div class="step-number">8</div>
+                <h3>Configurar GitHub Secrets (Opcional - Para CI/CD Avanzado)</h3>
+
+                <p><strong>8.1. ¿Para qué son los GitHub Secrets?</strong></p>
+                <p>Tu proyecto incluye GitHub Actions que pueden hacer deploy automático a Render. Para que funcione, GitHub necesita credenciales de Render.</p>
+
+                <div class="important">
+                    <strong>📌 NOTA:</strong> Esto es OPCIONAL. El auto-deploy básico (de Render) YA funciona sin esto. Los Secrets son para funcionalidad avanzada de GitHub Actions.
+                </div>
+
+                <p><strong>8.2. Obtener Render API Key</strong></p>
+                <ul>
+                    <li>En Render Dashboard, click en tu avatar (esquina superior derecha)</li>
+                    <li>Click en "Account Settings"</li>
+                    <li>Click en "API Keys" (menú izquierdo)</li>
+                    <li>Click en "Create API Key"</li>
+                    <li>Nombre: "GitHub Actions Deploy"</li>
+                    <li>Click "Create"</li>
+                    <li>COPIA el key (solo se muestra una vez)</li>
+                </ul>
+
+                <p><strong>8.3. Obtener Service ID</strong></p>
+                <ul>
+                    <li>Ve a tu servicio en Render Dashboard</li>
+                    <li>La URL será: https://dashboard.render.com/web/<strong>srv-XXXXX</strong></li>
+                    <li>El Service ID es la parte <strong>srv-XXXXX</strong></li>
+                </ul>
+
+                <p><strong>8.4. Agregar Secrets en GitHub</strong></p>
+                <p>Ve a tu repositorio en GitHub:</p>
+                <div class="url-box">
+                    https://github.com/benitocabrerar/jobnimbus-mcp-remote/settings/secrets/actions
+                </div>
+
+                <p>Click en "New repository secret" y agrega estos 3 secrets:</p>
+
+                <table>
+                    <tr>
+                        <th>Name</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>RENDER_API_KEY</td>
+                        <td>rnd_XXXXXXXXXXXXX (el que copiaste)</td>
+                    </tr>
+                    <tr>
+                        <td>RENDER_SERVICE_ID</td>
+                        <td>srv-XXXXX (de la URL)</td>
+                    </tr>
+                    <tr>
+                        <td>RENDER_SERVICE_URL</td>
+                        <td>https://tu-servicio.onrender.com</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- TROUBLESHOOTING -->
+            <div class="step">
+                <div class="step-number">⚠️</div>
+                <h3>Troubleshooting - Problemas Comunes</h3>
+
+                <div class="warning">
+                    <strong>❌ Problema 1: Deployment failed - Build error</strong>
+                    <p><strong>Síntoma:</strong> El deployment se pone rojo con "Build failed"</p>
+                    <p><strong>Solución:</strong></p>
+                    <ul>
+                        <li>Click en "Logs" para ver el error exacto</li>
+                        <li>Usualmente es un error de TypeScript o dependencias</li>
+                        <li>Verifica que tu código funcione localmente con <code>npm run build</code></li>
+                        <li>Si hay error de tipos, arréglalo y haz push de nuevo</li>
+                    </ul>
+                </div>
+
+                <div class="warning">
+                    <strong>❌ Problema 2: Service is live pero /health no responde</strong>
+                    <p><strong>Síntoma:</strong> Render dice "Live" pero la URL no carga</p>
+                    <p><strong>Solución:</strong></p>
+                    <ul>
+                        <li>Espera 2-3 minutos más (a veces tarda en propagar)</li>
+                        <li>Verifica que el puerto sea correcto en el código (debe ser process.env.PORT)</li>
+                        <li>Revisa logs en Render para ver si hay errores de runtime</li>
+                    </ul>
+                </div>
+
+                <div class="warning">
+                    <strong>❌ Problema 3: No veo mi repositorio en la lista</strong>
+                    <p><strong>Síntoma:</strong> "jobnimbus-mcp-remote" no aparece al conectar repo</p>
+                    <p><strong>Solución:</strong></p>
+                    <ul>
+                        <li>Click en "Configure account" o "Add repositories"</li>
+                        <li>En GitHub, autoriza acceso específicamente a ese repo</li>
+                        <li>Regresa a Render y refresca</li>
+                    </ul>
+                </div>
+
+                <div class="warning">
+                    <strong>❌ Problema 4: Health check failing</strong>
+                    <p><strong>Síntoma:</strong> Logs muestran "Health check failed"</p>
+                    <p><strong>Solución:</strong></p>
+                    <ul>
+                        <li>Verifica que tu servidor escuche en <code>process.env.PORT</code> (NO 3000 hardcoded)</li>
+                        <li>Verifica que <code>/health</code> endpoint exista y responda rápido (&lt;30s)</li>
+                        <li>Revisa el código en <code>src/server/index.ts</code></li>
+                    </ul>
+                </div>
+
+                <div class="warning">
+                    <strong>❌ Problema 5: Out of memory error</strong>
+                    <p><strong>Síntoma:</strong> "Container killed - Out of memory"</p>
+                    <p><strong>Solución:</strong></p>
+                    <ul>
+                        <li>Upgrade a plan con más RAM (Starter tiene 512MB, Standard 2GB)</li>
+                        <li>O optimiza tu código para usar menos memoria</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- SIGUIENTE PASO -->
+            <div class="step">
+                <div class="step-number">✅</div>
+                <h3>¡Deployment Completado! - Siguiente Paso</h3>
+
+                <div class="success">
+                    <strong>🎉 ¡FELICIDADES!</strong> Tu servidor MCP JobNimbus está ahora en producción y accesible desde internet.
+                </div>
+
+                <p><strong>Información de tu servidor:</strong></p>
+                <table>
+                    <tr>
+                        <th>Item</th>
+                        <th>Valor</th>
+                    </tr>
+                    <tr>
+                        <td>URL del Servidor</td>
+                        <td>https://TU-SERVICIO.onrender.com</td>
+                    </tr>
+                    <tr>
+                        <td>Health Check</td>
+                        <td>https://TU-SERVICIO.onrender.com/health</td>
+                    </tr>
+                    <tr>
+                        <td>MCP Tools List</td>
+                        <td>POST /mcp/tools/list</td>
+                    </tr>
+                    <tr>
+                        <td>MCP Tools Call</td>
+                        <td>POST /mcp/tools/call</td>
+                    </tr>
+                    <tr>
+                        <td>Herramientas</td>
+                        <td>48 disponibles</td>
+                    </tr>
+                </table>
+
+                <h4 style="margin-top: 30px;">🎯 Próximo Paso: Configurar Claude Desktop</h4>
+
+                <p>Ahora que tu servidor está en producción, el siguiente paso es configurar Claude Desktop para que lo use.</p>
+
+                <p><strong>Archivo a editar:</strong></p>
+                <div class="url-box">%APPDATA%\Claude\claude_desktop_config.json</div>
+
+                <p><strong>Configuración a agregar:</strong></p>
+                <div class="code">
+<pre>{
+  "mcpServers": {
+    "jobnimbus-stamford": {
+      "command": "node",
+      "args": [
+        "C:/Users/benito/poweria/jobnimbus/jobnimbus-mcp-remote/examples/mcp-client.js"
+      ],
+      "env": {
+        "MCP_SERVER_URL": "https://TU-SERVICIO.onrender.com",
+        "JOBNIMBUS_API_KEY": "meax4gxgz5zfgzrwu19b73g3il",
+        "JOBNIMBUS_INSTANCE": "stamford"
+      }
+    }
+  }
+}</pre>
+                </div>
+
+                <div class="important">
+                    <strong>🔒 IMPORTANTE:</strong> Reemplaza <code>TU-SERVICIO.onrender.com</code> con tu URL real de Render.
+                </div>
+
+                <h4 style="margin-top: 30px;">📚 Recursos Útiles:</h4>
+                <ul class="checklist">
+                    <li>Dashboard de Render: https://dashboard.render.com</li>
+                    <li>Logs en tiempo real: En tu servicio → "Logs"</li>
+                    <li>GitHub Repo: https://github.com/benitocabrerar/jobnimbus-mcp-remote</li>
+                    <li>Documentación del proyecto: Ver README.md en el repo</li>
+                </ul>
+
+                <h4 style="margin-top: 30px;">🔄 Actualizar en el futuro:</h4>
+                <p>Cuando quieras actualizar tu servidor:</p>
+                <div class="code">
+<pre># 1. Hacer cambios en tu código local
+# 2. Commit y push
+git add .
+git commit -m "feat: nueva funcionalidad"
+git push origin main
+
+# 3. Render automáticamente detecta el cambio y deploya
+# 4. Espera 6-8 minutos
+# 5. ¡Listo! Nueva versión en producción</pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <h3>📞 ¿Necesitas Ayuda?</h3>
+            <p style="margin: 15px 0;">Si tienes problemas o preguntas:</p>
+            <ul style="list-style: none; padding: 0;">
+                <li>📖 Consulta la documentación en <a href="https://github.com/benitocabrerar/jobnimbus-mcp-remote">GitHub</a></li>
+                <li>🐛 Reporta issues en <a href="https://github.com/benitocabrerar/jobnimbus-mcp-remote/issues">GitHub Issues</a></li>
+                <li>📊 Revisa logs en Render Dashboard</li>
+            </ul>
+            <p style="margin-top: 30px; opacity: 0.7;">JobNimbus MCP Remote Server - Deployment Guide</p>
+        </div>
+    </div>
+</body>
+</html>
