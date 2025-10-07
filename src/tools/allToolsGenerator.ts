@@ -240,14 +240,8 @@ export const ALL_TOOLS_CONFIG = [
     name: 'get_estimates_with_addresses',
     description: 'Estimates with geographic address data',
   },
-  {
-    name: 'get_timeline_data',
-    description: 'Timeline data for project scheduling',
-  },
-  {
-    name: 'get_calendar_activities',
-    description: 'Get calendar activities and scheduling',
-  },
+  // NOTE: get_timeline_data and get_calendar_activities now have dedicated implementations
+  // in src/tools/activities/ and are registered directly in index.ts
   {
     name: 'get_tasks',
     description: 'Retrieve tasks from JobNimbus',

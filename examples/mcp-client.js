@@ -19,6 +19,14 @@ const SERVER_URL = process.env.MCP_SERVER_URL;
 const API_KEY = process.env.JOBNIMBUS_API_KEY;
 const INSTANCE = process.env.JOBNIMBUS_INSTANCE || 'stamford';
 
+// Debug logging to stderr (visible in Claude Desktop logs)
+console.error('=== MCP Client Debug ===');
+console.error('SERVER_URL:', SERVER_URL);
+console.error('API_KEY length:', API_KEY ? API_KEY.length : 'undefined');
+console.error('API_KEY (first 10 chars):', API_KEY ? API_KEY.substring(0, 10) + '...' : 'undefined');
+console.error('INSTANCE:', INSTANCE);
+console.error('=======================');
+
 if (!SERVER_URL) {
   console.error('ERROR: MCP_SERVER_URL not configured');
   process.exit(1);
@@ -104,10 +112,24 @@ process.stdin.on('data', async (chunk) => {
     try {
       const message = JSON.parse(line);
 
+      // Helper function to safely write to stdout
+      const safeWrite = (data) => {
+        try {
+          if (!process.stdout.destroyed) {
+            process.stdout.write(data);
+          }
+        } catch (error) {
+          // Ignore EPIPE errors when stdout is closed
+          if (error.code !== 'EPIPE') {
+            console.error('Write error:', error);
+          }
+        }
+      };
+
       // Handle different MCP methods
       if (message.method === 'initialize') {
         // Handle MCP initialize handshake
-        process.stdout.write(JSON.stringify({
+        safeWrite(JSON.stringify({
           jsonrpc: '2.0',
           id: message.id,
           result: {
@@ -123,14 +145,14 @@ process.stdin.on('data', async (chunk) => {
         }) + '\n');
       } else if (message.method === 'tools/list') {
         const response = await makeRequest('POST', '/mcp/tools/list', {});
-        process.stdout.write(JSON.stringify({
+        safeWrite(JSON.stringify({
           jsonrpc: '2.0',
           id: message.id,
           result: response,
         }) + '\n');
       } else if (message.method === 'tools/call') {
         const response = await makeRequest('POST', '/mcp/tools/call', message.params);
-        process.stdout.write(JSON.stringify({
+        safeWrite(JSON.stringify({
           jsonrpc: '2.0',
           id: message.id,
           result: response,
@@ -140,7 +162,7 @@ process.stdin.on('data', async (chunk) => {
         // Just acknowledge silently
       } else {
         // Unsupported method
-        process.stdout.write(JSON.stringify({
+        safeWrite(JSON.stringify({
           jsonrpc: '2.0',
           id: message.id,
           error: {

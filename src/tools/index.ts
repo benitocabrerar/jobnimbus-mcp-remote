@@ -15,6 +15,8 @@ import { CreateContactTool } from './contacts/createContact.js';
 import { GetEstimatesTool } from './estimates/getEstimates.js';
 import { GetActivitiesTool } from './activities/getActivities.js';
 import { CreateActivityTool } from './activities/createActivity.js';
+import { GetCalendarActivities } from './activities/getCalendarActivities.js';
+import { GetTimelineData } from './activities/getTimelineData.js';
 import { GetSystemInfoTool } from './system/getSystemInfo.js';
 import { ValidateApiKeyTool } from './system/validateApiKey.js';
 
@@ -44,6 +46,8 @@ export class ToolRegistry {
     this.registerTool(new GetEstimatesTool());
     this.registerTool(new GetActivitiesTool());
     this.registerTool(new CreateActivityTool());
+    this.registerTool(new GetCalendarActivities());
+    this.registerTool(new GetTimelineData());
     this.registerTool(new AnalyzeInsurancePipelineTool());
     this.registerTool(new AnalyzeRetailPipelineTool());
 
