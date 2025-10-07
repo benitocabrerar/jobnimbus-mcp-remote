@@ -1,9 +1,17 @@
 {
-  "name": "jobnimbus-mcp-remote",
+  "name": "jobnimbus-mcp-client",
   "version": "1.0.0",
-  "description": "JobNimbus MCP Server - Remote access for multiple Claude Desktop clients",
+  "description": "JobNimbus MCP Client - Connect Claude Desktop to remote JobNimbus MCP server",
   "main": "dist/index.js",
   "type": "module",
+  "bin": {
+    "jobnimbus-mcp-client": "./bin/mcp-client.js"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "README.md"
+  ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",

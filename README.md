@@ -1,6 +1,8 @@
-# 🚀 JobNimbus MCP Remote Server
+# JobNimbus MCP Client
 
-Servidor MCP (Model Context Protocol) de JobNimbus accesible remotamente desde cualquier PC con Claude Desktop.
+**Connect Claude Desktop to your remote JobNimbus MCP server from any computer**
+
+This package provides an MCP (Model Context Protocol) client that connects Claude Desktop to a remote JobNimbus MCP server. No local installation or repository cloning required!
 
 ## ✨ Características
 
