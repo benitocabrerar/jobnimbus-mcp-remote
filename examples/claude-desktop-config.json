@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "jobnimbus-stamford": {
+      "command": "node",
+      "args": ["C:/Users/benito/poweria/jobnimbus/jobnimbus-mcp-remote/examples/mcp-client.js"],
+      "env": {
+        "MCP_SERVER_URL": "https://your-service.onrender.com",
+        "JOBNIMBUS_API_KEY": "your_stamford_api_key_here",
+        "JOBNIMBUS_INSTANCE": "stamford"
+      }
+    },
+    "jobnimbus-guilford": {
+      "command": "node",
+      "args": ["C:/Users/benito/poweria/jobnimbus/jobnimbus-mcp-remote/examples/mcp-client.js"],
+      "env": {
+        "MCP_SERVER_URL": "https://your-service.onrender.com",
+        "JOBNIMBUS_API_KEY": "your_guilford_api_key_here",
+        "JOBNIMBUS_INSTANCE": "guilford"
+      }
+    }
+  }
+}

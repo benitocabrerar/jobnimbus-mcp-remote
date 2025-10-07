@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: jobnimbus-mcp-remote
+    runtime: node
+    region: oregon
+    plan: starter
+
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:prod
+
+    healthCheckPath: /health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: 10000
+
+      - key: JOBNIMBUS_API_BASE_URL
+        value: https://app.jobnimbus.com/api1
+
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 60000
+
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 60
+
+      - key: LOG_LEVEL
+        value: info
+
+      - key: CORS_ORIGIN
+        value: "*"
+
+    autoDeploy: true
