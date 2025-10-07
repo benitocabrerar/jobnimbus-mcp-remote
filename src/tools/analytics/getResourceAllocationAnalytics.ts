@@ -107,17 +107,25 @@ export class GetResourceAllocationAnalyticsTool extends BaseTool<any, any> {
       const daysAhead = input.days_ahead || 30;
 
       // Fetch data
-      const [usersResponse, jobsResponse, activitiesResponse, estimatesResponse] = await Promise.all([
-        this.client.get(context.apiKey, 'users', { size: 100 }),
+      const [jobsResponse, activitiesResponse, estimatesResponse] = await Promise.all([
         this.client.get(context.apiKey, 'jobs', { size: 100 }),
         this.client.get(context.apiKey, 'activities', { size: 100 }),
         this.client.get(context.apiKey, 'estimates', { size: 100 }),
       ]);
 
-      const users = usersResponse.data?.results || usersResponse.data?.users || [];
       const jobs = jobsResponse.data?.results || [];
       const activities = activitiesResponse.data?.activity || [];
       const estimates = estimatesResponse.data?.results || [];
+
+      // Try to fetch users - endpoint may not be available in all JobNimbus accounts
+      let users: any[] = [];
+      try {
+        const usersResponse = await this.client.get(context.apiKey, 'users', { size: 100 });
+        users = usersResponse.data?.results || usersResponse.data?.users || [];
+      } catch (error) {
+        // Users endpoint not available - proceed without user attribution
+        console.warn('Users endpoint not available - resource allocation analysis will be limited');
+      }
 
       const now = Date.now();
       const futureDate = now + (daysAhead * 24 * 60 * 60 * 1000);

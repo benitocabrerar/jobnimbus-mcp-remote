@@ -157,17 +157,25 @@ export class GetQualityControlAnalyticsTool extends BaseTool<any, any> {
       const includeTeamAnalysis = input.include_team_analysis !== false;
       const includeParetoAnalysis = input.include_pareto_analysis !== false;
 
-      const [jobsResponse, activitiesResponse, contactsResponse, usersResponse] = await Promise.all([
+      const [jobsResponse, activitiesResponse, contactsResponse] = await Promise.all([
         this.client.get(context.apiKey, 'jobs', { size: 100 }),
         this.client.get(context.apiKey, 'activities', { size: 100 }),
         this.client.get(context.apiKey, 'contacts', { size: 100 }),
-        this.client.get(context.apiKey, 'users', { size: 100 }),
       ]);
 
       const jobs = jobsResponse.data?.results || [];
       const activities = activitiesResponse.data?.activity || [];
       const contacts = contactsResponse.data?.results || [];
-      const users = usersResponse.data?.users || [];
+
+      // Try to fetch users - endpoint may not be available in all JobNimbus accounts
+      let users: any[] = [];
+      try {
+        const usersResponse = await this.client.get(context.apiKey, 'users', { size: 100 });
+        users = usersResponse.data?.users || [];
+      } catch (error) {
+        // Users endpoint not available - proceed without user attribution
+        console.warn('Users endpoint not available - team quality analysis will be limited');
+      }
 
       const now = Date.now();
       const cutoffDate = now - (timeWindowDays * 24 * 60 * 60 * 1000);

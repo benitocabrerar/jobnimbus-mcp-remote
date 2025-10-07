@@ -103,15 +103,23 @@ export class GetCommunicationAnalyticsTool extends BaseTool<any, any> {
       const daysBack = input.days_back || 30;
 
       // Fetch data
-      const [activitiesResponse, usersResponse, jobsResponse] = await Promise.all([
+      const [activitiesResponse, jobsResponse] = await Promise.all([
         this.client.get(context.apiKey, 'activities', { size: 100 }),
-        this.client.get(context.apiKey, 'users', { size: 100 }),
         this.client.get(context.apiKey, 'jobs', { size: 100 }),
       ]);
 
       const activities = activitiesResponse.data?.activity || [];
-      const users = usersResponse.data?.results || usersResponse.data?.users || [];
       const jobs = jobsResponse.data?.results || [];
+
+      // Try to fetch users - endpoint may not be available in all JobNimbus accounts
+      let users: any[] = [];
+      try {
+        const usersResponse = await this.client.get(context.apiKey, 'users', { size: 100 });
+        users = usersResponse.data?.results || usersResponse.data?.users || [];
+      } catch (error) {
+        // Users endpoint not available - proceed without user attribution
+        console.warn('Users endpoint not available - communication analytics will be limited');
+      }
 
       const now = Date.now();
       const cutoffDate = now - (daysBack * 24 * 60 * 60 * 1000);

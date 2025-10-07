@@ -134,15 +134,23 @@ export class GetOperationalEfficiencyAnalyticsTool extends BaseTool<any, any> {
       const includeWaste = input.include_waste_analysis !== false;
       const efficiencyThreshold = input.efficiency_threshold || 75;
 
-      const [jobsResponse, activitiesResponse, usersResponse] = await Promise.all([
+      const [jobsResponse, activitiesResponse] = await Promise.all([
         this.client.get(context.apiKey, 'jobs', { size: 100 }),
         this.client.get(context.apiKey, 'activities', { size: 100 }),
-        this.client.get(context.apiKey, 'users', { size: 100 }),
       ]);
 
       const jobs = jobsResponse.data?.results || [];
       const activities = activitiesResponse.data?.activity || [];
-      const users = usersResponse.data?.results || usersResponse.data?.users || [];
+
+      // Try to fetch users - endpoint may not be available in all JobNimbus accounts
+      let users: any[] = [];
+      try {
+        const usersResponse = await this.client.get(context.apiKey, 'users', { size: 100 });
+        users = usersResponse.data?.results || usersResponse.data?.users || [];
+      } catch (error) {
+        // Users endpoint not available - proceed without user attribution
+        console.warn('Users endpoint not available - operational efficiency analysis will be limited');
+      }
 
       const now = Date.now();
       const cutoffDate = now - (daysBack * 24 * 60 * 60 * 1000);

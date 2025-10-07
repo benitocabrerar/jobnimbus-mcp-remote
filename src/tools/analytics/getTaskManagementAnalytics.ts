@@ -111,14 +111,22 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
       const daysBack = input.days_back || 30;
 
       // Fetch tasks and related data
-      const [activitiesResponse, usersResponse] = await Promise.all([
+      const [activitiesResponse] = await Promise.all([
         this.client.get(context.apiKey, 'activities', { size: 100 }),
-        this.client.get(context.apiKey, 'users', { size: 100 }),
       ]);
 
       // Note: Tasks might come from activities endpoint in JobNimbus
       const activities = activitiesResponse.data?.activity || [];
-      const users = usersResponse.data?.results || usersResponse.data?.users || [];
+
+      // Try to fetch users - endpoint may not be available in all JobNimbus accounts
+      let users: any[] = [];
+      try {
+        const usersResponse = await this.client.get(context.apiKey, 'users', { size: 100 });
+        users = usersResponse.data?.results || usersResponse.data?.users || [];
+      } catch (error) {
+        // Users endpoint not available - proceed without user attribution
+        console.warn('Users endpoint not available - task management analysis will be limited');
+      }
 
       // Filter task-type activities
       const tasks = activities.filter((act: any) => {
