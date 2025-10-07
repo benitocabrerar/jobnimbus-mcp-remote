@@ -11,8 +11,8 @@
  * - JOBNIMBUS_INSTANCE: "stamford" or "guilford"
  */
 
-const https = require('https');
-const http = require('http');
+import https from 'https';
+import http from 'http';
 
 // Get configuration from environment
 const SERVER_URL = process.env.MCP_SERVER_URL;
