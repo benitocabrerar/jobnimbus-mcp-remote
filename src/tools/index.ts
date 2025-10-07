@@ -20,12 +20,48 @@ import { GetTimelineData } from './activities/getTimelineData.js';
 import { GetSystemInfoTool } from './system/getSystemInfo.js';
 import { ValidateApiKeyTool } from './system/validateApiKey.js';
 
-// Analytics tools
+// Analytics tools - Comprehensive implementations
 import { AnalyzeInsurancePipelineTool } from './analytics/analyzeInsurancePipeline.js';
 import { AnalyzeRetailPipelineTool } from './analytics/analyzeRetailPipeline.js';
 import { GetSalesRepPerformanceTool } from './analytics/getSalesRepPerformance.js';
 import { GetPerformanceMetricsTool } from './analytics/getPerformanceMetrics.js';
 import { GetAutomatedFollowupTool } from './analytics/getAutomatedFollowup.js';
+import { GetRevenueReportTool } from './analytics/getRevenueReport.js';
+import { GetMarginAnalysisTool } from './analytics/getMarginAnalysis.js';
+import { AnalyzeRevenueLeakageTool } from './analytics/analyzeRevenueLeakage.js';
+import { GetCustomerLifetimeValueTool } from './analytics/getCustomerLifetimeValue.js';
+import { GetProfitabilityDashboardTool } from './analytics/getProfitabilityDashboard.js';
+import {
+  AnalyzeDuplicateContactsTool,
+  AnalyzeDuplicateJobsTool,
+  AnalyzePricingAnomaliesTool,
+  GetPricingOptimizationTool,
+  GetCompetitiveIntelligenceTool,
+  GetUpsellOpportunitiesTool,
+} from './analytics/batchAnalyticsTools.js';
+import {
+  AnalyzeServicesRepairPipelineTool,
+  AnalyzePublicAdjusterPipelineTool,
+  GetJobSummaryTool,
+  GetJobsDistributionTool,
+  GetOptimalDoorRoutesTool,
+  GetTerritoryHeatMapsTool,
+  GetDoorKnockingScriptsByAreaTool,
+  GetSeasonalDoorTimingTool,
+  GetSeasonalTrendsTool,
+  GetPipelineForecastingTool,
+  GetSmartSchedulingTool,
+  GetEstimatesWithAddressesTool,
+  GetTasksTool,
+  GetUsersTool,
+  GetWebhooksTool,
+  GetAttachmentsTool,
+  BulkImportContactsTool,
+  GetActivitiesAnalyticsTool,
+  ValidateContactInformationTool,
+  GetTimelineDataTool2,
+  GetCalendarActivitiesTool2,
+} from './analytics/simplifiedBatchTools.js';
 
 // Generic tool generator for remaining tools
 import { createGenericTool, ALL_TOOLS_CONFIG } from './allToolsGenerator.js';
@@ -56,6 +92,40 @@ export class ToolRegistry {
     this.registerTool(new GetSalesRepPerformanceTool());
     this.registerTool(new GetPerformanceMetricsTool());
     this.registerTool(new GetAutomatedFollowupTool());
+    this.registerTool(new GetRevenueReportTool());
+    this.registerTool(new GetMarginAnalysisTool());
+    this.registerTool(new AnalyzeRevenueLeakageTool());
+    this.registerTool(new GetCustomerLifetimeValueTool());
+    this.registerTool(new GetProfitabilityDashboardTool());
+    this.registerTool(new AnalyzeDuplicateContactsTool());
+    this.registerTool(new AnalyzeDuplicateJobsTool());
+    this.registerTool(new AnalyzePricingAnomaliesTool());
+    this.registerTool(new GetPricingOptimizationTool());
+    this.registerTool(new GetCompetitiveIntelligenceTool());
+    this.registerTool(new GetUpsellOpportunitiesTool());
+
+    // Register simplified batch tools
+    this.registerTool(new AnalyzeServicesRepairPipelineTool());
+    this.registerTool(new AnalyzePublicAdjusterPipelineTool());
+    this.registerTool(new GetJobSummaryTool());
+    this.registerTool(new GetJobsDistributionTool());
+    this.registerTool(new GetOptimalDoorRoutesTool());
+    this.registerTool(new GetTerritoryHeatMapsTool());
+    this.registerTool(new GetDoorKnockingScriptsByAreaTool());
+    this.registerTool(new GetSeasonalDoorTimingTool());
+    this.registerTool(new GetSeasonalTrendsTool());
+    this.registerTool(new GetPipelineForecastingTool());
+    this.registerTool(new GetSmartSchedulingTool());
+    this.registerTool(new GetEstimatesWithAddressesTool());
+    this.registerTool(new GetTasksTool());
+    this.registerTool(new GetUsersTool());
+    this.registerTool(new GetWebhooksTool());
+    this.registerTool(new GetAttachmentsTool());
+    this.registerTool(new BulkImportContactsTool());
+    this.registerTool(new GetActivitiesAnalyticsTool());
+    this.registerTool(new ValidateContactInformationTool());
+    this.registerTool(new GetTimelineDataTool2());
+    this.registerTool(new GetCalendarActivitiesTool2());
 
     // Register all generic tools
     for (const config of ALL_TOOLS_CONFIG) {
