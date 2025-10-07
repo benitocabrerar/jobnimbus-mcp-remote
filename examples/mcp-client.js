@@ -152,10 +152,22 @@ process.stdin.on('data', async (chunk) => {
         }) + '\n');
       } else if (message.method === 'tools/call') {
         const response = await makeRequest('POST', '/mcp/tools/call', message.params);
+
+        // Format response according to MCP protocol
+        // Extract actual data from server response wrapper
+        const data = response.data || response;
+
         safeWrite(JSON.stringify({
           jsonrpc: '2.0',
           id: message.id,
-          result: response,
+          result: {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(data, null, 2)
+              }
+            ]
+          }
         }) + '\n');
       } else if (message.method === 'notifications/initialized') {
         // Client notification after initialize - no response needed
