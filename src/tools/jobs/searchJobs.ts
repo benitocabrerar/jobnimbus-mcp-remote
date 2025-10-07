@@ -1,5 +1,6 @@
 /**
  * Search Jobs Tool
+ * Enhanced with schedule filtering and sorting capabilities (synced with get_jobs)
  */
 
 import { BaseTool } from '../baseTool.js';
@@ -11,13 +12,29 @@ interface SearchJobsInput {
   size?: number;
   date_from?: string;
   date_to?: string;
+  scheduled_from?: string;
+  scheduled_to?: string;
+  has_schedule?: boolean;
+  sort_by?: 'date_start' | 'date_end' | 'date_created' | 'date_updated' | 'date_status_change';
+  order?: 'asc' | 'desc';
+}
+
+interface Job {
+  jnid?: string;
+  number?: number;
+  date_start?: number;
+  date_end?: number;
+  date_created?: number;
+  date_updated?: number;
+  date_status_change?: number;
+  [key: string]: any;
 }
 
 export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'search_jobs',
-      description: 'Search jobs by criteria with pagination and date filtering',
+      description: 'Search jobs by criteria with pagination, date filtering, scheduling filters, and sorting',
       inputSchema: {
         type: 'object',
         properties: {
@@ -35,37 +52,249 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
           },
           date_from: {
             type: 'string',
-            description: 'Start date filter (YYYY-MM-DD format)',
+            description: 'Start date filter for date_created (YYYY-MM-DD format)',
           },
           date_to: {
             type: 'string',
-            description: 'End date filter (YYYY-MM-DD format)',
+            description: 'End date filter for date_created (YYYY-MM-DD format)',
+          },
+          scheduled_from: {
+            type: 'string',
+            description: 'Filter jobs scheduled on or after this date (date_start >= fecha, YYYY-MM-DD format)',
+          },
+          scheduled_to: {
+            type: 'string',
+            description: 'Filter jobs scheduled on or before this date (date_start <= fecha, YYYY-MM-DD format)',
+          },
+          has_schedule: {
+            type: 'boolean',
+            description: 'Filter only jobs with scheduled dates (date_start > 0)',
+          },
+          sort_by: {
+            type: 'string',
+            description: 'Field to sort by',
+            enum: ['date_start', 'date_end', 'date_created', 'date_updated', 'date_status_change'],
+          },
+          order: {
+            type: 'string',
+            description: 'Sort order (asc or desc)',
+            enum: ['asc', 'desc'],
           },
         },
       },
     };
   }
 
+  /**
+   * Convert YYYY-MM-DD string to Unix timestamp
+   */
+  private dateStringToUnix(dateStr: string, isStartOfDay: boolean = true): number {
+    const date = new Date(dateStr + 'T00:00:00Z');
+    if (isStartOfDay) {
+      return Math.floor(date.getTime() / 1000);
+    } else {
+      // End of day (23:59:59)
+      return Math.floor(date.getTime() / 1000) + 86399;
+    }
+  }
+
+  /**
+   * Filter jobs by date_created
+   */
+  private filterByDateCreated(jobs: Job[], dateFrom?: string, dateTo?: string): Job[] {
+    let filtered = jobs;
+
+    if (dateFrom) {
+      const fromTs = this.dateStringToUnix(dateFrom, true);
+      filtered = filtered.filter(j => (j.date_created || 0) >= fromTs);
+    }
+
+    if (dateTo) {
+      const toTs = this.dateStringToUnix(dateTo, false);
+      filtered = filtered.filter(j => (j.date_created || 0) <= toTs);
+    }
+
+    return filtered;
+  }
+
+  /**
+   * Filter jobs by scheduling parameters (date_start/date_end)
+   */
+  private filterBySchedule(
+    jobs: Job[],
+    scheduledFrom?: string,
+    scheduledTo?: string,
+    hasSchedule?: boolean
+  ): Job[] {
+    let filtered = jobs;
+
+    // Filter by has_schedule first
+    if (hasSchedule !== undefined) {
+      if (hasSchedule) {
+        filtered = filtered.filter(j => (j.date_start || 0) > 0);
+      } else {
+        filtered = filtered.filter(j => (j.date_start || 0) === 0);
+      }
+    }
+
+    // Filter by scheduled_from
+    if (scheduledFrom) {
+      const scheduledFromTs = this.dateStringToUnix(scheduledFrom, true);
+      filtered = filtered.filter(j => (j.date_start || 0) >= scheduledFromTs);
+    }
+
+    // Filter by scheduled_to
+    if (scheduledTo) {
+      const scheduledToTs = this.dateStringToUnix(scheduledTo, false);
+      filtered = filtered.filter(j => {
+        const dateStart = j.date_start || 0;
+        return dateStart > 0 && dateStart <= scheduledToTs;
+      });
+    }
+
+    return filtered;
+  }
+
+  /**
+   * Sort jobs by specified field
+   */
+  private sortJobs(jobs: Job[], sortBy?: string, order: string = 'desc'): Job[] {
+    if (!sortBy || jobs.length === 0) {
+      return jobs;
+    }
+
+    const validFields = ['date_start', 'date_end', 'date_created', 'date_updated', 'date_status_change'];
+    if (!validFields.includes(sortBy)) {
+      return jobs;
+    }
+
+    const reverse = order === 'desc';
+
+    return [...jobs].sort((a, b) => {
+      const aVal = (a[sortBy] as number) || 0;
+      const bVal = (b[sortBy] as number) || 0;
+      return reverse ? bVal - aVal : aVal - bVal;
+    });
+  }
+
   async execute(input: SearchJobsInput, context: ToolContext): Promise<any> {
-    const params: any = {
-      from: input.from || 0,
-      size: Math.min(input.size || 50, 100),
-    };
+    const fromIndex = input.from || 0;
+    const requestedSize = Math.min(input.size || 50, 100);
+    const order = input.order || 'desc';
 
-    if (input.query) {
-      params.q = input.query;
+    // Determine if we need to fetch all jobs for filtering/sorting
+    const needsFullFetch =
+      input.date_from ||
+      input.date_to ||
+      input.scheduled_from ||
+      input.scheduled_to ||
+      input.has_schedule !== undefined ||
+      input.sort_by;
+
+    if (needsFullFetch) {
+      // Fetch all jobs with pagination
+      const batchSize = 100;
+      const maxIterations = 50;
+      let allJobs: Job[] = [];
+      let offset = 0;
+      let iteration = 0;
+
+      while (iteration < maxIterations) {
+        const params: any = { size: batchSize, from: offset };
+        if (input.query) {
+          params.q = input.query;
+        }
+
+        const response = await this.client.get(context.apiKey, 'jobs/search', params);
+        const batch = response.data?.results || [];
+
+        if (batch.length === 0) {
+          break;
+        }
+
+        allJobs = allJobs.concat(batch);
+        offset += batchSize;
+        iteration++;
+
+        if (batch.length < batchSize) {
+          break;
+        }
+      }
+
+      // Apply date_created filtering
+      let filteredJobs = this.filterByDateCreated(allJobs, input.date_from, input.date_to);
+
+      // Apply schedule filtering
+      if (input.scheduled_from || input.scheduled_to || input.has_schedule !== undefined) {
+        filteredJobs = this.filterBySchedule(
+          filteredJobs,
+          input.scheduled_from,
+          input.scheduled_to,
+          input.has_schedule
+        );
+      }
+
+      // Apply sorting
+      if (input.sort_by) {
+        filteredJobs = this.sortJobs(filteredJobs, input.sort_by, order);
+      }
+
+      // Paginate
+      const paginatedJobs = filteredJobs.slice(fromIndex, fromIndex + requestedSize);
+
+      return {
+        count: paginatedJobs.length,
+        total_filtered: filteredJobs.length,
+        total_fetched: allJobs.length,
+        iterations: iteration,
+        from: fromIndex,
+        size: requestedSize,
+        has_more: fromIndex + paginatedJobs.length < filteredJobs.length,
+        total_pages: Math.ceil(filteredJobs.length / requestedSize),
+        current_page: Math.floor(fromIndex / requestedSize) + 1,
+        query: input.query,
+        date_filter_applied: !!(input.date_from || input.date_to),
+        date_from: input.date_from,
+        date_to: input.date_to,
+        schedule_filter_applied: !!(
+          input.scheduled_from ||
+          input.scheduled_to ||
+          input.has_schedule !== undefined
+        ),
+        scheduled_from: input.scheduled_from,
+        scheduled_to: input.scheduled_to,
+        has_schedule: input.has_schedule,
+        sort_applied: !!input.sort_by,
+        sort_by: input.sort_by,
+        order: order,
+        results: paginatedJobs,
+      };
+    } else {
+      // Simple search without filtering
+      const params: any = {
+        from: fromIndex,
+        size: requestedSize,
+      };
+
+      if (input.query) {
+        params.q = input.query;
+      }
+
+      const result = await this.client.get(context.apiKey, 'jobs/search', params);
+      const jobs = result.data?.results || [];
+
+      return {
+        count: jobs.length,
+        total_filtered: jobs.length,
+        from: fromIndex,
+        size: requestedSize,
+        has_more: false,
+        query: input.query,
+        date_filter_applied: false,
+        schedule_filter_applied: false,
+        sort_applied: false,
+        results: jobs,
+      };
     }
-
-    if (input.date_from) {
-      params.date_from = input.date_from;
-    }
-
-    if (input.date_to) {
-      params.date_to = input.date_to;
-    }
-
-    const result = await this.client.get(context.apiKey, 'jobs/search', params);
-
-    return result.data;
   }
 }
