@@ -105,7 +105,23 @@ process.stdin.on('data', async (chunk) => {
       const message = JSON.parse(line);
 
       // Handle different MCP methods
-      if (message.method === 'tools/list') {
+      if (message.method === 'initialize') {
+        // Handle MCP initialize handshake
+        process.stdout.write(JSON.stringify({
+          jsonrpc: '2.0',
+          id: message.id,
+          result: {
+            protocolVersion: '2025-06-18',
+            capabilities: {
+              tools: {},
+            },
+            serverInfo: {
+              name: 'jobnimbus-mcp-remote-client',
+              version: '1.0.0',
+            },
+          },
+        }) + '\n');
+      } else if (message.method === 'tools/list') {
         const response = await makeRequest('POST', '/mcp/tools/list', {});
         process.stdout.write(JSON.stringify({
           jsonrpc: '2.0',
@@ -119,6 +135,9 @@ process.stdin.on('data', async (chunk) => {
           id: message.id,
           result: response,
         }) + '\n');
+      } else if (message.method === 'notifications/initialized') {
+        // Client notification after initialize - no response needed
+        // Just acknowledge silently
       } else {
         // Unsupported method
         process.stdout.write(JSON.stringify({
