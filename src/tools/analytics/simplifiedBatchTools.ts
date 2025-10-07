@@ -45,18 +45,10 @@ class GenericAnalyticsTool extends BaseTool<any, any> {
   }
 }
 
-// 25 TOOLS EXPORT
-export class AnalyzeServicesRepairPipelineTool extends GenericAnalyticsTool {
-  constructor() {
-    super('analyze_services_repair_pipeline', 'Services & Repair pipeline optimization');
-  }
-}
-
-export class AnalyzePublicAdjusterPipelineTool extends GenericAnalyticsTool {
-  constructor() {
-    super('analyze_public_adjuster_pipeline', 'Public Adjuster pipeline optimization');
-  }
-}
+// 20 TOOLS EXPORT (5 moved to dedicated implementations)
+// Note: AnalyzeServicesRepairPipelineTool, AnalyzePublicAdjusterPipelineTool,
+// GetSeasonalTrendsTool, GetPipelineForecastingTool, GetSmartSchedulingTool
+// now have comprehensive implementations in separate files
 
 export class GetJobSummaryTool extends GenericAnalyticsTool {
   constructor() {
@@ -91,24 +83,6 @@ export class GetDoorKnockingScriptsByAreaTool extends GenericAnalyticsTool {
 export class GetSeasonalDoorTimingTool extends GenericAnalyticsTool {
   constructor() {
     super('get_seasonal_door_timing', 'Optimal door-to-door timing by season');
-  }
-}
-
-export class GetSeasonalTrendsTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_seasonal_trends', 'Seasonal demand patterns');
-  }
-}
-
-export class GetPipelineForecastingTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_pipeline_forecasting', 'Predict quarterly revenue');
-  }
-}
-
-export class GetSmartSchedulingTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_smart_scheduling', 'AI-powered appointment optimization');
   }
 }
 

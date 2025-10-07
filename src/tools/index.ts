@@ -39,18 +39,21 @@ import {
   GetCompetitiveIntelligenceTool,
   GetUpsellOpportunitiesTool,
 } from './analytics/batchAnalyticsTools.js';
+
+// New comprehensive analytics tools
+import { AnalyzeServicesRepairPipelineTool } from './analytics/analyzeServicesRepairPipeline.js';
+import { AnalyzePublicAdjusterPipelineTool } from './analytics/analyzePublicAdjusterPipeline.js';
+import { GetSeasonalTrendsTool } from './analytics/getSeasonalTrends.js';
+import { GetPipelineForecastingTool } from './analytics/getPipelineForecasting.js';
+import { GetSmartSchedulingTool } from './analytics/getSmartScheduling.js';
+
 import {
-  AnalyzeServicesRepairPipelineTool,
-  AnalyzePublicAdjusterPipelineTool,
   GetJobSummaryTool,
   GetJobsDistributionTool,
   GetOptimalDoorRoutesTool,
   GetTerritoryHeatMapsTool,
   GetDoorKnockingScriptsByAreaTool,
   GetSeasonalDoorTimingTool,
-  GetSeasonalTrendsTool,
-  GetPipelineForecastingTool,
-  GetSmartSchedulingTool,
   GetEstimatesWithAddressesTool,
   GetTasksTool,
   GetUsersTool,
