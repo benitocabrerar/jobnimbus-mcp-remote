@@ -1,17 +1,30 @@
 /**
  * Simplified Batch Tools - Functional tools con datos reales de JobNimbus API
  *
- * NOTA: Las siguientes herramientas tienen implementaciones comprehensivas en archivos dedicados:
- * - GetJobSummaryTool → getJobSummary.ts (340+ líneas)
- * - GetOptimalDoorRoutesTool → getOptimalDoorRoutes.ts (290+ líneas)
- * - GetTerritoryHeatMapsTool → getTerritoryHeatMaps.ts (320+ líneas)
- * - GetActivitiesAnalyticsTool → getActivitiesAnalytics.ts (360+ líneas)
- * - BulkImportContactsTool → getBulkImportContacts.ts (330+ líneas)
+ * COMPREHENSIVE IMPLEMENTATIONS (15 herramientas con lógica de negocio completa):
+ *
+ * BATCH 1 (5 tools - 1,500+ líneas):
  * - AnalyzeServicesRepairPipelineTool → analyzeServicesRepairPipeline.ts (310+ líneas)
  * - AnalyzePublicAdjusterPipelineTool → analyzePublicAdjusterPipeline.ts (320+ líneas)
  * - GetSeasonalTrendsTool → getSeasonalTrends.ts (280+ líneas)
  * - GetPipelineForecastingTool → getPipelineForecasting.ts (290+ líneas)
  * - GetSmartSchedulingTool → getSmartScheduling.ts (300+ líneas)
+ *
+ * BATCH 2 (5 tools - 1,600+ líneas):
+ * - GetJobSummaryTool → getJobSummary.ts (340+ líneas)
+ * - GetOptimalDoorRoutesTool → getOptimalDoorRoutes.ts (290+ líneas)
+ * - GetTerritoryHeatMapsTool → getTerritoryHeatMaps.ts (320+ líneas)
+ * - GetActivitiesAnalyticsTool → getActivitiesAnalytics.ts (360+ líneas)
+ * - BulkImportContactsTool → getBulkImportContacts.ts (330+ líneas)
+ *
+ * BATCH 3 (5 tools - 1,920+ líneas):
+ * - GetJobsDistributionTool → getJobsDistribution.ts (330+ líneas)
+ * - GetDoorKnockingScriptsByAreaTool → getDoorKnockingScriptsByArea.ts (330+ líneas)
+ * - GetSeasonalDoorTimingTool → getSeasonalDoorTiming.ts (340+ líneas)
+ * - GetEstimatesWithAddressesTool → getEstimatesWithAddresses.ts (370+ líneas)
+ * - ValidateContactInformationTool → validateContactInformation.ts (550+ líneas)
+ *
+ * TOTAL: 15 comprehensive tools with 5,020+ lines of business logic
  */
 
 import { BaseTool } from '../baseTool.js';
@@ -56,29 +69,7 @@ class GenericAnalyticsTool extends BaseTool<any, any> {
   }
 }
 
-export class GetJobsDistributionTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_jobs_distribution', 'Geographic distribution analysis of jobs');
-  }
-}
-
-export class GetDoorKnockingScriptsByAreaTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_door_knocking_scripts_by_area', 'Customized door knocking scripts');
-  }
-}
-
-export class GetSeasonalDoorTimingTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_seasonal_door_timing', 'Optimal door-to-door timing by season');
-  }
-}
-
-export class GetEstimatesWithAddressesTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_estimates_with_addresses', 'Estimates with geographic data');
-  }
-}
+// SIMPLIFIED TOOLS - Generic implementations for remaining tools
 
 export class GetTasksTool extends GenericAnalyticsTool {
   constructor() {
@@ -101,12 +92,6 @@ export class GetWebhooksTool extends GenericAnalyticsTool {
 export class GetAttachmentsTool extends GenericAnalyticsTool {
   constructor() {
     super('get_attachments', 'Get file attachments');
-  }
-}
-
-export class ValidateContactInformationTool extends GenericAnalyticsTool {
-  constructor() {
-    super('validate_contact_information', 'Comprehensive contact validation');
   }
 }
 

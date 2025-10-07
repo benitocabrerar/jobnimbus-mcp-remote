@@ -54,16 +54,18 @@ import { GetTerritoryHeatMapsTool } from './analytics/getTerritoryHeatMaps.js';
 import { GetActivitiesAnalyticsTool } from './analytics/getActivitiesAnalytics.js';
 import { BulkImportContactsTool } from './analytics/getBulkImportContacts.js';
 
+// Comprehensive analytics tools (Batch 3 - 5 tools)
+import { GetJobsDistributionTool } from './analytics/getJobsDistribution.js';
+import { GetDoorKnockingScriptsByAreaTool } from './analytics/getDoorKnockingScriptsByArea.js';
+import { GetSeasonalDoorTimingTool } from './analytics/getSeasonalDoorTiming.js';
+import { GetEstimatesWithAddressesTool } from './analytics/getEstimatesWithAddresses.js';
+import { ValidateContactInformationTool } from './analytics/validateContactInformation.js';
+
 import {
-  GetJobsDistributionTool,
-  GetDoorKnockingScriptsByAreaTool,
-  GetSeasonalDoorTimingTool,
-  GetEstimatesWithAddressesTool,
   GetTasksTool,
   GetUsersTool,
   GetWebhooksTool,
   GetAttachmentsTool,
-  ValidateContactInformationTool,
   GetTimelineDataTool2,
   GetCalendarActivitiesTool2,
 } from './analytics/simplifiedBatchTools.js';
@@ -109,26 +111,28 @@ export class ToolRegistry {
     this.registerTool(new GetCompetitiveIntelligenceTool());
     this.registerTool(new GetUpsellOpportunitiesTool());
 
-    // Register simplified batch tools
+    // Register comprehensive analytics tools (Batches 1-3)
     this.registerTool(new AnalyzeServicesRepairPipelineTool());
     this.registerTool(new AnalyzePublicAdjusterPipelineTool());
-    this.registerTool(new GetJobSummaryTool());
-    this.registerTool(new GetJobsDistributionTool());
-    this.registerTool(new GetOptimalDoorRoutesTool());
-    this.registerTool(new GetTerritoryHeatMapsTool());
-    this.registerTool(new GetDoorKnockingScriptsByAreaTool());
-    this.registerTool(new GetSeasonalDoorTimingTool());
     this.registerTool(new GetSeasonalTrendsTool());
     this.registerTool(new GetPipelineForecastingTool());
     this.registerTool(new GetSmartSchedulingTool());
+    this.registerTool(new GetJobSummaryTool());
+    this.registerTool(new GetOptimalDoorRoutesTool());
+    this.registerTool(new GetTerritoryHeatMapsTool());
+    this.registerTool(new GetActivitiesAnalyticsTool());
+    this.registerTool(new BulkImportContactsTool());
+    this.registerTool(new GetJobsDistributionTool());
+    this.registerTool(new GetDoorKnockingScriptsByAreaTool());
+    this.registerTool(new GetSeasonalDoorTimingTool());
     this.registerTool(new GetEstimatesWithAddressesTool());
+    this.registerTool(new ValidateContactInformationTool());
+
+    // Register remaining simplified tools
     this.registerTool(new GetTasksTool());
     this.registerTool(new GetUsersTool());
     this.registerTool(new GetWebhooksTool());
     this.registerTool(new GetAttachmentsTool());
-    this.registerTool(new BulkImportContactsTool());
-    this.registerTool(new GetActivitiesAnalyticsTool());
-    this.registerTool(new ValidateContactInformationTool());
     this.registerTool(new GetTimelineDataTool2());
     this.registerTool(new GetCalendarActivitiesTool2());
 
