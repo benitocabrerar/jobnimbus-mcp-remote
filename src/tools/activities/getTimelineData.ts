@@ -85,7 +85,7 @@ export class GetTimelineData extends BaseTool<TimelineDataInput, TimelineDataOut
     };
 
     const response = await this.client.get(context.apiKey, 'activities', params);
-    const activities = response.data?.results || [];
+    const activities = response.data?.activity || [];
 
     const groupBy = input.group_by || 'day';
 
