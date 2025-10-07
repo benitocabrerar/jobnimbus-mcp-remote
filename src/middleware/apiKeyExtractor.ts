@@ -17,7 +17,8 @@ const INSTANCE_HEADER = 'x-jobnimbus-instance';
  */
 function isValidApiKeyFormat(apiKey: string): boolean {
   // Basic validation - length and characters
-  if (apiKey.length < 20 || apiKey.length > 256) {
+  // JobNimbus API keys can be 16-26 characters
+  if (apiKey.length < 16 || apiKey.length > 256) {
     return false;
   }
 
