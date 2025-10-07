@@ -1,5 +1,5 @@
 /**
- * Tool Registry - ALL 48 TOOLS
+ * Tool Registry - ALL 53 TOOLS
  */
 
 import { BaseTool } from './baseTool.js';
@@ -74,6 +74,13 @@ import { GetConversionFunnelAnalyticsTool } from './analytics/getConversionFunne
 import { GetResourceAllocationAnalyticsTool } from './analytics/getResourceAllocationAnalytics.js';
 import { GetCustomerSatisfactionAnalyticsTool } from './analytics/getCustomerSatisfactionAnalytics.js';
 import { GetTimeTrackingAnalyticsTool } from './analytics/getTimeTrackingAnalytics.js';
+
+// Comprehensive analytics tools (Batch 6 - 5 tools)
+import { GetProjectManagementAnalyticsTool } from './analytics/getProjectManagementAnalytics.js';
+import { GetMarketingCampaignAnalyticsTool } from './analytics/getMarketingCampaignAnalytics.js';
+import { GetFinancialForecastingAnalyticsTool } from './analytics/getFinancialForecastingAnalytics.js';
+import { GetCustomerSegmentationAnalyticsTool } from './analytics/getCustomerSegmentationAnalytics.js';
+import { GetOperationalEfficiencyAnalyticsTool } from './analytics/getOperationalEfficiencyAnalytics.js';
 
 import {
   GetTasksTool,
@@ -151,6 +158,11 @@ export class ToolRegistry {
     this.registerTool(new GetResourceAllocationAnalyticsTool());
     this.registerTool(new GetCustomerSatisfactionAnalyticsTool());
     this.registerTool(new GetTimeTrackingAnalyticsTool());
+    this.registerTool(new GetProjectManagementAnalyticsTool());
+    this.registerTool(new GetMarketingCampaignAnalyticsTool());
+    this.registerTool(new GetFinancialForecastingAnalyticsTool());
+    this.registerTool(new GetCustomerSegmentationAnalyticsTool());
+    this.registerTool(new GetOperationalEfficiencyAnalyticsTool());
 
     // Register remaining simplified tools
     this.registerTool(new GetTasksTool());
