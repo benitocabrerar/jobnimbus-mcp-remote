@@ -61,6 +61,13 @@ import { GetSeasonalDoorTimingTool } from './analytics/getSeasonalDoorTiming.js'
 import { GetEstimatesWithAddressesTool } from './analytics/getEstimatesWithAddresses.js';
 import { ValidateContactInformationTool } from './analytics/validateContactInformation.js';
 
+// Comprehensive analytics tools (Batch 4 - 5 tools)
+import { GetTaskManagementAnalyticsTool } from './analytics/getTaskManagementAnalytics.js';
+import { GetUserProductivityAnalyticsTool } from './analytics/getUserProductivityAnalytics.js';
+import { GetWebhookMonitoringTool } from './analytics/getWebhookMonitoring.js';
+import { GetFileStorageAnalyticsTool } from './analytics/getFileStorageAnalytics.js';
+import { GetLeadScoringAnalyticsTool } from './analytics/getLeadScoringAnalytics.js';
+
 import {
   GetTasksTool,
   GetUsersTool,
@@ -111,7 +118,7 @@ export class ToolRegistry {
     this.registerTool(new GetCompetitiveIntelligenceTool());
     this.registerTool(new GetUpsellOpportunitiesTool());
 
-    // Register comprehensive analytics tools (Batches 1-3)
+    // Register comprehensive analytics tools (Batches 1-4)
     this.registerTool(new AnalyzeServicesRepairPipelineTool());
     this.registerTool(new AnalyzePublicAdjusterPipelineTool());
     this.registerTool(new GetSeasonalTrendsTool());
@@ -127,6 +134,11 @@ export class ToolRegistry {
     this.registerTool(new GetSeasonalDoorTimingTool());
     this.registerTool(new GetEstimatesWithAddressesTool());
     this.registerTool(new ValidateContactInformationTool());
+    this.registerTool(new GetTaskManagementAnalyticsTool());
+    this.registerTool(new GetUserProductivityAnalyticsTool());
+    this.registerTool(new GetWebhookMonitoringTool());
+    this.registerTool(new GetFileStorageAnalyticsTool());
+    this.registerTool(new GetLeadScoringAnalyticsTool());
 
     // Register remaining simplified tools
     this.registerTool(new GetTasksTool());
