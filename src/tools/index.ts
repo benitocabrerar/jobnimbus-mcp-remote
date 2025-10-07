@@ -68,6 +68,13 @@ import { GetWebhookMonitoringTool } from './analytics/getWebhookMonitoring.js';
 import { GetFileStorageAnalyticsTool } from './analytics/getFileStorageAnalytics.js';
 import { GetLeadScoringAnalyticsTool } from './analytics/getLeadScoringAnalytics.js';
 
+// Comprehensive analytics tools (Batch 5 - 5 tools)
+import { GetCommunicationAnalyticsTool } from './analytics/getCommunicationAnalytics.js';
+import { GetConversionFunnelAnalyticsTool } from './analytics/getConversionFunnelAnalytics.js';
+import { GetResourceAllocationAnalyticsTool } from './analytics/getResourceAllocationAnalytics.js';
+import { GetCustomerSatisfactionAnalyticsTool } from './analytics/getCustomerSatisfactionAnalytics.js';
+import { GetTimeTrackingAnalyticsTool } from './analytics/getTimeTrackingAnalytics.js';
+
 import {
   GetTasksTool,
   GetUsersTool,
@@ -139,6 +146,11 @@ export class ToolRegistry {
     this.registerTool(new GetWebhookMonitoringTool());
     this.registerTool(new GetFileStorageAnalyticsTool());
     this.registerTool(new GetLeadScoringAnalyticsTool());
+    this.registerTool(new GetCommunicationAnalyticsTool());
+    this.registerTool(new GetConversionFunnelAnalyticsTool());
+    this.registerTool(new GetResourceAllocationAnalyticsTool());
+    this.registerTool(new GetCustomerSatisfactionAnalyticsTool());
+    this.registerTool(new GetTimeTrackingAnalyticsTool());
 
     // Register remaining simplified tools
     this.registerTool(new GetTasksTool());
