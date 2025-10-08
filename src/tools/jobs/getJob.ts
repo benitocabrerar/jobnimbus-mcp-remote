@@ -15,7 +15,7 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_job',
-      description: 'Get specific job by ID. Automatically verifies and corrects attachment_count if suspicious values detected (>100).',
+      description: 'Get specific job by ID (JNID) or job number. Supports backward search to find old jobs. Automatically verifies and corrects attachment_count if suspicious values detected (>100).',
       inputSchema: {
         type: 'object',
         properties: {
@@ -33,14 +33,44 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
     };
   }
 
-  async execute(input: GetJobInput, context: ToolContext): Promise<any> {
-    // Get job data
-    const result = await this.client.get(
-      context.apiKey,
-      `jobs/${input.job_id}`
-    );
-    const job = result.data;
+  /**
+   * Search for job by number when direct JNID lookup fails
+   */
+  private async searchJobByNumber(jobNumber: string, context: ToolContext): Promise<any> {
+    const batchSize = 100;
+    const maxIterations = 50; // Maximum 5,000 jobs
+    let offset = 0;
 
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      const response = await this.client.get(context.apiKey, 'jobs', {
+        size: batchSize,
+        from: offset
+      });
+
+      const jobs = response.data?.results || [];
+      if (jobs.length === 0) break;
+
+      // Search for job by number field
+      const found = jobs.find((j: any) =>
+        String(j.number) === String(jobNumber) ||
+        String(j.display_number) === String(jobNumber)
+      );
+
+      if (found) {
+        return found;
+      }
+
+      offset += batchSize;
+      if (jobs.length < batchSize) break;
+    }
+
+    return null;
+  }
+
+  /**
+   * Process job with attachment verification
+   */
+  private async processJob(job: any, input: GetJobInput, context: ToolContext): Promise<any> {
     // Get job's jnid for file filtering
     const jobJnid = job.jnid || input.job_id;
 
@@ -114,5 +144,35 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
 
     // Return job as-is if no verification needed
     return job;
+  }
+
+  async execute(input: GetJobInput, context: ToolContext): Promise<any> {
+    // 1. Try direct JNID lookup first (fast path for valid JNIDs)
+    try {
+      const result = await this.client.get(
+        context.apiKey,
+        `jobs/${input.job_id}`
+      );
+      const job = result.data;
+      return await this.processJob(job, input, context);
+    } catch (error: any) {
+      // If not a 404 error, throw it
+      if (error.statusCode !== 404 && error.status !== 404) {
+        throw error;
+      }
+      // If 404, continue to search by job number
+    }
+
+    // 2. Search by job number (backward search for old jobs)
+    const job = await this.searchJobByNumber(input.job_id, context);
+
+    if (!job) {
+      throw new Error(
+        `Job not found: ${input.job_id} (searched by JNID and job number). ` +
+        `This job may not exist or may be in a different company instance.`
+      );
+    }
+
+    return await this.processJob(job, input, context);
   }
 }
