@@ -41,27 +41,34 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
     const maxIterations = 50; // Maximum 5,000 jobs
     let offset = 0;
 
-    for (let iteration = 0; iteration < maxIterations; iteration++) {
-      const response = await this.client.get(context.apiKey, 'jobs', {
-        size: batchSize,
-        from: offset
-      });
+    try {
+      for (let iteration = 0; iteration < maxIterations; iteration++) {
+        const response = await this.client.get(context.apiKey, 'jobs', {
+          size: batchSize,
+          from: offset
+        });
 
-      const jobs = response.data?.results || [];
-      if (jobs.length === 0) break;
+        const jobs = response.data?.results || [];
+        if (jobs.length === 0) break;
 
-      // Search for job by number field
-      const found = jobs.find((j: any) =>
-        String(j.number) === String(jobNumber) ||
-        String(j.display_number) === String(jobNumber)
-      );
+        // Search for job by number field
+        const found = jobs.find((j: any) =>
+          String(j.number) === String(jobNumber) ||
+          String(j.display_number) === String(jobNumber)
+        );
 
-      if (found) {
-        return found;
+        if (found) {
+          return found;
+        }
+
+        offset += batchSize;
+        if (jobs.length < batchSize) break;
       }
-
-      offset += batchSize;
-      if (jobs.length < batchSize) break;
+    } catch (error: any) {
+      // If search fails due to API error, log and return null
+      // This allows execute() to provide a better error message
+      console.error(`Backward search failed for job ${jobNumber}:`, error.message || error);
+      return null;
     }
 
     return null;
@@ -147,6 +154,8 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
   }
 
   async execute(input: GetJobInput, context: ToolContext): Promise<any> {
+    let directLookupError: any = null;
+
     // 1. Try direct JNID lookup first (fast path for valid JNIDs)
     try {
       const result = await this.client.get(
@@ -156,7 +165,8 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
       const job = result.data;
       return await this.processJob(job, input, context);
     } catch (error: any) {
-      // If not a 404 error, throw it
+      directLookupError = error;
+      // If not a 404 error, throw it immediately
       if (error.statusCode !== 404 && error.status !== 404) {
         throw error;
       }
@@ -167,10 +177,17 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
     const job = await this.searchJobByNumber(input.job_id, context);
 
     if (!job) {
-      throw new Error(
-        `Job not found: ${input.job_id} (searched by JNID and job number). ` +
-        `This job may not exist or may be in a different company instance.`
-      );
+      // Provide detailed error message
+      const errorDetails = [];
+      errorDetails.push(`Job not found: ${input.job_id}`);
+      errorDetails.push(`Direct lookup: ${directLookupError?.message || 'Not Found (404)'}`);
+      errorDetails.push(`Backward search: Searched up to 5,000 jobs by number field`);
+      errorDetails.push(`Possible causes:`);
+      errorDetails.push(`  - Job doesn't exist in this instance`);
+      errorDetails.push(`  - Job is in a different company (Stamford vs Guilford)`);
+      errorDetails.push(`  - API key permissions insufficient for listing jobs`);
+
+      throw new Error(errorDetails.join('\n'));
     }
 
     return await this.processJob(job, input, context);
