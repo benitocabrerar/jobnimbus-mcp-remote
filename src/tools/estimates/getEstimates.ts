@@ -24,10 +24,11 @@ interface GetEstimatesInput {
 interface Estimate {
   jnid?: string;
   date_sent?: number;
-  date_approved?: number;
+  date_signed?: number;
   date_created?: number;
   date_updated?: number;
-  status?: string;
+  status?: number;
+  status_name?: string;
   [key: string]: any;
 }
 
@@ -65,15 +66,15 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
           },
           approved_from: {
             type: 'string',
-            description: 'Filter estimates approved on or after this date (date_approved >= fecha, YYYY-MM-DD format)',
+            description: 'Filter estimates signed on or after this date (date_signed >= fecha, YYYY-MM-DD format)',
           },
           approved_to: {
             type: 'string',
-            description: 'Filter estimates approved on or before this date (date_approved <= fecha, YYYY-MM-DD format)',
+            description: 'Filter estimates signed on or before this date (date_signed <= fecha, YYYY-MM-DD format)',
           },
           has_approval: {
             type: 'boolean',
-            description: 'Filter only estimates with approval status (date_approved > 0)',
+            description: 'Filter only estimates with approval/signed status (date_signed > 0)',
           },
           status: {
             type: 'string',
@@ -153,7 +154,7 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
   }
 
   /**
-   * Filter estimates by approved date (date_approved) and has_approval
+   * Filter estimates by signed date (date_signed) and has_approval
    */
   private filterByApprovedDate(
     estimates: Estimate[],
@@ -163,27 +164,27 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
   ): Estimate[] {
     let filtered = estimates;
 
-    // Filter by has_approval first
+    // Filter by has_approval first (using date_signed)
     if (hasApproval !== undefined) {
       if (hasApproval) {
-        filtered = filtered.filter(e => (e.date_approved || 0) > 0);
+        filtered = filtered.filter(e => (e.date_signed || 0) > 0);
       } else {
-        filtered = filtered.filter(e => (e.date_approved || 0) === 0);
+        filtered = filtered.filter(e => (e.date_signed || 0) === 0);
       }
     }
 
-    // Filter by approved_from
+    // Filter by approved_from (using date_signed)
     if (approvedFrom) {
       const approvedFromTs = this.dateStringToUnix(approvedFrom, true);
-      filtered = filtered.filter(e => (e.date_approved || 0) >= approvedFromTs);
+      filtered = filtered.filter(e => (e.date_signed || 0) >= approvedFromTs);
     }
 
-    // Filter by approved_to
+    // Filter by approved_to (using date_signed)
     if (approvedTo) {
       const approvedToTs = this.dateStringToUnix(approvedTo, false);
       filtered = filtered.filter(e => {
-        const dateApproved = e.date_approved || 0;
-        return dateApproved > 0 && dateApproved <= approvedToTs;
+        const dateSigned = e.date_signed || 0;
+        return dateSigned > 0 && dateSigned <= approvedToTs;
       });
     }
 
@@ -200,7 +201,7 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
 
     const lowerStatus = status.toLowerCase();
     return estimates.filter(e => {
-      const estimateStatus = (e.status || '').toLowerCase();
+      const estimateStatus = String(e.status_name || '').toLowerCase();
       return estimateStatus.includes(lowerStatus);
     });
   }
