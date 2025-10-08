@@ -99,6 +99,7 @@ import {
 
 // Attachments tools
 import { GetAttachmentsTool } from './attachments/getAttachments.js';
+import { AnalyzeJobAttachmentsTool } from './attachments/analyzeJobAttachments.js';
 
 // Generic tool generator for remaining tools
 import { createGenericTool, ALL_TOOLS_CONFIG } from './allToolsGenerator.js';
@@ -185,6 +186,9 @@ export class ToolRegistry {
     this.registerTool(new GetAttachmentsTool());
     this.registerTool(new GetTimelineDataTool2());
     this.registerTool(new GetCalendarActivitiesTool2());
+
+    // Register attachment analysis tools
+    this.registerTool(new AnalyzeJobAttachmentsTool());
 
     // Register all generic tools
     for (const config of ALL_TOOLS_CONFIG) {
