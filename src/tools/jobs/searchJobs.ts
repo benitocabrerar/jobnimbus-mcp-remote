@@ -205,7 +205,7 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
           params.q = input.query;
         }
 
-        const response = await this.client.get(context.apiKey, 'jobs/search', params);
+        const response = await this.client.get(context.apiKey, 'jobs', params);
         const batch = response.data?.results || [];
 
         if (batch.length === 0) {
@@ -280,7 +280,7 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
         params.q = input.query;
       }
 
-      const result = await this.client.get(context.apiKey, 'jobs/search', params);
+      const result = await this.client.get(context.apiKey, 'jobs', params);
       const jobs = result.data?.results || [];
 
       return {
