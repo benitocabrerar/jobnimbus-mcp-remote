@@ -41,21 +41,38 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
     );
     const job = result.data;
 
+    // Get job's jnid for file filtering
+    const jobJnid = job.jnid || input.job_id;
+
     // Check if attachment_count needs verification
     const reportedCount = job.attachment_count || 0;
     const shouldVerify = input.verify_attachments || reportedCount > 100;
 
     if (shouldVerify && reportedCount > 0) {
       try {
-        // Query actual attachments for this job
-        const attachmentsResponse = await this.client.get(
+        // Query actual files for this job (correct endpoint is /files, NOT /attachments)
+        const filesResponse = await this.client.get(
           context.apiKey,
-          'attachments',
-          { related: input.job_id, size: 100 }
+          'files',
+          { size: 500 } // Fetch more since we filter client-side
         );
 
-        const attachments = attachmentsResponse.data?.results || attachmentsResponse.data?.attachments || [];
-        const actualCount = attachments.length;
+        const allFiles = filesResponse.data?.files || [];
+
+        // Filter files related to this job
+        const jobFiles = allFiles.filter((file: any) => {
+          // Check if job ID is in primary
+          if (file.primary?.id === jobJnid) return true;
+
+          // Check if job ID is in related array
+          if (file.related && Array.isArray(file.related)) {
+            return file.related.some((rel: any) => rel.id === jobJnid);
+          }
+
+          return false;
+        });
+
+        const actualCount = jobFiles.length;
 
         // Add verification metadata
         const verification = {
@@ -63,7 +80,14 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
           actual_attachment_count: actualCount,
           verified: true,
           discrepancy: reportedCount !== actualCount,
-          warning: reportedCount > 100 ? `Suspicious attachment_count (${reportedCount}). API may be counting all system files instead of job-specific files.` : null,
+          warning: reportedCount > 100 ? `Suspicious attachment_count (${reportedCount}). JobNimbus API may be counting all system files. Verified actual count: ${actualCount}` : null,
+          endpoint_used: 'files',
+          job_jnid: jobJnid,
+          sample_files: jobFiles.slice(0, 3).map((f: any) => ({
+            filename: f.filename,
+            size_mb: ((f.size || 0) / (1024 * 1024)).toFixed(2),
+            type: f.content_type,
+          })),
         };
 
         return {
@@ -80,7 +104,9 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
             actual_attachment_count: null,
             verified: false,
             error: error instanceof Error ? error.message : 'Failed to verify attachments',
-            warning: reportedCount > 100 ? `Suspicious attachment_count (${reportedCount}). Verification failed.` : null,
+            warning: reportedCount > 100 ? `Suspicious attachment_count (${reportedCount}). Verification failed - check API permissions.` : null,
+            endpoint_attempted: 'files',
+            job_jnid: jobJnid,
           },
         };
       }
