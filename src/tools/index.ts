@@ -8,6 +8,7 @@ import { MCPToolDefinition } from '../types/index.js';
 // Basic tools
 import { GetJobsTool } from './jobs/getJobs.js';
 import { SearchJobsTool } from './jobs/searchJobs.js';
+import { SearchJobsEnhancedTool } from './jobs/searchJobsEnhanced.js';
 import { GetJobTool } from './jobs/getJob.js';
 import { GetContactsTool } from './contacts/getContacts.js';
 import { SearchContactsTool } from './contacts/searchContacts.js';
@@ -101,6 +102,9 @@ import {
 import { GetAttachmentsTool } from './attachments/getAttachments.js';
 import { AnalyzeJobAttachmentsTool } from './attachments/analyzeJobAttachments.js';
 
+// Business intelligence tools
+import { SearchInsuranceJobsTool } from './business/searchInsuranceJobs.js';
+
 // Generic tool generator for remaining tools
 import { createGenericTool, ALL_TOOLS_CONFIG } from './allToolsGenerator.js';
 
@@ -116,6 +120,7 @@ export class ToolRegistry {
     this.registerTool(new ValidateApiKeyTool());
     this.registerTool(new GetJobsTool());
     this.registerTool(new SearchJobsTool());
+    this.registerTool(new SearchJobsEnhancedTool());
     this.registerTool(new GetJobTool());
     this.registerTool(new GetContactsTool());
     this.registerTool(new SearchContactsTool());
@@ -189,6 +194,9 @@ export class ToolRegistry {
 
     // Register attachment analysis tools
     this.registerTool(new AnalyzeJobAttachmentsTool());
+
+    // Register business intelligence tools
+    this.registerTool(new SearchInsuranceJobsTool());
 
     // Register all generic tools
     for (const config of ALL_TOOLS_CONFIG) {
