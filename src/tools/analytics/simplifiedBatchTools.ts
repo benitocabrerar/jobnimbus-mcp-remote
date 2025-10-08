@@ -117,11 +117,7 @@ export class GetWebhooksTool extends GenericAnalyticsTool {
   }
 }
 
-export class GetAttachmentsTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_attachments', 'Get file attachments');
-  }
-}
+// GetAttachmentsTool moved to ./attachments/getAttachments.ts for proper implementation
 
 export class GetTimelineDataTool2 extends GenericAnalyticsTool {
   constructor() {

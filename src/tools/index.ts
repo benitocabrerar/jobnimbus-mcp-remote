@@ -93,10 +93,12 @@ import {
   GetTasksTool,
   GetUsersTool,
   GetWebhooksTool,
-  GetAttachmentsTool,
   GetTimelineDataTool2,
   GetCalendarActivitiesTool2,
 } from './analytics/simplifiedBatchTools.js';
+
+// Attachments tools
+import { GetAttachmentsTool } from './attachments/getAttachments.js';
 
 // Generic tool generator for remaining tools
 import { createGenericTool, ALL_TOOLS_CONFIG } from './allToolsGenerator.js';
