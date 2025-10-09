@@ -112,6 +112,15 @@ import { GetMaterialUsageReportTool } from './materials/getMaterialUsageReport.j
 import { GetSupplierComparisonTool } from './materials/getSupplierComparison.js';
 import { GetMaterialInventoryInsightsTool } from './materials/getMaterialInventoryInsights.js';
 
+// Material calculation tools (NEW)
+import { CalculateRoofingMaterialsTool } from './materials/calculateRoofingMaterials.js';
+import { CalculateSidingMaterialsTool } from './materials/calculateSidingMaterials.js';
+import { EstimateMaterialsFromJobTool } from './materials/estimateMaterialsFromJob.js';
+import { CalculateWasteFactorsTool } from './materials/calculateWasteFactors.js';
+import { OptimizeMaterialOrdersTool } from './materials/optimizeMaterialOrders.js';
+import { GetMaterialSpecificationsTool } from './materials/getMaterialSpecifications.js';
+import { CompareMaterialAlternativesTool } from './materials/compareMaterialAlternatives.js';
+
 // Generic tool generator for remaining tools
 import { createGenericTool, ALL_TOOLS_CONFIG } from './allToolsGenerator.js';
 
@@ -211,6 +220,15 @@ export class ToolRegistry {
     this.registerTool(new GetMaterialUsageReportTool());
     this.registerTool(new GetSupplierComparisonTool());
     this.registerTool(new GetMaterialInventoryInsightsTool());
+
+    // Register material calculation tools (NEW - 7 tools)
+    this.registerTool(new CalculateRoofingMaterialsTool());
+    this.registerTool(new CalculateSidingMaterialsTool());
+    this.registerTool(new EstimateMaterialsFromJobTool());
+    this.registerTool(new CalculateWasteFactorsTool());
+    this.registerTool(new OptimizeMaterialOrdersTool());
+    this.registerTool(new GetMaterialSpecificationsTool());
+    this.registerTool(new CompareMaterialAlternativesTool());
 
     // Register all generic tools
     for (const config of ALL_TOOLS_CONFIG) {
