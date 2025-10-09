@@ -348,3 +348,244 @@ export enum CalculationErrorCode {
   SPEC_NOT_FOUND = 'SPEC_NOT_FOUND',
   API_ERROR = 'API_ERROR'
 }
+
+// ============================================================================
+// Complete Pricing System Types (NEW)
+// ============================================================================
+
+export type JobType =
+  | 'roofing'
+  | 'siding'
+  | 'windows'
+  | 'doors'
+  | 'gutters'
+  | 'general_construction';
+
+export type LaborSkillLevel =
+  | 'general_labor'
+  | 'skilled_installation'
+  | 'specialty_trade'
+  | 'master_craftsman';
+
+// ============================================================================
+// Labor Cost Types
+// ============================================================================
+
+export interface LaborCategory {
+  category_name: string;
+  description: string;
+  skill_level: LaborSkillLevel;
+  hourly_rate: number;
+  estimated_hours: number;
+  crew_size: number;
+  total_labor_hours: number; // hours * crew_size
+  subtotal: number;
+  notes?: string[];
+}
+
+export interface LaborCostInput {
+  job_type: JobType;
+  area_sqft?: number;
+  complexity?: 'simple' | 'moderate' | 'complex';
+  stories?: number;
+  access_difficulty?: 'easy' | 'moderate' | 'difficult';
+  custom_labor_categories?: Partial<LaborCategory>[];
+}
+
+export interface LaborCostResult {
+  labor_categories: LaborCategory[];
+  summary: {
+    total_hours: number;
+    total_labor_hours: number; // Including crew
+    average_hourly_rate: number;
+    total_labor_cost: number;
+    estimated_duration_days: number;
+    recommended_crew_size: number;
+  };
+  breakdown_by_phase: {
+    preparation: number;
+    installation: number;
+    finishing: number;
+    cleanup: number;
+  };
+  adjustments_applied: {
+    reason: string;
+    adjustment_percent: number;
+    amount: number;
+  }[];
+}
+
+// ============================================================================
+// Permit & Regulatory Types
+// ============================================================================
+
+export interface PermitFeeInput {
+  job_type: JobType;
+  project_value: number; // Used for percentage-based permits
+  location?: {
+    state?: string;
+    county?: string;
+    city?: string;
+    zip_code?: string;
+  };
+  scope?: {
+    structural_changes?: boolean;
+    electrical_work?: boolean;
+    plumbing_work?: boolean;
+  };
+}
+
+export interface PermitFee {
+  fee_type: string;
+  description: string;
+  amount: number;
+  jurisdiction: string;
+  notes?: string;
+}
+
+export interface PermitFeeResult {
+  permits: PermitFee[];
+  total_permit_fees: number;
+  estimated_processing_days: number;
+  requirements: string[];
+  warnings: string[];
+}
+
+// ============================================================================
+// Additional Costs Types
+// ============================================================================
+
+export interface AdditionalCostInput {
+  job_type: JobType;
+  area_sqft?: number;
+  dumpster_required?: boolean;
+  dumpster_size?: '10_yard' | '20_yard' | '30_yard' | '40_yard';
+  equipment_rental_days?: number;
+  protection_required?: boolean;
+  special_disposal?: boolean; // Asbestos, hazmat, etc.
+  access_equipment?: 'scaffolding' | 'lift' | 'crane' | 'none';
+}
+
+export interface AdditionalCostItem {
+  category: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unit_cost: number;
+  total_cost: number;
+  notes?: string;
+}
+
+export interface AdditionalCostResult {
+  cost_items: AdditionalCostItem[];
+  breakdown: {
+    dumpster_rental: number;
+    disposal_fees: number;
+    equipment_rental: number;
+    protection_materials: number;
+    access_equipment: number;
+    miscellaneous: number;
+  };
+  total_additional_costs: number;
+  recommendations: string[];
+}
+
+// ============================================================================
+// Complete Pricing Types
+// ============================================================================
+
+export interface CompletePricingInput {
+  // Material calculation input (use existing types)
+  materials_input: RoofingCalculationInput | SidingCalculationInput;
+
+  // Labor input
+  labor_input?: Partial<LaborCostInput>;
+
+  // Permit input
+  permit_input?: Partial<PermitFeeInput>;
+
+  // Additional costs
+  additional_costs_input?: Partial<AdditionalCostInput>;
+
+  // Pricing preferences
+  pricing_preferences?: {
+    markup_percentage?: number; // Override default markup
+    target_margin_percentage?: number; // Calculate markup to achieve margin
+    round_final_price?: boolean; // Round to nearest $100
+    include_contingency?: number; // Add % contingency
+  };
+}
+
+export interface ProjectSummary {
+  job_type: JobType;
+  total_area_sqft: number;
+  complexity: 'simple' | 'moderate' | 'complex';
+  estimated_duration_days: number;
+  crew_size: number;
+  project_scope: string;
+}
+
+export interface MaterialCostSummary {
+  items: MaterialLineItem[];
+  subtotal: number;
+  waste_factor: number;
+  waste_amount: number;
+  total_with_waste: number;
+}
+
+export interface PricingBreakdown {
+  subtotal: number; // All costs before markup
+  markup_percentage: number;
+  markup_amount: number;
+  contingency_percentage?: number;
+  contingency_amount?: number;
+  final_price: number;
+  cost_per_sqft: number;
+  price_per_sqft: number;
+}
+
+export interface ProfitAnalysis {
+  total_hard_costs: number; // Materials + labor + permits + additional
+  total_revenue: number; // Final price
+  gross_profit: number; // Revenue - hard costs
+  gross_margin_percentage: number; // (profit / revenue) * 100
+  net_profit_estimate?: number; // After overhead allocation
+  net_margin_percentage?: number;
+  break_even_point?: number;
+}
+
+export interface CompletePricingResult {
+  project_summary: ProjectSummary;
+
+  cost_breakdown: {
+    materials: MaterialCostSummary;
+    labor: LaborCostResult;
+    permits: PermitFeeResult;
+    additional_costs: AdditionalCostResult;
+  };
+
+  pricing: PricingBreakdown;
+
+  profit_analysis: ProfitAnalysis;
+
+  recommendations: string[];
+  warnings: string[];
+
+  metadata: {
+    calculated_at: string;
+    calculator_version: string;
+    industry_standards_applied: string[];
+  };
+}
+
+// ============================================================================
+// Pricing Configuration Types
+// ============================================================================
+
+export interface PricingConfiguration {
+  job_type: JobType;
+  default_markup_percentage: number;
+  target_margin_percentage: number;
+  contingency_percentage: number;
+  overhead_allocation_percentage: number;
+}
