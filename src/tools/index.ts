@@ -105,6 +105,13 @@ import { AnalyzeJobAttachmentsTool } from './attachments/analyzeJobAttachments.j
 // Business intelligence tools
 import { SearchInsuranceJobsTool } from './business/searchInsuranceJobs.js';
 
+// Material tracking tools
+import { GetEstimateMaterialsTool } from './materials/getEstimateMaterials.js';
+import { AnalyzeMaterialCostsTool } from './materials/analyzeMaterialCosts.js';
+import { GetMaterialUsageReportTool } from './materials/getMaterialUsageReport.js';
+import { GetSupplierComparisonTool } from './materials/getSupplierComparison.js';
+import { GetMaterialInventoryInsightsTool } from './materials/getMaterialInventoryInsights.js';
+
 // Generic tool generator for remaining tools
 import { createGenericTool, ALL_TOOLS_CONFIG } from './allToolsGenerator.js';
 
@@ -197,6 +204,13 @@ export class ToolRegistry {
 
     // Register business intelligence tools
     this.registerTool(new SearchInsuranceJobsTool());
+
+    // Register material tracking tools
+    this.registerTool(new GetEstimateMaterialsTool());
+    this.registerTool(new AnalyzeMaterialCostsTool());
+    this.registerTool(new GetMaterialUsageReportTool());
+    this.registerTool(new GetSupplierComparisonTool());
+    this.registerTool(new GetMaterialInventoryInsightsTool());
 
     // Register all generic tools
     for (const config of ALL_TOOLS_CONFIG) {
