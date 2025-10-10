@@ -10,6 +10,8 @@ import { GetJobsTool } from './jobs/getJobs.js';
 import { SearchJobsTool } from './jobs/searchJobs.js';
 import { SearchJobsEnhancedTool } from './jobs/searchJobsEnhanced.js';
 import { GetJobTool } from './jobs/getJob.js';
+import { SearchJobNotesTool } from './jobs/searchJobNotes.js';
+import { GetJobTasksTool } from './jobs/getJobTasks.js';
 import { GetContactsTool } from './contacts/getContacts.js';
 import { SearchContactsTool } from './contacts/searchContacts.js';
 import { CreateContactTool } from './contacts/createContact.js';
@@ -138,6 +140,8 @@ export class ToolRegistry {
     this.registerTool(new SearchJobsTool());
     this.registerTool(new SearchJobsEnhancedTool());
     this.registerTool(new GetJobTool());
+    this.registerTool(new SearchJobNotesTool());
+    this.registerTool(new GetJobTasksTool());
     this.registerTool(new GetContactsTool());
     this.registerTool(new SearchContactsTool());
     this.registerTool(new CreateContactTool());
