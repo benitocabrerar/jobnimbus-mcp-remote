@@ -274,6 +274,7 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
         : paginatedActivities;
 
       return {
+        _code_version: 'v2.0-compact-mode-2025-10-10',
         count: paginatedActivities.length,
         total_filtered: filteredActivities.length,
         total_fetched: allActivities.length,
@@ -323,6 +324,7 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
         : activities;
 
       return {
+        _code_version: 'v2.0-compact-mode-2025-10-10',
         count: activities.length,
         total_filtered: activities.length,
         from: fromIndex,
