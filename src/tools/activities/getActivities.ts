@@ -5,6 +5,7 @@
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { compactActivity, compactArray } from '../../utils/compactData.js';
 
 interface GetActivitiesInput {
   from?: number;
@@ -17,6 +18,7 @@ interface GetActivitiesInput {
   activity_type?: string;
   sort_by?: 'date_start' | 'date_end' | 'date_created' | 'date_updated';
   order?: 'asc' | 'desc';
+  include_full_details?: boolean;
 }
 
 interface Activity {
@@ -78,6 +80,10 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
             type: 'string',
             description: 'Sort order (asc or desc)',
             enum: ['asc', 'desc'],
+          },
+          include_full_details: {
+            type: 'boolean',
+            description: 'Return full activity details. Default: false (compact mode with only essential fields). Set to true for complete activity objects.',
           },
         },
       },
@@ -258,6 +264,11 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
       // Paginate
       const paginatedActivities = filteredActivities.slice(fromIndex, fromIndex + requestedSize);
 
+      // Apply compaction if not requesting full details
+      const resultActivities = input.include_full_details
+        ? paginatedActivities
+        : compactArray(paginatedActivities, compactActivity);
+
       return {
         count: paginatedActivities.length,
         total_filtered: filteredActivities.length,
@@ -284,7 +295,8 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
         sort_applied: !!input.sort_by,
         sort_by: input.sort_by,
         order: order,
-        activity: paginatedActivities,
+        compact_mode: !input.include_full_details,
+        activity: resultActivities,
       };
     } else {
       // Simple pagination without filtering
@@ -296,6 +308,11 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
       const result = await this.client.get(context.apiKey, 'activities', params);
       const activities = result.data?.activity || [];
 
+      // Apply compaction if not requesting full details
+      const resultActivities = input.include_full_details
+        ? activities
+        : compactArray(activities, compactActivity);
+
       return {
         count: activities.length,
         total_filtered: activities.length,
@@ -306,7 +323,8 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
         schedule_filter_applied: false,
         activity_type_filter_applied: false,
         sort_applied: false,
-        activity: activities,
+        compact_mode: !input.include_full_details,
+        activity: resultActivities,
       };
     }
   }

@@ -5,6 +5,7 @@
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { compactJob, compactArray } from '../../utils/compactData.js';
 
 interface GetJobsInput {
   from?: number;
@@ -16,6 +17,7 @@ interface GetJobsInput {
   has_schedule?: boolean;
   sort_by?: 'date_start' | 'date_end' | 'date_created' | 'date_updated' | 'date_status_change';
   order?: 'asc' | 'desc';
+  include_full_details?: boolean;
 }
 
 interface Job {
@@ -74,6 +76,10 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
             type: 'string',
             description: 'Sort order (asc or desc)',
             enum: ['asc', 'desc'],
+          },
+          include_full_details: {
+            type: 'boolean',
+            description: 'Return full job details. Default: false (compact mode with only essential fields). Set to true for complete job objects.',
           },
         },
       },
@@ -233,6 +239,11 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
       // Paginate
       const paginatedJobs = filteredJobs.slice(fromIndex, fromIndex + requestedSize);
 
+      // Apply compaction if not requesting full details
+      const resultJobs = input.include_full_details
+        ? paginatedJobs
+        : compactArray(paginatedJobs, compactJob);
+
       return {
         count: paginatedJobs.length,
         total_filtered: filteredJobs.length,
@@ -257,7 +268,8 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
         sort_applied: !!input.sort_by,
         sort_by: input.sort_by,
         order: order,
-        results: paginatedJobs,
+        compact_mode: !input.include_full_details,
+        results: resultJobs,
       };
     } else {
       // Simple pagination without filtering
@@ -269,6 +281,11 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
       const result = await this.client.get(context.apiKey, 'jobs', params);
       const jobs = result.data?.results || [];
 
+      // Apply compaction if not requesting full details
+      const resultJobs = input.include_full_details
+        ? jobs
+        : compactArray(jobs, compactJob);
+
       return {
         count: jobs.length,
         total_filtered: jobs.length,
@@ -278,7 +295,8 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
         date_filter_applied: false,
         schedule_filter_applied: false,
         sort_applied: false,
-        results: jobs,
+        compact_mode: !input.include_full_details,
+        results: resultJobs,
       };
     }
   }
