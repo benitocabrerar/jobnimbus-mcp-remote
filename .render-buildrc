@@ -1,0 +1,4 @@
+# Force Render to do a clean build
+# Created: 2025-10-10
+# This file forces Render to invalidate cache and rebuild from scratch
+BUILD_ID=20251010-1940
