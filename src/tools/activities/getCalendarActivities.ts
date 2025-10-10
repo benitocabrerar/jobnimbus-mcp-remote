@@ -79,7 +79,7 @@ export class GetCalendarActivities extends BaseTool<CalendarActivitiesInput, Cal
     };
 
     const response = await this.client.get(context.apiKey, 'activities', params);
-    const activities = response.data?.activity || [];
+    const activities = response.data?.results || [];
 
     // Transform activities into calendar events
     const now = new Date().toISOString();
