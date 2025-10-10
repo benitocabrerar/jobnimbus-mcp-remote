@@ -1,45 +1,38 @@
 /**
  * Get Users Tool
  * Retrieve system users/team members from JobNimbus
+ * Note: JobNimbus doesn't have a /users endpoint, so we extract users from jobs and activities
  */
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
-import { compactUser, compactArray } from '../../utils/compactData.js';
 
 interface GetUsersInput {
-  from?: number;
-  size?: number;
   include_full_details?: boolean;
 }
 
-interface User {
-  jnid?: string;
+interface UserInfo {
+  user_id: string;
+  name: string;
   email?: string;
-  first_name?: string;
-  last_name?: string;
-  [key: string]: any;
+  roles: string[];
+  job_count: number;
+  activity_count: number;
+  first_seen: string;
+  last_seen: string;
 }
 
 export class GetUsersTool extends BaseTool<GetUsersInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_users',
-      description: 'Get system users and permissions from JobNimbus',
+      description: 'Get system users and team members from JobNimbus (extracted from jobs and activities)',
       inputSchema: {
         type: 'object',
         properties: {
-          from: {
-            type: 'number',
-            description: 'Starting index for pagination (default: 0)',
-          },
-          size: {
-            type: 'number',
-            description: 'Number of records to retrieve (default: 50, max: 100)',
-          },
           include_full_details: {
             type: 'boolean',
-            description: 'Return full user details. Default: false (compact mode with only essential fields). Set to true for complete user objects.',
+            description: 'Return full user details including statistics. Default: false (compact mode).',
           },
         },
       },
@@ -47,30 +40,129 @@ export class GetUsersTool extends BaseTool<GetUsersInput, any> {
   }
 
   async execute(input: GetUsersInput, context: ToolContext): Promise<any> {
-    const fromIndex = input.from || 0;
-    const requestedSize = Math.min(input.size || 50, 100);
+    try {
+      // Fetch jobs and activities to extract user information
+      const [jobsResponse, activitiesResponse] = await Promise.all([
+        this.client.get(context.apiKey, 'jobs', { size: 100 }),
+        this.client.get(context.apiKey, 'activities', { size: 100 }),
+      ]);
 
-    // Fetch users from JobNimbus API
-    const params: any = {
-      from: fromIndex,
-      size: requestedSize,
-    };
+      const jobs = jobsResponse.data?.results || [];
+      const activities = activitiesResponse.data?.results || [];
 
-    const result = await this.client.get(context.apiKey, 'users', params);
-    const users: User[] = result.data?.results || result.data || [];
+      // Map to collect unique users
+      const usersMap = new Map<string, UserInfo>();
 
-    // Apply compaction if not requesting full details
-    const resultUsers = input.include_full_details
-      ? users
-      : compactArray(users, compactUser);
+      // Extract users from jobs
+      for (const job of jobs) {
+        // Sales rep
+        if (job.sales_rep && job.sales_rep_name) {
+          this.addOrUpdateUser(usersMap, job.sales_rep, job.sales_rep_name, 'Sales Rep', job.date_created, true, false);
+        }
 
-    return {
-      count: users.length,
-      from: fromIndex,
-      size: requestedSize,
-      has_more: users.length === requestedSize,
-      compact_mode: !input.include_full_details,
-      results: resultUsers,
-    };
+        // Created by
+        if (job.created_by && job.created_by_name) {
+          this.addOrUpdateUser(usersMap, job.created_by, job.created_by_name, 'Creator', job.date_created, true, false);
+        }
+
+        // Owners
+        if (job.owners && Array.isArray(job.owners)) {
+          for (const owner of job.owners) {
+            if (owner.id) {
+              this.addOrUpdateUser(usersMap, owner.id, owner.name || 'Unknown', 'Owner', job.date_created, true, false);
+            }
+          }
+        }
+      }
+
+      // Extract users from activities
+      for (const activity of activities) {
+        // Created by
+        if (activity.created_by && activity.created_by_name) {
+          this.addOrUpdateUser(usersMap, activity.created_by, activity.created_by_name, 'Activity Creator', activity.date_created, false, true);
+        }
+
+        // Assigned to
+        if (activity.assigned_to && activity.assigned_to_name) {
+          this.addOrUpdateUser(usersMap, activity.assigned_to, activity.assigned_to_name, 'Assigned', activity.date_created, false, true);
+        }
+      }
+
+      // Convert to array and sort by name
+      const users = Array.from(usersMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+      // Format results based on detail level
+      const results = input.include_full_details
+        ? users
+        : users.map(u => ({
+            user_id: u.user_id,
+            name: u.name,
+            roles: u.roles,
+          }));
+
+      return {
+        success: true,
+        data_source: 'Extracted from Jobs and Activities (JobNimbus has no /users endpoint)',
+        total_users: users.length,
+        jobs_analyzed: jobs.length,
+        activities_analyzed: activities.length,
+        users: results,
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        status: 'Failed',
+      };
+    }
+  }
+
+  private addOrUpdateUser(
+    usersMap: Map<string, UserInfo>,
+    userId: string,
+    userName: string,
+    role: string,
+    timestamp: number,
+    isFromJob: boolean,
+    isFromActivity: boolean
+  ): void {
+    if (!usersMap.has(userId)) {
+      usersMap.set(userId, {
+        user_id: userId,
+        name: userName,
+        roles: [role],
+        job_count: isFromJob ? 1 : 0,
+        activity_count: isFromActivity ? 1 : 0,
+        first_seen: this.formatTimestamp(timestamp),
+        last_seen: this.formatTimestamp(timestamp),
+      });
+    } else {
+      const user = usersMap.get(userId)!;
+      if (!user.roles.includes(role)) {
+        user.roles.push(role);
+      }
+      if (isFromJob) user.job_count++;
+      if (isFromActivity) user.activity_count++;
+
+      // Update first/last seen
+      const currentFirst = new Date(user.first_seen).getTime();
+      const currentLast = new Date(user.last_seen).getTime();
+      const newTime = timestamp * 1000;
+
+      if (newTime < currentFirst) {
+        user.first_seen = this.formatTimestamp(timestamp);
+      }
+      if (newTime > currentLast) {
+        user.last_seen = this.formatTimestamp(timestamp);
+      }
+    }
+  }
+
+  private formatTimestamp(timestamp: number): string {
+    if (!timestamp || timestamp === 0) return 'N/A';
+    try {
+      return new Date(timestamp * 1000).toISOString();
+    } catch {
+      return 'Invalid Date';
+    }
   }
 }
