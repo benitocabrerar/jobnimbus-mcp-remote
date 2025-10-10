@@ -4,6 +4,7 @@
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { getCurrentDate } from '../../utils/dateHelpers.js';
 
 interface SearchContactsInput {
   query?: string;
@@ -47,14 +48,19 @@ export class SearchContactsTool extends BaseTool<SearchContactsInput, any> {
   }
 
   async execute(input: SearchContactsInput, context: ToolContext): Promise<any> {
+    // Use current date as default if no date filters provided
+    const currentDate = getCurrentDate();
+    const dateFrom = input.date_from || currentDate;
+    const dateTo = input.date_to || currentDate;
+
     const params: any = {
       from: input.from || 0,
       size: Math.min(input.size || 50, 100),
     };
 
     if (input.query) params.q = input.query;
-    if (input.date_from) params.date_from = input.date_from;
-    if (input.date_to) params.date_to = input.date_to;
+    if (dateFrom) params.date_from = dateFrom;
+    if (dateTo) params.date_to = dateTo;
 
     const result = await this.client.get(context.apiKey, 'contacts/search', params);
     return result.data;

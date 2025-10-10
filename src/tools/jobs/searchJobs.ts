@@ -6,6 +6,7 @@
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { compactJob, compactArray } from '../../utils/compactData.js';
+import { getCurrentDate } from '../../utils/dateHelpers.js';
 
 interface SearchJobsInput {
   query?: string;
@@ -188,10 +189,16 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
     const requestedSize = Math.min(input.size || 50, 100);
     const order = input.order || 'desc';
 
+    // Use current date as default if no date filters provided
+    const currentDate = getCurrentDate();
+    const dateFrom = input.date_from || currentDate;
+    const dateTo = input.date_to || currentDate;
+
     // Determine if we need to fetch all jobs for filtering/sorting
+    // Always do full fetch when dateFrom/dateTo have values to apply date filtering
     const needsFullFetch =
-      input.date_from ||
-      input.date_to ||
+      dateFrom ||
+      dateTo ||
       input.scheduled_from ||
       input.scheduled_to ||
       input.has_schedule !== undefined ||
@@ -228,7 +235,7 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
       }
 
       // Apply date_created filtering
-      let filteredJobs = this.filterByDateCreated(allJobs, input.date_from, input.date_to);
+      let filteredJobs = this.filterByDateCreated(allJobs, dateFrom, dateTo);
 
       // Apply schedule filtering
       if (input.scheduled_from || input.scheduled_to || input.has_schedule !== undefined) {
@@ -264,9 +271,9 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
         total_pages: Math.ceil(filteredJobs.length / requestedSize),
         current_page: Math.floor(fromIndex / requestedSize) + 1,
         query: input.query,
-        date_filter_applied: !!(input.date_from || input.date_to),
-        date_from: input.date_from,
-        date_to: input.date_to,
+        date_filter_applied: !!(dateFrom || dateTo),
+        date_from: dateFrom,
+        date_to: dateTo,
         schedule_filter_applied: !!(
           input.scheduled_from ||
           input.scheduled_to ||

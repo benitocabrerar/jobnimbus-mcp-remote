@@ -7,6 +7,7 @@
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { JobCategorizer, Job, JobBusinessType, CategoryScore } from '../../services/business/JobCategorizer.js';
+import { getCurrentDate } from '../../utils/dateHelpers.js';
 
 interface SearchJobsEnhancedInput {
   // Existing search parameters
@@ -374,10 +375,16 @@ export class SearchJobsEnhancedTool extends BaseTool<SearchJobsEnhancedInput, an
     const order = input.order || 'desc';
     const confidenceThreshold = input.confidence_threshold || 60;
 
+    // Use current date as default if no date filters provided
+    const currentDate = getCurrentDate();
+    const dateFrom = input.date_from || currentDate;
+    const dateTo = input.date_to || currentDate;
+
     // Determine if we need to fetch all jobs for filtering/sorting
+    // Always do full fetch when dateFrom/dateTo have values to apply date filtering
     const needsFullFetch =
-      input.date_from ||
-      input.date_to ||
+      dateFrom ||
+      dateTo ||
       input.scheduled_from ||
       input.scheduled_to ||
       input.has_schedule !== undefined ||
@@ -426,7 +433,7 @@ export class SearchJobsEnhancedTool extends BaseTool<SearchJobsEnhancedInput, an
       let filteredJobs = allJobs;
 
       // 1. Date filtering
-      filteredJobs = this.filterByDateCreated(filteredJobs, input.date_from, input.date_to);
+      filteredJobs = this.filterByDateCreated(filteredJobs, dateFrom, dateTo);
 
       // 2. Schedule filtering
       if (input.scheduled_from || input.scheduled_to || input.has_schedule !== undefined) {

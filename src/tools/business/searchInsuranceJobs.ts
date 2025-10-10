@@ -8,6 +8,7 @@
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { JobCategorizer, Job } from '../../services/business/JobCategorizer.js';
+import { getCurrentDate } from '../../utils/dateHelpers.js';
 
 interface SearchInsuranceJobsInput {
   // Basic search
@@ -470,6 +471,11 @@ export class SearchInsuranceJobsTool extends BaseTool<SearchInsuranceJobsInput, 
     const requestedSize = Math.min(input.size || 50, 100);
     const minConfidence = input.min_confidence || 70;
 
+    // Use current date as default if no date filters provided
+    const currentDate = getCurrentDate();
+    const dateFrom = input.date_from || currentDate;
+    const dateTo = input.date_to || currentDate;
+
     // Fetch all jobs (we need to filter for insurance type)
     const batchSize = 100;
     const maxIterations = 50;
@@ -507,17 +513,17 @@ export class SearchInsuranceJobsTool extends BaseTool<SearchInsuranceJobsInput, 
       .filter(job => job._insurance_score! >= minConfidence);
 
     // Apply date filters
-    if (input.date_from || input.date_to) {
+    if (dateFrom || dateTo) {
       insuranceJobs = insuranceJobs.filter(job => {
         if (!job.date_created) return false;
 
-        if (input.date_from) {
-          const fromDate = new Date(input.date_from).getTime() / 1000;
+        if (dateFrom) {
+          const fromDate = new Date(dateFrom).getTime() / 1000;
           if (job.date_created < fromDate) return false;
         }
 
-        if (input.date_to) {
-          const toDate = new Date(input.date_to + 'T23:59:59').getTime() / 1000;
+        if (dateTo) {
+          const toDate = new Date(dateTo + 'T23:59:59').getTime() / 1000;
           if (job.date_created > toDate) return false;
         }
 
