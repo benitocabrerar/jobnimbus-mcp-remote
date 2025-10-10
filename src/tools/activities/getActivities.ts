@@ -83,7 +83,7 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
           },
           include_full_details: {
             type: 'boolean',
-            description: 'Return full activity details. Default: false (compact mode with only essential fields). Set to true for complete activity objects.',
+            description: 'Return full activity details. Default: false (compact mode - RECOMMENDED to prevent token limit issues). WARNING: Setting to true with large result sets may cause Claude Desktop to crash. Only use for small queries (< 20 results).',
           },
         },
       },
@@ -264,10 +264,14 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
       // Paginate
       const paginatedActivities = filteredActivities.slice(fromIndex, fromIndex + requestedSize);
 
-      // Apply compaction if not requesting full details
-      const resultActivities = input.include_full_details
-        ? paginatedActivities
-        : compactArray(paginatedActivities, compactActivity);
+      // Apply compaction if not requesting full details OR if result set is too large
+      // Safety override: Force compact mode if more than 20 results to prevent token limit issues
+      const forceCompact = paginatedActivities.length > 20;
+      const useCompactMode = !input.include_full_details || forceCompact;
+
+      const resultActivities = useCompactMode
+        ? compactArray(paginatedActivities, compactActivity)
+        : paginatedActivities;
 
       return {
         count: paginatedActivities.length,
@@ -295,7 +299,8 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
         sort_applied: !!input.sort_by,
         sort_by: input.sort_by,
         order: order,
-        compact_mode: !input.include_full_details,
+        compact_mode: useCompactMode,
+        compact_mode_forced: forceCompact,
         activity: resultActivities,
       };
     } else {
@@ -308,10 +313,14 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
       const result = await this.client.get(context.apiKey, 'activities', params);
       const activities = result.data?.activity || [];
 
-      // Apply compaction if not requesting full details
-      const resultActivities = input.include_full_details
-        ? activities
-        : compactArray(activities, compactActivity);
+      // Apply compaction if not requesting full details OR if result set is too large
+      // Safety override: Force compact mode if more than 20 results to prevent token limit issues
+      const forceCompact = activities.length > 20;
+      const useCompactMode = !input.include_full_details || forceCompact;
+
+      const resultActivities = useCompactMode
+        ? compactArray(activities, compactActivity)
+        : activities;
 
       return {
         count: activities.length,
@@ -323,7 +332,8 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
         schedule_filter_applied: false,
         activity_type_filter_applied: false,
         sort_applied: false,
-        compact_mode: !input.include_full_details,
+        compact_mode: useCompactMode,
+        compact_mode_forced: forceCompact,
         activity: resultActivities,
       };
     }
