@@ -96,8 +96,6 @@ import {
   GetTasksTool,
   GetUsersTool,
   GetWebhooksTool,
-  GetTimelineDataTool2,
-  GetCalendarActivitiesTool2,
 } from './analytics/simplifiedBatchTools.js';
 
 // Attachments tools
@@ -209,8 +207,7 @@ export class ToolRegistry {
     this.registerTool(new GetUsersTool());
     this.registerTool(new GetWebhooksTool());
     this.registerTool(new GetAttachmentsTool());
-    this.registerTool(new GetTimelineDataTool2());
-    this.registerTool(new GetCalendarActivitiesTool2());
+    // Removed GetTimelineDataTool2 and GetCalendarActivitiesTool2 - they were overriding real implementations
 
     // Register attachment analysis tools
     this.registerTool(new AnalyzeJobAttachmentsTool());
