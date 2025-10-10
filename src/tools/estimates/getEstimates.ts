@@ -5,6 +5,7 @@
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { getCurrentDate } from '../../utils/dateHelpers.js';
 
 interface GetEstimatesInput {
   from?: number;
@@ -233,10 +234,15 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
     const requestedSize = Math.min(input.size || 50, 100);
     const order = input.order || 'desc';
 
+    // Use current date as default if no date filters provided
+    const currentDate = getCurrentDate();
+    const dateFrom = input.date_from || currentDate;
+    const dateTo = input.date_to || currentDate;
+
     // Determine if we need to fetch all estimates for filtering/sorting
     const needsFullFetch =
-      input.date_from ||
-      input.date_to ||
+      dateFrom ||
+      dateTo ||
       input.sent_from ||
       input.sent_to ||
       input.approved_from ||
@@ -272,7 +278,7 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
       }
 
       // Apply date_created filtering
-      let filteredEstimates = this.filterByDateCreated(allEstimates, input.date_from, input.date_to);
+      let filteredEstimates = this.filterByDateCreated(allEstimates, dateFrom, dateTo);
 
       // Apply sent date filtering
       if (input.sent_from || input.sent_to) {
@@ -316,9 +322,9 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
         has_more: fromIndex + paginatedEstimates.length < filteredEstimates.length,
         total_pages: Math.ceil(filteredEstimates.length / requestedSize),
         current_page: Math.floor(fromIndex / requestedSize) + 1,
-        date_filter_applied: !!(input.date_from || input.date_to),
-        date_from: input.date_from,
-        date_to: input.date_to,
+        date_filter_applied: !!(dateFrom || dateTo),
+        date_from: dateFrom,
+        date_to: dateTo,
         sent_date_filter_applied: !!(input.sent_from || input.sent_to),
         sent_from: input.sent_from,
         sent_to: input.sent_to,

@@ -17,6 +17,7 @@ import {
   validatePositiveNumber,
   sanitizeString,
 } from '../../utils/validation.js';
+import { getCurrentDate } from '../../utils/dateHelpers.js';
 
 export class GetSupplierComparisonTool extends BaseTool<
   GetSupplierComparisonInput,
@@ -88,11 +89,19 @@ export class GetSupplierComparisonTool extends BaseTool<
     context: ToolContext
   ): Promise<GetSupplierComparisonOutput> {
     try {
-      this.validateInput(input);
+      // Use current date as default if no date filters provided
+      const currentDate = getCurrentDate();
+      const inputWithDefaults = {
+        ...input,
+        date_from: input.date_from || currentDate,
+        date_to: input.date_to || currentDate,
+      };
+
+      this.validateInput(inputWithDefaults);
 
       const result = await materialAnalyzer.getSupplierComparison(
         context.apiKey,
-        input
+        inputWithDefaults
       );
 
       return result;

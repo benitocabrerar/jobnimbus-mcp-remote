@@ -17,6 +17,7 @@ import {
   validatePositiveNumber,
   validateStringArray,
 } from '../../utils/validation.js';
+import { getCurrentDate } from '../../utils/dateHelpers.js';
 
 export class AnalyzeMaterialCostsTool extends BaseTool<
   AnalyzeMaterialCostsInput,
@@ -77,9 +78,17 @@ export class AnalyzeMaterialCostsTool extends BaseTool<
     context: ToolContext
   ): Promise<AnalyzeMaterialCostsOutput> {
     try {
-      this.validateInput(input);
+      // Use current date as default if no date filters provided
+      const currentDate = getCurrentDate();
+      const inputWithDefaults = {
+        ...input,
+        date_from: input.date_from || currentDate,
+        date_to: input.date_to || currentDate,
+      };
 
-      const result = await materialAnalyzer.analyzeMaterialCosts(context.apiKey, input);
+      this.validateInput(inputWithDefaults);
+
+      const result = await materialAnalyzer.analyzeMaterialCosts(context.apiKey, inputWithDefaults);
 
       return result;
     } catch (error) {

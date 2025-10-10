@@ -17,6 +17,7 @@ import {
   validateAggregateBy,
   sanitizeString,
 } from '../../utils/validation.js';
+import { getCurrentDate } from '../../utils/dateHelpers.js';
 
 export class GetMaterialUsageReportTool extends BaseTool<
   GetMaterialUsageReportInput,
@@ -89,11 +90,19 @@ export class GetMaterialUsageReportTool extends BaseTool<
     context: ToolContext
   ): Promise<GetMaterialUsageReportOutput> {
     try {
-      this.validateInput(input);
+      // Use current date as default if no date filters provided
+      const currentDate = getCurrentDate();
+      const inputWithDefaults = {
+        ...input,
+        date_from: input.date_from || currentDate,
+        date_to: input.date_to || currentDate,
+      };
+
+      this.validateInput(inputWithDefaults);
 
       const result = await materialAnalyzer.getMaterialUsageReport(
         context.apiKey,
-        input
+        inputWithDefaults
       );
 
       return result;
