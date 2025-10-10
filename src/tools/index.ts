@@ -94,9 +94,11 @@ import { GetQualityControlAnalyticsTool } from './analytics/getQualityControlAna
 
 import {
   GetTasksTool,
-  GetUsersTool,
   GetWebhooksTool,
 } from './analytics/simplifiedBatchTools.js';
+
+// Users tools
+import { GetUsersTool } from './users/getUsers.js';
 
 // Attachments tools
 import { GetAttachmentsTool } from './attachments/getAttachments.js';

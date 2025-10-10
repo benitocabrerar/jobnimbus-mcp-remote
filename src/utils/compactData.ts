@@ -141,6 +141,42 @@ export function compactEstimate(estimate: any): CompactEstimate {
 }
 
 /**
+ * Compact User - Essential user/team member information
+ */
+export interface CompactUser {
+  jnid: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  role?: string;
+  status?: string;
+  is_active?: boolean;
+  last_login?: string;
+  date_created: string;
+}
+
+export function compactUser(user: any): CompactUser {
+  const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') ||
+                   user.display_name ||
+                   user.name ||
+                   'Unnamed User';
+
+  return {
+    jnid: user.jnid,
+    email: user.email || 'N/A',
+    first_name: user.first_name || '',
+    last_name: user.last_name || '',
+    full_name: fullName,
+    role: user.role || user.user_role,
+    status: user.status_name || user.status,
+    is_active: user.is_active || user.active,
+    last_login: user.last_login ? formatUnixDate(user.last_login) : undefined,
+    date_created: formatUnixDate(user.date_created),
+  };
+}
+
+/**
  * Format Unix timestamp to readable date (YYYY-MM-DD)
  */
 export function formatUnixDate(timestamp: number | undefined | null): string {

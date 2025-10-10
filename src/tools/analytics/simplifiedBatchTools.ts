@@ -105,11 +105,7 @@ export class GetTasksTool extends GenericAnalyticsTool {
   }
 }
 
-export class GetUsersTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_users', 'Get system users and permissions');
-  }
-}
+// GetUsersTool moved to ./users/getUsers.ts for proper implementation
 
 export class GetWebhooksTool extends GenericAnalyticsTool {
   constructor() {
