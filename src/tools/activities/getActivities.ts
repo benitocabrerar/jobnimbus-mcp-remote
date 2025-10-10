@@ -46,7 +46,7 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 50, max: 100)',
+            description: 'Number of records to retrieve (default: 15, max: 50). Use small values to prevent response saturation.',
           },
           date_from: {
             type: 'string',
@@ -200,7 +200,8 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
 
   async execute(input: GetActivitiesInput, context: ToolContext): Promise<any> {
     const fromIndex = input.from || 0;
-    const requestedSize = Math.min(input.size || 50, 100);
+    // OPTIMIZED: Reduced default from 50 to 15 to prevent Claude Desktop saturation
+    const requestedSize = Math.min(input.size || 15, 50);
     const order = input.order || 'desc';
 
     // Use current date as default if no date filters provided
@@ -222,7 +223,8 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
     if (needsFullFetch) {
       // Fetch all activities with pagination
       const batchSize = 100;
-      const maxIterations = 50;
+      // OPTIMIZED: Reduced from 50 to 20 iterations (max 2000 activities instead of 5000)
+      const maxIterations = 20;
       let allActivities: Activity[] = [];
       let offset = 0;
       let iteration = 0;
@@ -272,8 +274,8 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
       const paginatedActivities = filteredActivities.slice(fromIndex, fromIndex + requestedSize);
 
       // Apply compaction if not requesting full details OR if result set is too large
-      // Safety override: Force compact mode if more than 20 results to prevent token limit issues
-      const forceCompact = paginatedActivities.length > 20;
+      // OPTIMIZED: Force compact mode if more than 10 results (reduced from 20)
+      const forceCompact = paginatedActivities.length > 10;
       const useCompactMode = !input.include_full_details || forceCompact;
 
       const resultActivities = useCompactMode
@@ -322,8 +324,8 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
       const activities = result.data?.activity || [];
 
       // Apply compaction if not requesting full details OR if result set is too large
-      // Safety override: Force compact mode if more than 20 results to prevent token limit issues
-      const forceCompact = activities.length > 20;
+      // OPTIMIZED: Force compact mode if more than 10 results (reduced from 20)
+      const forceCompact = activities.length > 10;
       const useCompactMode = !input.include_full_details || forceCompact;
 
       const resultActivities = useCompactMode

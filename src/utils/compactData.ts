@@ -21,7 +21,8 @@ export interface CompactActivity {
 }
 
 export function compactActivity(activity: any): CompactActivity {
-  const notePreview = truncateText(stripHtml(activity.note), 200);
+  // OPTIMIZED: Reduced from 200 to 100 chars to reduce response size
+  const notePreview = truncateText(stripHtml(activity.note), 100);
   const relatedName = activity.primary?.name || 'Unknown';
   const relatedType = activity.primary?.type;
   const jobId = relatedType === 'job' ? activity.primary?.id : null;
