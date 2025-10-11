@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobNimbus Status Report - October 2025</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 40px;
+            background: #f8f9fa;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            font-size: 0.9em;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .summary-card .value {
+            font-size: 3em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #2d3748;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .status-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .status-row {
+            display: grid;
+            grid-template-columns: 1fr 100px;
+            align-items: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .status-row:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-row.has-jobs {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-left: 4px solid #667eea;
+        }
+
+        .status-name {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .status-category {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .status-count {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+            text-align: right;
+        }
+
+        .status-count.zero {
+            color: #cbd5e0;
+        }
+
+        .footer {
+            padding: 30px 40px;
+            background: #2d3748;
+            color: white;
+            text-align: center;
+        }
+
+        .footer p {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .category-section {
+            margin-bottom: 40px;
+        }
+
+        .category-header {
+            font-size: 1.3em;
+            color: #667eea;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>JobNimbus Status Report</h1>
+            <p>October 2025 - Job Pipeline Analysis</p>
+        </div>
+
+        <div class="summary">
+            <div class="summary-card">
+                <h3>Total Jobs</h3>
+                <div class="value">15</div>
+            </div>
+            <div class="summary-card">
+                <h3>Active Statuses</h3>
+                <div class="value">6</div>
+            </div>
+            <div class="summary-card">
+                <h3>Completion Rate</h3>
+                <div class="value">13%</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <h2 class="section-title">Status Breakdown</h2>
+
+            <div class="category-section">
+                <div class="category-header">Prospecting & Initial Contact</div>
+                <div class="status-grid">
+                    <div class="status-row has-jobs">
+                        <div>
+                            <div class="status-name">Leads</div>
+                            <div class="status-category">New potential customers</div>
+                        </div>
+                        <div class="status-count">4</div>
+                    </div>
+
+                    <div class="status-row has-jobs">
+                        <div>
+                            <div class="status-name">Appointments</div>
+                            <div class="status-category">Meetings scheduled</div>
+                        </div>
+                        <div class="status-count">2</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header">Estimation & Proposal</div>
+                <div class="status-grid">
+                    <div class="status-row has-jobs">
+                        <div>
+                            <div class="status-name">Estimating</div>
+                            <div class="status-category">Preparing quotes</div>
+                        </div>
+                        <div class="status-count">3</div>
+                    </div>
+
+                    <div class="status-row has-jobs">
+                        <div>
+                            <div class="status-name">Pending Approval</div>
+                            <div class="status-category">Waiting for customer decision</div>
+                        </div>
+                        <div class="status-count">4</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header">Contract & Scheduling</div>
+                <div class="status-grid">
+                    <div class="status-row">
+                        <div>
+                            <div class="status-name">Signed Contracts</div>
+                            <div class="status-category">Ready to schedule</div>
+                        </div>
+                        <div class="status-count zero">0</div>
+                    </div>
+
+                    <div class="status-row">
+                        <div>
+                            <div class="status-name">Deposits</div>
+                            <div class="status-category">Deposit received</div>
+                        </div>
+                        <div class="status-count zero">0</div>
+                    </div>
+
+                    <div class="status-row">
+                        <div>
+                            <div class="status-name">Scheduled</div>
+                            <div class="status-category">Ready to begin work</div>
+                        </div>
+                        <div class="status-count zero">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header">Work Execution</div>
+                <div class="status-grid">
+                    <div class="status-row">
+                        <div>
+                            <div class="status-name">In Progress</div>
+                            <div class="status-category">Active work</div>
+                        </div>
+                        <div class="status-count zero">0</div>
+                    </div>
+
+                    <div class="status-row">
+                        <div>
+                            <div class="status-name">Completed</div>
+                            <div class="status-category">Finished work</div>
+                        </div>
+                        <div class="status-count zero">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header">Payment & Closure</div>
+                <div class="status-grid">
+                    <div class="status-row">
+                        <div>
+                            <div class="status-name">Invoiced</div>
+                            <div class="status-category">Awaiting payment</div>
+                        </div>
+                        <div class="status-count zero">0</div>
+                    </div>
+
+                    <div class="status-row has-jobs">
+                        <div>
+                            <div class="status-name">Pending Payments</div>
+                            <div class="status-category">Payment processing</div>
+                        </div>
+                        <div class="status-count">1</div>
+                    </div>
+
+                    <div class="status-row has-jobs">
+                        <div>
+                            <div class="status-name">Paid & Closed</div>
+                            <div class="status-category">Successfully completed</div>
+                        </div>
+                        <div class="status-count">1</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header">Lost Opportunities</div>
+                <div class="status-grid">
+                    <div class="status-row">
+                        <div>
+                            <div class="status-name">Lost</div>
+                            <div class="status-category">Opportunities we didn't win</div>
+                        </div>
+                        <div class="status-count zero">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Generated on October 11, 2025 | JobNimbus MCP Server</p>
+            <p>Data Source: JobNimbus API via MCP Remote Server</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -19,7 +19,8 @@
       "mcp__jobnimbus-guilford__get_timeline_data",
       "mcp__jobnimbus-stamford__get_users",
       "mcp__jobnimbus-stamford__search_job_notes",
-      "mcp__jobnimbus-stamford__get_tasks"
+      "mcp__jobnimbus-stamford__get_tasks",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

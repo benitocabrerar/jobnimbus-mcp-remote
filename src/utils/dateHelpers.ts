@@ -145,6 +145,26 @@ export function getCurrentDate(): string {
 }
 
 /**
+ * Get current month date range (first day to last day of current month)
+ * @returns Object with date_from and date_to for current month
+ */
+export function getCurrentMonth(): { date_from: string; date_to: string } {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth(); // 0-11
+
+  // First day of current month
+  const firstDay = new Date(Date.UTC(year, month, 1));
+  const date_from = `${firstDay.getUTCFullYear()}-${String(firstDay.getUTCMonth() + 1).padStart(2, '0')}-01`;
+
+  // Last day of current month
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)); // Day 0 of next month = last day of current month
+  const date_to = `${lastDay.getUTCFullYear()}-${String(lastDay.getUTCMonth() + 1).padStart(2, '0')}-${String(lastDay.getUTCDate()).padStart(2, '0')}`;
+
+  return { date_from, date_to };
+}
+
+/**
  * Calculate days since timestamp
  * @param timestamp - Unix timestamp in seconds
  * @returns Number of days since timestamp

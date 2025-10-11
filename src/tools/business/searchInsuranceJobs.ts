@@ -8,7 +8,7 @@
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { JobCategorizer, Job } from '../../services/business/JobCategorizer.js';
-import { getCurrentDate } from '../../utils/dateHelpers.js';
+import { getCurrentMonth } from '../../utils/dateHelpers.js';
 
 interface SearchInsuranceJobsInput {
   // Basic search
@@ -472,9 +472,9 @@ export class SearchInsuranceJobsTool extends BaseTool<SearchInsuranceJobsInput, 
     const minConfidence = input.min_confidence || 70;
 
     // Use current date as default if no date filters provided
-    const currentDate = getCurrentDate();
-    const dateFrom = input.date_from || currentDate;
-    const dateTo = input.date_to || currentDate;
+    const currentMonth = getCurrentMonth();
+    const dateFrom = input.date_from || currentMonth.date_from;
+    const dateTo = input.date_to || currentMonth.date_to;
 
     // Fetch all jobs (we need to filter for insurance type)
     const batchSize = 100;

@@ -17,7 +17,7 @@ import {
   validatePositiveNumber,
   sanitizeString,
 } from '../../utils/validation.js';
-import { getCurrentDate } from '../../utils/dateHelpers.js';
+import { getCurrentMonth } from '../../utils/dateHelpers.js';
 
 export class GetSupplierComparisonTool extends BaseTool<
   GetSupplierComparisonInput,
@@ -90,11 +90,11 @@ export class GetSupplierComparisonTool extends BaseTool<
   ): Promise<GetSupplierComparisonOutput> {
     try {
       // Use current date as default if no date filters provided
-      const currentDate = getCurrentDate();
+      const currentMonth = getCurrentMonth();
       const inputWithDefaults = {
         ...input,
-        date_from: input.date_from || currentDate,
-        date_to: input.date_to || currentDate,
+        date_from: input.date_from || currentMonth.date_from,
+        date_to: input.date_to || currentMonth.date_to,
       };
 
       this.validateInput(inputWithDefaults);

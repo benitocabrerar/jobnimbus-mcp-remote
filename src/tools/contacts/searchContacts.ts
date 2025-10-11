@@ -4,7 +4,7 @@
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
-import { getCurrentDate } from '../../utils/dateHelpers.js';
+import { getCurrentMonth } from '../../utils/dateHelpers.js';
 
 interface SearchContactsInput {
   query?: string;
@@ -48,10 +48,10 @@ export class SearchContactsTool extends BaseTool<SearchContactsInput, any> {
   }
 
   async execute(input: SearchContactsInput, context: ToolContext): Promise<any> {
-    // Use current date as default if no date filters provided
-    const currentDate = getCurrentDate();
-    const dateFrom = input.date_from || currentDate;
-    const dateTo = input.date_to || currentDate;
+    // Use current month as default if no date filters provided
+    const currentMonth = getCurrentMonth();
+    const dateFrom = input.date_from || currentMonth.date_from;
+    const dateTo = input.date_to || currentMonth.date_to;
 
     const params: any = {
       from: input.from || 0,

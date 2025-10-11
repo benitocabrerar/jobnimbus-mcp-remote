@@ -5,7 +5,7 @@
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { compactContact, compactArray } from '../../utils/compactData.js';
-import { getCurrentDate } from '../../utils/dateHelpers.js';
+import { getCurrentMonth } from '../../utils/dateHelpers.js';
 
 interface GetContactsInput {
   from?: number;
@@ -85,10 +85,10 @@ export class GetContactsTool extends BaseTool<GetContactsInput, any> {
     // OPTIMIZED: Reduced from 50 to 15 (default) and 100 to 50 (max) to prevent saturation
     const requestedSize = Math.min(input.size || 15, 50);
 
-    // Use current date as default if no date filters provided
-    const currentDate = getCurrentDate();
-    const dateFrom = input.date_from || currentDate;
-    const dateTo = input.date_to || currentDate;
+    // Use current month as default if no date filters provided
+    const currentMonth = getCurrentMonth();
+    const dateFrom = input.date_from || currentMonth.date_from;
+    const dateTo = input.date_to || currentMonth.date_to;
 
     // Determine if we need to fetch all contacts for date filtering
     const needsFullFetch = dateFrom || dateTo;

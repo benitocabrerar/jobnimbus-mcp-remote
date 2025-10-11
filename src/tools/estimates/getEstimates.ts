@@ -5,7 +5,7 @@
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
-import { getCurrentDate } from '../../utils/dateHelpers.js';
+import { getCurrentMonth } from '../../utils/dateHelpers.js';
 import { compactEstimate, compactArray } from '../../utils/compactData.js';
 
 interface GetEstimatesInput {
@@ -242,9 +242,9 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
     const order = input.order || 'desc';
 
     // Use current date as default if no date filters provided
-    const currentDate = getCurrentDate();
-    const dateFrom = input.date_from || currentDate;
-    const dateTo = input.date_to || currentDate;
+    const currentMonth = getCurrentMonth();
+    const dateFrom = input.date_from || currentMonth.date_from;
+    const dateTo = input.date_to || currentMonth.date_to;
 
     // Determine if we need to fetch all estimates for filtering/sorting
     const needsFullFetch =

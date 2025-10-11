@@ -5,7 +5,7 @@
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
-import { getCurrentDate } from '../../utils/dateHelpers.js';
+import { getCurrentMonth } from '../../utils/dateHelpers.js';
 
 interface TimelineDataInput {
   from?: number;
@@ -77,10 +77,10 @@ export class GetTimelineData extends BaseTool<TimelineDataInput, TimelineDataOut
   }
 
   async execute(input: TimelineDataInput, context: ToolContext): Promise<TimelineDataOutput> {
-    // Use current date as default if no date filters provided
-    const currentDate = getCurrentDate();
-    const dateFrom = input.date_from || currentDate;
-    const dateTo = input.date_to || currentDate;
+    // Use current month as default if no date filters provided
+    const currentMonth = getCurrentMonth();
+    const dateFrom = input.date_from || currentMonth.date_from;
+    const dateTo = input.date_to || currentMonth.date_to;
 
     // Fetch activities from JobNimbus API
     const params = {
