@@ -46,7 +46,7 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 50, max: 100)',
+            description: 'Number of records to retrieve (default: 15, max: 50). Use small values to prevent response saturation.',
           },
           date_from: {
             type: 'string',
@@ -181,7 +181,8 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
 
   async execute(input: GetJobsInput, context: ToolContext): Promise<any> {
     const fromIndex = input.from || 0;
-    const requestedSize = Math.min(input.size || 50, 100);
+    // OPTIMIZED: Reduced from 50 to 15 (default) and 100 to 50 (max) to prevent saturation
+    const requestedSize = Math.min(input.size || 15, 50);
     const order = input.order || 'desc';
 
     // Use current date as default if no date filters provided
@@ -202,7 +203,8 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
     if (needsFullFetch) {
       // Fetch all jobs with pagination
       const batchSize = 100;
-      const maxIterations = 50;
+      // OPTIMIZED: Reduced from 50 to 20 iterations (max 2000 instead of 5000 records)
+      const maxIterations = 20;
       let allJobs: Job[] = [];
       let offset = 0;
       let iteration = 0;
@@ -246,12 +248,17 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
       // Paginate
       const paginatedJobs = filteredJobs.slice(fromIndex, fromIndex + requestedSize);
 
+      // OPTIMIZED: Force compact mode if more than 10 results to prevent saturation
+      const forceCompact = paginatedJobs.length > 10;
+      const useCompactMode = !input.include_full_details || forceCompact;
+
       // Apply compaction if not requesting full details
-      const resultJobs = input.include_full_details
-        ? paginatedJobs
-        : compactArray(paginatedJobs, compactJob);
+      const resultJobs = useCompactMode
+        ? compactArray(paginatedJobs, compactJob)
+        : paginatedJobs;
 
       return {
+        _code_version: 'v1.0-optimized-2025-10-10',
         count: paginatedJobs.length,
         total_filtered: filteredJobs.length,
         total_fetched: allJobs.length,
@@ -275,7 +282,8 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
         sort_applied: !!input.sort_by,
         sort_by: input.sort_by,
         order: order,
-        compact_mode: !input.include_full_details,
+        compact_mode: useCompactMode,
+        compact_mode_forced: forceCompact,
         results: resultJobs,
       };
     } else {
@@ -288,12 +296,17 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
       const result = await this.client.get(context.apiKey, 'jobs', params);
       const jobs = result.data?.results || [];
 
+      // OPTIMIZED: Force compact mode if more than 10 results
+      const forceCompact = jobs.length > 10;
+      const useCompactMode = !input.include_full_details || forceCompact;
+
       // Apply compaction if not requesting full details
-      const resultJobs = input.include_full_details
-        ? jobs
-        : compactArray(jobs, compactJob);
+      const resultJobs = useCompactMode
+        ? compactArray(jobs, compactJob)
+        : jobs;
 
       return {
+        _code_version: 'v1.0-optimized-2025-10-10',
         count: jobs.length,
         total_filtered: jobs.length,
         from: fromIndex,
@@ -302,7 +315,8 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
         date_filter_applied: false,
         schedule_filter_applied: false,
         sort_applied: false,
-        compact_mode: !input.include_full_details,
+        compact_mode: useCompactMode,
+        compact_mode_forced: forceCompact,
         results: resultJobs,
       };
     }

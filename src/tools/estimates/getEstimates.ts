@@ -6,6 +6,7 @@
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { getCurrentDate } from '../../utils/dateHelpers.js';
+import { compactEstimate, compactArray } from '../../utils/compactData.js';
 
 interface GetEstimatesInput {
   from?: number;
@@ -20,6 +21,7 @@ interface GetEstimatesInput {
   status?: string;
   sort_by?: 'date_sent' | 'date_approved' | 'date_created' | 'date_updated';
   order?: 'asc' | 'desc';
+  include_full_details?: boolean;
 }
 
 interface Estimate {
@@ -47,7 +49,7 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 50, max: 100)',
+            description: 'Number of records to retrieve (default: 15, max: 50). Use small values to prevent response saturation.',
           },
           date_from: {
             type: 'string',
@@ -90,6 +92,10 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
             type: 'string',
             description: 'Sort order (asc or desc)',
             enum: ['asc', 'desc'],
+          },
+          include_full_details: {
+            type: 'boolean',
+            description: 'Return full estimate details. Default: false (compact mode with only essential fields). Set to true for complete estimate objects.',
           },
         },
       },
@@ -231,7 +237,8 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
 
   async execute(input: GetEstimatesInput, context: ToolContext): Promise<any> {
     const fromIndex = input.from || 0;
-    const requestedSize = Math.min(input.size || 50, 100);
+    // OPTIMIZED: Reduced from 50 to 15 (default) and 100 to 50 (max) to prevent saturation
+    const requestedSize = Math.min(input.size || 15, 50);
     const order = input.order || 'desc';
 
     // Use current date as default if no date filters provided
@@ -254,7 +261,8 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
     if (needsFullFetch) {
       // Fetch all estimates with pagination
       const batchSize = 100;
-      const maxIterations = 50;
+      // OPTIMIZED: Reduced from 50 to 20 iterations (max 2000 instead of 5000 records)
+      const maxIterations = 20;
       let allEstimates: Estimate[] = [];
       let offset = 0;
       let iteration = 0;
@@ -312,7 +320,17 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
       // Paginate
       const paginatedEstimates = filteredEstimates.slice(fromIndex, fromIndex + requestedSize);
 
+      // OPTIMIZED: Force compact mode if more than 10 results to prevent saturation
+      const forceCompact = paginatedEstimates.length > 10;
+      const useCompactMode = !input.include_full_details || forceCompact;
+
+      // Apply compaction if not requesting full details
+      const resultEstimates = useCompactMode
+        ? compactArray(paginatedEstimates, compactEstimate)
+        : paginatedEstimates;
+
       return {
+        _code_version: 'v1.0-optimized-2025-10-10',
         count: paginatedEstimates.length,
         total_filtered: filteredEstimates.length,
         total_fetched: allEstimates.length,
@@ -341,7 +359,9 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
         sort_applied: !!input.sort_by,
         sort_by: input.sort_by,
         order: order,
-        results: paginatedEstimates,
+        compact_mode: useCompactMode,
+        compact_mode_forced: forceCompact,
+        results: resultEstimates,
       };
     } else {
       // Simple pagination without filtering
@@ -353,7 +373,17 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
       const result = await this.client.get(context.apiKey, 'estimates', params);
       const estimates = result.data?.results || [];
 
+      // OPTIMIZED: Force compact mode if more than 10 results
+      const forceCompact = estimates.length > 10;
+      const useCompactMode = !input.include_full_details || forceCompact;
+
+      // Apply compaction if not requesting full details
+      const resultEstimates = useCompactMode
+        ? compactArray(estimates, compactEstimate)
+        : estimates;
+
       return {
+        _code_version: 'v1.0-optimized-2025-10-10',
         count: estimates.length,
         total_filtered: estimates.length,
         from: fromIndex,
@@ -364,7 +394,9 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
         approved_date_filter_applied: false,
         status_filter_applied: false,
         sort_applied: false,
-        results: estimates,
+        compact_mode: useCompactMode,
+        compact_mode_forced: forceCompact,
+        results: resultEstimates,
       };
     }
   }

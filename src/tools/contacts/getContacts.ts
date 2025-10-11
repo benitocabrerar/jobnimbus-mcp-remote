@@ -29,7 +29,7 @@ export class GetContactsTool extends BaseTool<GetContactsInput, any> {
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 50, max: 100)',
+            description: 'Number of records to retrieve (default: 15, max: 50). Use small values to prevent response saturation.',
           },
           date_from: {
             type: 'string',
@@ -82,7 +82,8 @@ export class GetContactsTool extends BaseTool<GetContactsInput, any> {
 
   async execute(input: GetContactsInput, context: ToolContext): Promise<any> {
     const fromIndex = input.from || 0;
-    const requestedSize = Math.min(input.size || 50, 100);
+    // OPTIMIZED: Reduced from 50 to 15 (default) and 100 to 50 (max) to prevent saturation
+    const requestedSize = Math.min(input.size || 15, 50);
 
     // Use current date as default if no date filters provided
     const currentDate = getCurrentDate();
@@ -95,7 +96,8 @@ export class GetContactsTool extends BaseTool<GetContactsInput, any> {
     if (needsFullFetch) {
       // Fetch all contacts with pagination
       const batchSize = 100;
-      const maxIterations = 50;
+      // OPTIMIZED: Reduced from 50 to 20 iterations (max 2000 instead of 5000 records)
+      const maxIterations = 20;
       let allContacts: any[] = [];
       let offset = 0;
       let iteration = 0;
@@ -124,12 +126,17 @@ export class GetContactsTool extends BaseTool<GetContactsInput, any> {
       // Paginate
       const paginatedContacts = filteredContacts.slice(fromIndex, fromIndex + requestedSize);
 
+      // OPTIMIZED: Force compact mode if more than 10 results to prevent saturation
+      const forceCompact = paginatedContacts.length > 10;
+      const useCompactMode = !input.include_full_details || forceCompact;
+
       // Apply compaction if not requesting full details
-      const resultContacts = input.include_full_details
-        ? paginatedContacts
-        : compactArray(paginatedContacts, compactContact);
+      const resultContacts = useCompactMode
+        ? compactArray(paginatedContacts, compactContact)
+        : paginatedContacts;
 
       return {
+        _code_version: 'v1.0-optimized-2025-10-10',
         count: paginatedContacts.length,
         total_filtered: filteredContacts.length,
         total_fetched: allContacts.length,
@@ -142,7 +149,8 @@ export class GetContactsTool extends BaseTool<GetContactsInput, any> {
         date_filter_applied: !!(dateFrom || dateTo),
         date_from: dateFrom,
         date_to: dateTo,
-        compact_mode: !input.include_full_details,
+        compact_mode: useCompactMode,
+        compact_mode_forced: forceCompact,
         results: resultContacts,
       };
     } else {
@@ -155,19 +163,25 @@ export class GetContactsTool extends BaseTool<GetContactsInput, any> {
       const result = await this.client.get(context.apiKey, 'contacts', params);
       const contacts = result.data?.results || [];
 
+      // OPTIMIZED: Force compact mode if more than 10 results
+      const forceCompact = contacts.length > 10;
+      const useCompactMode = !input.include_full_details || forceCompact;
+
       // Apply compaction if not requesting full details
-      const resultContacts = input.include_full_details
-        ? contacts
-        : compactArray(contacts, compactContact);
+      const resultContacts = useCompactMode
+        ? compactArray(contacts, compactContact)
+        : contacts;
 
       return {
+        _code_version: 'v1.0-optimized-2025-10-10',
         count: contacts.length,
         total_filtered: contacts.length,
         from: fromIndex,
         size: requestedSize,
         has_more: false,
         date_filter_applied: false,
-        compact_mode: !input.include_full_details,
+        compact_mode: useCompactMode,
+        compact_mode_forced: forceCompact,
         results: resultContacts,
       };
     }

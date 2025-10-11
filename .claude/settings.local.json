@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: complete getCurrentDate implementation for all date-based tools\n\nExtended default current date functionality to estimates and materials tools.\nAll JobNimbus MCP tools with date parameters now default to today''s date \nwhen users don''t specify dates explicitly.\n\nAdditional tools modified:\n- getEstimates.ts - estimates with date_from/date_to defaults\n- analyzeMaterialCosts.ts - material cost analysis defaults\n- getMaterialUsageReport.ts - usage report defaults\n- getSupplierComparison.ts - supplier comparison defaults\n- getMaterialInventoryInsights.ts - inventory insights defaults\n\nAll tools now consistently filter by current date by default across:\n- Jobs & Activities (10 tools) - already completed\n- Estimates (1 tool) - completed in this commit\n- Materials (4 tools) - completed in this commit\n- Analytics (24 tools) - already use days_back pattern (correct)\n\nTotal: 39 tools with proper date defaulting behavior\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "mcp__jobnimbus-stamford__search_jobs",
+      "mcp__jobnimbus-stamford__search_jobs_enhanced",
+      "mcp__jobnimbus-stamford__get_contacts",
+      "mcp__jobnimbus-stamford__search_contacts",
+      "mcp__jobnimbus-stamford__get_timeline_data",
+      "mcp__jobnimbus-stamford__get_calendar_activities",
+      "mcp__jobnimbus-stamford__search_insurance_jobs",
+      "mcp__jobnimbus-stamford__get_estimates",
+      "mcp__jobnimbus-stamford__analyze_material_costs",
+      "mcp__jobnimbus-stamford__get_material_usage_report",
+      "mcp__jobnimbus-stamford__get_supplier_comparison",
+      "mcp__jobnimbus-stamford__get_material_inventory_insights",
+      "Bash(git commit:*)",
+      "mcp__jobnimbus-guilford__get_timeline_data",
+      "mcp__jobnimbus-stamford__get_users",
+      "mcp__jobnimbus-stamford__search_job_notes",
+      "mcp__jobnimbus-stamford__get_tasks"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "jobnimbus-stamford",
+    "jobnimbus-guilford"
+  ]
+}

@@ -89,7 +89,33 @@ Ver: [docs/SETUP.md](docs/SETUP.md) para guía completa de deployment.
 **Ver lista completa**: Las 48 herramientas están implementadas y listas.
 **Agregar más**: Ver [docs/ADDING_TOOLS.md](docs/ADDING_TOOLS.md)
 
-## 💻 Configuración Claude Desktop
+## 💻 Configuración MCP
+
+### Opción 1: Claude Code (Recomendado)
+
+1. **Configurar variables de entorno**:
+```bash
+cp .env.mcp.example .env.mcp
+# Edita .env.mcp con tus API keys
+```
+
+2. **Cargar variables** (PowerShell):
+```powershell
+Get-Content .env.mcp | ForEach-Object {
+    if ($_ -match '^([^=]+)=(.+)$') {
+        [Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process')
+    }
+}
+```
+
+3. **Verificar**:
+```
+/mcp
+```
+
+Ver guía completa: [MCP_SETUP.md](MCP_SETUP.md)
+
+### Opción 2: Claude Desktop
 
 Ubicación: `%APPDATA%/Claude/claude_desktop_config.json`
 
@@ -114,6 +140,7 @@ Ver ejemplo completo: [examples/claude-desktop-config.json](examples/claude-desk
 ## 📚 Documentación
 
 - [📖 Setup Guide](docs/SETUP.md) - Instalación y deployment
+- [🔌 MCP Setup](MCP_SETUP.md) - Configuración de MCP para Claude Code
 - [🏗️ Arquitectura](docs/ARCHITECTURE.md) - Diseño técnico completo
 - [🛠️ Agregar Herramientas](docs/ADDING_TOOLS.md) - Cómo crear nuevas tools
 
