@@ -99,12 +99,7 @@ class GenericAnalyticsTool extends BaseTool<any, any> {
 
 // SIMPLIFIED TOOLS - Generic implementations for remaining tools
 
-export class GetTasksTool extends GenericAnalyticsTool {
-  constructor() {
-    super('get_tasks', 'Retrieve tasks from JobNimbus');
-  }
-}
-
+// GetTasksTool moved to ./tasks/getTasks.ts for proper optimized implementation
 // GetUsersTool moved to ./users/getUsers.ts for proper implementation
 
 export class GetWebhooksTool extends GenericAnalyticsTool {

@@ -93,12 +93,14 @@ import { GetInventoryManagementAnalyticsTool } from './analytics/getInventoryMan
 import { GetQualityControlAnalyticsTool } from './analytics/getQualityControlAnalytics.js';
 
 import {
-  GetTasksTool,
   GetWebhooksTool,
 } from './analytics/simplifiedBatchTools.js';
 
 // Users tools
 import { GetUsersTool } from './users/getUsers.js';
+
+// Tasks tools
+import { GetTasksTool } from './tasks/getTasks.js';
 
 // Attachments tools
 import { GetAttachmentsTool } from './attachments/getAttachments.js';
