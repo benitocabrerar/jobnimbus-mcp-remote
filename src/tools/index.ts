@@ -1,5 +1,5 @@
 /**
- * Tool Registry - ALL 58 TOOLS
+ * Tool Registry - ALL 71 TOOLS (58 + 13 quick status search tools)
  */
 
 import { BaseTool } from './baseTool.js';
@@ -12,6 +12,23 @@ import { SearchJobsEnhancedTool } from './jobs/searchJobsEnhanced.js';
 import { GetJobTool } from './jobs/getJob.js';
 import { SearchJobNotesTool } from './jobs/searchJobNotes.js';
 import { GetJobTasksTool } from './jobs/getJobTasks.js';
+
+// Quick status search tools (NEW - 13 tools)
+import { SearchJobsByStatusTool } from './jobs/searchJobsByStatus.js';
+import {
+  GetLeadsTool,
+  GetPendingApprovalTool,
+  GetLostJobsTool,
+  GetInProgressTool,
+  GetCompletedTool,
+  GetPaidClosedTool,
+  GetEstimatingTool,
+  GetSignedContractsTool,
+  GetScheduledTool,
+  GetAppointmentsTool,
+  GetInvoicedTool,
+  GetDepositsTool,
+} from './jobs/quickStatusTools.js';
 import { GetContactsTool } from './contacts/getContacts.js';
 import { SearchContactsTool } from './contacts/searchContacts.js';
 import { CreateContactTool } from './contacts/createContact.js';
@@ -144,6 +161,21 @@ export class ToolRegistry {
     this.registerTool(new GetJobTool());
     this.registerTool(new SearchJobNotesTool());
     this.registerTool(new GetJobTasksTool());
+
+    // Register quick status search tools (NEW - 13 tools)
+    this.registerTool(new SearchJobsByStatusTool());
+    this.registerTool(new GetLeadsTool());
+    this.registerTool(new GetPendingApprovalTool());
+    this.registerTool(new GetLostJobsTool());
+    this.registerTool(new GetInProgressTool());
+    this.registerTool(new GetCompletedTool());
+    this.registerTool(new GetPaidClosedTool());
+    this.registerTool(new GetEstimatingTool());
+    this.registerTool(new GetSignedContractsTool());
+    this.registerTool(new GetScheduledTool());
+    this.registerTool(new GetAppointmentsTool());
+    this.registerTool(new GetInvoicedTool());
+    this.registerTool(new GetDepositsTool());
     this.registerTool(new GetContactsTool());
     this.registerTool(new SearchContactsTool());
     this.registerTool(new CreateContactTool());
