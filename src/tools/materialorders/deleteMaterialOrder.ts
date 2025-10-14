@@ -37,10 +37,12 @@ export class DeleteMaterialOrderTool extends BaseTool<DeleteMaterialOrderInput, 
   async execute(input: DeleteMaterialOrderInput, context: ToolContext): Promise<any> {
     try {
       // Soft delete by setting is_active to false
+      // IMPORTANT: Include jnid in body (JobNimbus API requirement)
       const response = await this.client.put(
         context.apiKey,
         `v2/materialorders/${input.jnid}`,
         {
+          jnid: input.jnid,
           is_active: false,
         }
       );
