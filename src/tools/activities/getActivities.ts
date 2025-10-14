@@ -1,12 +1,16 @@
 /**
  * Get Activities Tool
  * Enhanced with schedule filtering, activity type filtering, and sorting capabilities
+ *
+ * PHASE 2: Integrated Redis cache system for performance optimization
  */
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { compactActivity, compactArray } from '../../utils/compactData.js';
 import { getCurrentMonth } from '../../utils/dateHelpers.js';
+import { withCache } from '../../services/cacheService.js';
+import { CACHE_PREFIXES, getTTL } from '../../config/cache.js';
 
 interface GetActivitiesInput {
   from?: number;
@@ -30,6 +34,26 @@ interface Activity {
   date_updated?: number;
   type?: string;
   [key: string]: any;
+}
+
+/**
+ * Generate deterministic cache identifier from input parameters
+ * Format: {from}:{size}:{date_from}:{date_to}:{scheduled_from}:{scheduled_to}:{has_schedule}:{activity_type}:{sort_by}:{order}:{full_details}
+ */
+function generateCacheIdentifier(input: GetActivitiesInput): string {
+  const from = input.from || 0;
+  const size = input.size || 15;
+  const dateFrom = input.date_from || 'null';
+  const dateTo = input.date_to || 'null';
+  const scheduledFrom = input.scheduled_from || 'null';
+  const scheduledTo = input.scheduled_to || 'null';
+  const hasSchedule = input.has_schedule === undefined ? 'null' : String(input.has_schedule);
+  const activityType = input.activity_type || 'null';
+  const sortBy = input.sort_by || 'null';
+  const order = input.order || 'desc';
+  const fullDetails = input.include_full_details ? 'full' : 'compact';
+
+  return `${from}:${size}:${dateFrom}:${dateTo}:${scheduledFrom}:${scheduledTo}:${hasSchedule}:${activityType}:${sortBy}:${order}:${fullDetails}`;
 }
 
 export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
@@ -199,10 +223,22 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
   }
 
   async execute(input: GetActivitiesInput, context: ToolContext): Promise<any> {
-    const fromIndex = input.from || 0;
-    // OPTIMIZED: Reduced default from 50 to 15 to prevent Claude Desktop saturation
-    const requestedSize = Math.min(input.size || 15, 50);
-    const order = input.order || 'desc';
+    // Generate cache identifier
+    const cacheIdentifier = generateCacheIdentifier(input);
+
+    // Wrap with cache layer (PHASE 2: Redis cache integration)
+    return await withCache(
+      {
+        entity: CACHE_PREFIXES.ACTIVITIES,
+        operation: CACHE_PREFIXES.LIST,
+        identifier: cacheIdentifier,
+      },
+      getTTL('ACTIVITIES_LIST'),
+      async () => {
+        const fromIndex = input.from || 0;
+        // OPTIMIZED: Reduced default from 50 to 15 to prevent Claude Desktop saturation
+        const requestedSize = Math.min(input.size || 15, 50);
+        const order = input.order || 'desc';
 
     // Use current month as default if no date filters provided
     const currentMonth = getCurrentMonth();
@@ -348,5 +384,7 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
         activity: resultActivities,
       };
     }
+      }
+    );
   }
 }

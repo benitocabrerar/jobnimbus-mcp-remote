@@ -1,10 +1,14 @@
 /**
  * Search Contacts Tool
+ *
+ * PHASE 2: Integrated Redis cache system for performance optimization
  */
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { getCurrentMonth } from '../../utils/dateHelpers.js';
+import { withCache } from '../../services/cacheService.js';
+import { CACHE_PREFIXES, getTTL } from '../../config/cache.js';
 
 interface SearchContactsInput {
   query?: string;
@@ -12,6 +16,20 @@ interface SearchContactsInput {
   size?: number;
   date_from?: string;
   date_to?: string;
+}
+
+/**
+ * Generate deterministic cache identifier from input parameters
+ * Format: {query}:{from}:{size}:{date_from}:{date_to}
+ */
+function generateCacheIdentifier(input: SearchContactsInput): string {
+  const query = input.query || 'all';
+  const from = input.from || 0;
+  const size = input.size || 50;
+  const dateFrom = input.date_from || 'null';
+  const dateTo = input.date_to || 'null';
+
+  return `${query}:${from}:${size}:${dateFrom}:${dateTo}`;
 }
 
 export class SearchContactsTool extends BaseTool<SearchContactsInput, any> {
@@ -48,21 +66,35 @@ export class SearchContactsTool extends BaseTool<SearchContactsInput, any> {
   }
 
   async execute(input: SearchContactsInput, context: ToolContext): Promise<any> {
-    // Use current month as default if no date filters provided
-    const currentMonth = getCurrentMonth();
-    const dateFrom = input.date_from || currentMonth.date_from;
-    const dateTo = input.date_to || currentMonth.date_to;
+    // Generate cache identifier
+    const cacheIdentifier = generateCacheIdentifier(input);
 
-    const params: any = {
-      from: input.from || 0,
-      size: Math.min(input.size || 50, 100),
-    };
+    // Wrap with cache layer (PHASE 2: Redis cache integration)
+    return await withCache(
+      {
+        entity: CACHE_PREFIXES.CONTACTS,
+        operation: CACHE_PREFIXES.SEARCH,
+        identifier: cacheIdentifier,
+      },
+      getTTL('CONTACTS_SEARCH'),
+      async () => {
+        // Use current month as default if no date filters provided
+        const currentMonth = getCurrentMonth();
+        const dateFrom = input.date_from || currentMonth.date_from;
+        const dateTo = input.date_to || currentMonth.date_to;
 
-    if (input.query) params.q = input.query;
-    if (dateFrom) params.date_from = dateFrom;
-    if (dateTo) params.date_to = dateTo;
+        const params: any = {
+          from: input.from || 0,
+          size: Math.min(input.size || 50, 100),
+        };
 
-    const result = await this.client.get(context.apiKey, 'contacts/search', params);
-    return result.data;
+        if (input.query) params.q = input.query;
+        if (dateFrom) params.date_from = dateFrom;
+        if (dateTo) params.date_to = dateTo;
+
+        const result = await this.client.get(context.apiKey, 'contacts/search', params);
+        return result.data;
+      }
+    );
   }
 }

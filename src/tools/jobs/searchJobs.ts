@@ -1,12 +1,16 @@
 /**
  * Search Jobs Tool
  * Enhanced with schedule filtering and sorting capabilities (synced with get_jobs)
+ *
+ * PHASE 2: Integrated Redis cache system for performance optimization
  */
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { compactJob, compactArray } from '../../utils/compactData.js';
 import { getCurrentMonth } from '../../utils/dateHelpers.js';
+import { withCache } from '../../services/cacheService.js';
+import { CACHE_PREFIXES, getTTL } from '../../config/cache.js';
 
 interface SearchJobsInput {
   query?: string;
@@ -31,6 +35,26 @@ interface Job {
   date_updated?: number;
   date_status_change?: number;
   [key: string]: any;
+}
+
+/**
+ * Generate deterministic cache identifier from input parameters
+ * Format: {query}:{from}:{size}:{date_from}:{date_to}:{scheduled_from}:{scheduled_to}:{has_schedule}:{sort_by}:{order}:{full_details}
+ */
+function generateCacheIdentifier(input: SearchJobsInput): string {
+  const query = input.query || 'all';
+  const from = input.from || 0;
+  const size = input.size || 50;
+  const dateFrom = input.date_from || 'null';
+  const dateTo = input.date_to || 'null';
+  const scheduledFrom = input.scheduled_from || 'null';
+  const scheduledTo = input.scheduled_to || 'null';
+  const hasSchedule = input.has_schedule === undefined ? 'null' : String(input.has_schedule);
+  const sortBy = input.sort_by || 'null';
+  const order = input.order || 'desc';
+  const fullDetails = input.include_full_details ? 'full' : 'compact';
+
+  return `${query}:${from}:${size}:${dateFrom}:${dateTo}:${scheduledFrom}:${scheduledTo}:${hasSchedule}:${sortBy}:${order}:${fullDetails}`;
 }
 
 export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
@@ -185,9 +209,21 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
   }
 
   async execute(input: SearchJobsInput, context: ToolContext): Promise<any> {
-    const fromIndex = input.from || 0;
-    const requestedSize = Math.min(input.size || 50, 100);
-    const order = input.order || 'desc';
+    // Generate cache identifier
+    const cacheIdentifier = generateCacheIdentifier(input);
+
+    // Wrap with cache layer (PHASE 2: Redis cache integration)
+    return await withCache(
+      {
+        entity: CACHE_PREFIXES.JOBS,
+        operation: CACHE_PREFIXES.SEARCH,
+        identifier: cacheIdentifier,
+      },
+      getTTL('JOBS_SEARCH'),
+      async () => {
+        const fromIndex = input.from || 0;
+        const requestedSize = Math.min(input.size || 50, 100);
+        const order = input.order || 'desc';
 
     // Use current month as default if no date filters provided
     const currentMonth = getCurrentMonth();
@@ -321,5 +357,7 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
         results: resultJobs,
       };
     }
+      }
+    );
   }
 }

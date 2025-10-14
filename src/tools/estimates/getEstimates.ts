@@ -1,12 +1,16 @@
 /**
  * Get Estimates Tool
  * Enhanced with status filtering, sent/approved date filtering, and sorting capabilities
+ *
+ * PHASE 2: Integrated Redis cache system for performance optimization
  */
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { getCurrentMonth } from '../../utils/dateHelpers.js';
 import { compactEstimate, compactArray } from '../../utils/compactData.js';
+import { withCache } from '../../services/cacheService.js';
+import { CACHE_PREFIXES, getTTL } from '../../config/cache.js';
 
 interface GetEstimatesInput {
   from?: number;
@@ -33,6 +37,28 @@ interface Estimate {
   status?: number;
   status_name?: string;
   [key: string]: any;
+}
+
+/**
+ * Generate deterministic cache identifier from input parameters
+ * Format: {from}:{size}:{date_from}:{date_to}:{sent_from}:{sent_to}:{approved_from}:{approved_to}:{has_approval}:{status}:{sort_by}:{order}:{full_details}
+ */
+function generateCacheIdentifier(input: GetEstimatesInput): string {
+  const from = input.from || 0;
+  const size = input.size || 15;
+  const dateFrom = input.date_from || 'null';
+  const dateTo = input.date_to || 'null';
+  const sentFrom = input.sent_from || 'null';
+  const sentTo = input.sent_to || 'null';
+  const approvedFrom = input.approved_from || 'null';
+  const approvedTo = input.approved_to || 'null';
+  const hasApproval = input.has_approval === undefined ? 'null' : String(input.has_approval);
+  const status = input.status || 'null';
+  const sortBy = input.sort_by || 'null';
+  const order = input.order || 'desc';
+  const fullDetails = input.include_full_details ? 'full' : 'compact';
+
+  return `${from}:${size}:${dateFrom}:${dateTo}:${sentFrom}:${sentTo}:${approvedFrom}:${approvedTo}:${hasApproval}:${status}:${sortBy}:${order}:${fullDetails}`;
 }
 
 export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
@@ -236,10 +262,22 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
   }
 
   async execute(input: GetEstimatesInput, context: ToolContext): Promise<any> {
-    const fromIndex = input.from || 0;
-    // OPTIMIZED: Reduced from 50 to 15 (default) and 100 to 50 (max) to prevent saturation
-    const requestedSize = Math.min(input.size || 15, 50);
-    const order = input.order || 'desc';
+    // Generate cache identifier
+    const cacheIdentifier = generateCacheIdentifier(input);
+
+    // Wrap with cache layer (PHASE 2: Redis cache integration)
+    return await withCache(
+      {
+        entity: CACHE_PREFIXES.ESTIMATES,
+        operation: CACHE_PREFIXES.LIST,
+        identifier: cacheIdentifier,
+      },
+      getTTL('ESTIMATES_LIST'),
+      async () => {
+        const fromIndex = input.from || 0;
+        // OPTIMIZED: Reduced from 50 to 15 (default) and 100 to 50 (max) to prevent saturation
+        const requestedSize = Math.min(input.size || 15, 50);
+        const order = input.order || 'desc';
 
     // Use current date as default if no date filters provided
     const currentMonth = getCurrentMonth();
@@ -399,5 +437,7 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
         results: resultEstimates,
       };
     }
+      }
+    );
   }
 }

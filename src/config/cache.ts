@@ -57,9 +57,20 @@ export const CACHE_TTL = {
   ATTACHMENTS_BY_JOB: 20 * 60,      // 20 minutes - job files change often
   ATTACHMENTS_BY_CONTACT: 30 * 60,  // 30 minutes - contact files more stable
 
-  // Entity TTLs
+  // Entity List TTLs (Phase 2)
+  JOBS_LIST: 10 * 60,               // 10 minutes - jobs update frequently
+  JOBS_SEARCH: 5 * 60,              // 5 minutes - search results vary
+  ESTIMATES_LIST: 15 * 60,          // 15 minutes - estimates change moderately
+  ESTIMATES_SEARCH: 5 * 60,         // 5 minutes - search results vary
+  CONTACTS_LIST: 20 * 60,           // 20 minutes - contacts more stable
+  CONTACTS_SEARCH: 5 * 60,          // 5 minutes - search results vary
+  ACTIVITIES_LIST: 10 * 60,         // 10 minutes - activities change often
+
+  // Entity Detail TTLs
   JOB_DETAIL: 10 * 60,              // 10 minutes - jobs update frequently
   CONTACT_DETAIL: 30 * 60,          // 30 minutes - contacts more stable
+  ESTIMATE_DETAIL: 20 * 60,         // 20 minutes - estimates moderately stable
+  ACTIVITY_DETAIL: 15 * 60,         // 15 minutes - activities change
 
   // Aggregation/Analytics TTLs
   ANALYTICS: 60 * 60,               // 1 hour - expensive computations
