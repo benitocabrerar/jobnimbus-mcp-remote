@@ -25,14 +25,105 @@ interface GetJobsInput {
   include_full_details?: boolean;
 }
 
+interface JobOwner {
+  id: string;
+}
+
+interface JobLocation {
+  id: number;
+  parent_id?: number | null;
+  name?: string;
+}
+
+interface JobGeo {
+  lat: number;
+  lon: number;
+}
+
+interface JobPrimary {
+  id: string;
+  name?: string;
+  number?: string;
+  type?: string;
+}
+
+/**
+ * Complete Job interface matching JobNimbus API
+ * Based on official JobNimbus API documentation
+ */
 interface Job {
-  jnid?: string;
-  number?: number;
+  // Core identifiers
+  jnid: string;
+  recid: number;
+  number?: string;
+  display_number?: string;
+  type: string;
+  customer?: string;
+
+  // Metadata
+  created_by: string;
+  created_by_name: string;
+  date_created: number;
+  date_updated: number;
+  date_status_change?: number;
+
+  // Ownership & Location
+  owners: JobOwner[];
+  subcontractors: any[];
+  location: JobLocation;
+
+  // Job Information
+  name?: string;
+  display_name?: string;
+  description?: string;
+
+  // Classification
+  record_type: number;
+  record_type_name: string;
+  status?: number;
+  status_name?: string;
+  source?: number;
+  source_name?: string;
+
+  // Sales
+  sales_rep?: string;
+  sales_rep_name?: string;
+
+  // Address
+  address_line1?: string;
+  address_line2?: string | null;
+  city?: string;
+  state_text?: string;
+  country_name?: string;
+  zip?: string;
+  geo?: JobGeo;
+
+  // Primary Contact/Customer
+  primary?: JobPrimary;
+
+  // Scheduling
   date_start?: number;
   date_end?: number;
-  date_created?: number;
-  date_updated?: number;
-  date_status_change?: number;
+
+  // Financial
+  approved_estimate_total?: number;
+  approved_invoice_total?: number;
+  last_estimate?: number;
+  last_invoice?: number;
+  work_order_total?: number;
+
+  // Attachments
+  attachment_count?: number;
+
+  // Status
+  is_active?: boolean;
+  is_archived?: boolean;
+
+  // Additional
+  tags?: any[];
+  external_id?: string | null;
+
+  // Allow additional fields from API
   [key: string]: any;
 }
 
