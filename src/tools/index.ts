@@ -1,5 +1,5 @@
 /**
- * Tool Registry - 85 TOOLS (2025-10-14 Enhancement: Added Contact Management get_contact)
+ * Tool Registry - 86 TOOLS (2025-01-14 Enhancement: Added Activities Management get_activity)
  *
  * REMOVED (Archived - 11 tools):
  * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
@@ -59,6 +59,7 @@ import { SearchContactsTool } from './contacts/searchContacts.js';
 import { CreateContactTool } from './contacts/createContact.js';
 import { GetEstimatesTool } from './estimates/getEstimates.js';
 import { GetActivitiesTool } from './activities/getActivities.js';
+import { GetActivityTool } from './activities/getActivity.js';
 import { CreateActivityTool } from './activities/createActivity.js';
 import { GetCalendarActivities } from './activities/getCalendarActivities.js';
 import { GetTimelineData } from './activities/getTimelineData.js';
@@ -162,7 +163,7 @@ export class ToolRegistry {
   private tools = new Map<string, BaseTool>();
 
   constructor() {
-    // === CORE CRUD TOOLS (22 tools) ===
+    // === CORE CRUD TOOLS (23 tools) ===
     this.registerTool(new ValidateApiKeyTool());
     this.registerTool(new GetJobsTool());
     this.registerTool(new SearchJobsTool());
@@ -193,6 +194,7 @@ export class ToolRegistry {
     this.registerTool(new CreateContactTool());
     this.registerTool(new GetEstimatesTool());
     this.registerTool(new GetActivitiesTool());
+    this.registerTool(new GetActivityTool());
     this.registerTool(new CreateActivityTool());
     this.registerTool(new GetCalendarActivities());
     this.registerTool(new GetTimelineData());
