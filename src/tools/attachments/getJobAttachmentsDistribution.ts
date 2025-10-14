@@ -74,13 +74,13 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
   get definition(): MCPToolDefinition {
     return {
       name: 'get_job_attachments_distribution',
-      description: 'Comprehensive file distribution analysis for a job. Collects files from job and related entities (estimate, invoice, contact), uses JobNimbus record_type_name field for classification across 20+ categories including: Photos, Documents, Email Attachments, Work Orders, Estimates, Invoices, Permit Related, Financing, Receipts, EagleView, Credit Memos, Insurance Scopes, Material Receipts, Measurements, Payments, Agreements, Material Orders, Subcontractor Docs, Change Orders, and Others. Detects discrepancies vs reported attachment_count, and provides detailed statistics with examples.',
+      description: 'Comprehensive file distribution analysis for a job. Accepts job NUMBER (e.g., "1820") - the tool automatically resolves internal IDs. Collects files from job and related entities (estimate, invoice, contact), uses JobNimbus record_type_name field for classification across 20+ categories including: Photos, Documents, Email Attachments, Work Orders, Estimates, Invoices, Permit Related, Financing, Receipts, EagleView, Credit Memos, Insurance Scopes, Material Receipts, Measurements, Payments, Agreements, Material Orders, Subcontractor Docs, Change Orders, and Others. Detects discrepancies vs reported attachment_count, and provides detailed statistics with examples.',
       inputSchema: {
         type: 'object',
         properties: {
           job_id: {
             type: 'string',
-            description: 'Job ID or number (e.g., "1820")',
+            description: 'Job number as shown in JobNimbus UI (e.g., "1820"). Users only need to provide the job number they see - internal JNID lookup is automatic.',
           },
           page_size: {
             type: 'number',
@@ -300,6 +300,7 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
 
     try {
       // Step 1: Resolve job metadata
+      notes.push(`Tool accepts job NUMBER (e.g., "1820") and automatically resolves internal IDs`);
       notes.push(`Resolving metadata for job_id=${input.job_id}`);
       const jobResponse = await this.client.get(context.apiKey, `jobs/${input.job_id}`);
       const job = jobResponse.data;

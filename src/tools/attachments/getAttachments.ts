@@ -71,13 +71,13 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_attachments',
-      description: 'Retrieve file attachments from JobNimbus /files endpoint using server-side Elasticsearch filtering. Returns all file attachments with metadata including filename, content type, size, related entities, and creation dates. Supports filtering by related entity (job_id, contact_id) using Elasticsearch query syntax, and file type (client-side). Based on official JobNimbus API.',
+      description: 'Retrieve file attachments from JobNimbus /files endpoint using server-side Elasticsearch filtering. Accepts job NUMBER (e.g., "1820") or internal JNID - both work automatically. Returns all file attachments with metadata including filename, content type, size, related entities, and creation dates. Supports filtering by related entity (job_id, contact_id) using Elasticsearch query syntax, and file type (client-side). Based on official JobNimbus API.',
       inputSchema: {
         type: 'object',
         properties: {
           job_id: {
             type: 'string',
-            description: 'Filter files by job ID (searches in related array and primary field)',
+            description: 'Filter files by job number (e.g., "1820") or internal JNID. Both formats work automatically.',
           },
           contact_id: {
             type: 'string',
@@ -266,7 +266,7 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
               record_type_name: file.record_type_name,
               type: file.type,
             })),
-            _note: 'Uses official /files endpoint with server-side Elasticsearch filtering when entity ID provided. File type filtering is client-side. To get ALL files, omit job_id/contact_id/related_to.',
+            _note: 'Uses official /files endpoint with server-side Elasticsearch filtering. Accepts job NUMBER (users only see numbers like "1820") or internal JNID - both work. File type filtering is client-side. To get ALL files, omit job_id/contact_id/related_to.',
           };
         } catch (error) {
           return {
