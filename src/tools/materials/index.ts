@@ -7,7 +7,7 @@
 export { default as getEstimateMaterialsTool } from './getEstimateMaterials.js';
 export { default as analyzeMaterialCostsTool } from './analyzeMaterialCosts.js';
 export { default as getMaterialUsageReportTool } from './getMaterialUsageReport.js';
-export { default as getSupplierComparisonTool } from './getSupplierComparison.js';
+// export { default as getSupplierComparisonTool } from './getSupplierComparison.js'; // ARCHIVED/EXPERIMENTAL
 export { default as getMaterialInventoryInsightsTool } from './getMaterialInventoryInsights.js';
 
 // Material Calculation Tools (new)
@@ -23,7 +23,7 @@ export { default as compareMaterialAlternativesTool } from './compareMaterialAlt
 export { GetEstimateMaterialsTool } from './getEstimateMaterials.js';
 export { AnalyzeMaterialCostsTool } from './analyzeMaterialCosts.js';
 export { GetMaterialUsageReportTool } from './getMaterialUsageReport.js';
-export { GetSupplierComparisonTool } from './getSupplierComparison.js';
+// export { GetSupplierComparisonTool } from './getSupplierComparison.js'; // ARCHIVED/EXPERIMENTAL
 export { GetMaterialInventoryInsightsTool } from './getMaterialInventoryInsights.js';
 export { CalculateRoofingMaterialsTool } from './calculateRoofingMaterials.js';
 export { CalculateSidingMaterialsTool } from './calculateSidingMaterials.js';

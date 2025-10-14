@@ -1,5 +1,5 @@
 /**
- * Tool Registry - CONSOLIDATED 88 TOOLS (Removed 14 archived/experimental)
+ * Tool Registry - 84 TOOLS (2025-01-14 Enhancement: Added Task Management)
  *
  * REMOVED (Archived - 11 tools):
  * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
@@ -14,7 +14,12 @@
  * - GetQualityControlAnalyticsTool, GetSmartSchedulingTool
  * - GetCustomerJourneyAnalyticsTool
  *
- * Recent verified changes:
+ * 2025-01-14 ENHANCEMENT - Task Management Tools:
+ * - get_task: Retrieve specific task by JNID with full details
+ * - update_task: Update or soft-delete tasks with 17+ parameters
+ * - get_tasks: ENHANCED with 9 filters + cache integration
+ *
+ * Previous verified changes:
  * - get_invoices: VERIFIED WORKING (new endpoint)
  * - get_attachments: Uses /files endpoint (documents/orders don't exist)
  * - get_file_by_id: NEW tool for GET /files/<jnid>
@@ -114,6 +119,8 @@ import { GetCompetitiveAnalysisAnalyticsTool } from './analytics/getCompetitiveA
 // ===== SYSTEM TOOLS =====
 import { GetUsersTool } from './users/getUsers.js';
 import { GetTasksTool } from './tasks/getTasks.js';
+import { GetTaskTool } from './tasks/getTask.js';
+import { UpdateTaskTool } from './tasks/updateTask.js';
 
 // ===== ATTACHMENTS TOOLS =====
 import { GetAttachmentsTool } from './attachments/getAttachments.js';
@@ -154,7 +161,7 @@ export class ToolRegistry {
   private tools = new Map<string, BaseTool>();
 
   constructor() {
-    // === CORE CRUD TOOLS (19 tools) ===
+    // === CORE CRUD TOOLS (21 tools) ===
     this.registerTool(new ValidateApiKeyTool());
     this.registerTool(new GetJobsTool());
     this.registerTool(new SearchJobsTool());
@@ -241,8 +248,10 @@ export class ToolRegistry {
     this.registerTool(new GetSalesVelocityAnalyticsTool());
     this.registerTool(new GetCompetitiveAnalysisAnalyticsTool());
 
-    // === SYSTEM TOOLS (2 tools) ===
+    // === SYSTEM TOOLS (4 tools) ===
     this.registerTool(new GetTasksTool());
+    this.registerTool(new GetTaskTool());
+    this.registerTool(new UpdateTaskTool());
     this.registerTool(new GetUsersTool());
 
     // === ATTACHMENTS (4 tools) ===

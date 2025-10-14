@@ -34,12 +34,14 @@ export const CACHE_PREFIXES = {
   ACTIVITIES: 'activities',
   ESTIMATES: 'estimates',
   INVOICES: 'invoices', // NEW - VERIFIED WORKING endpoint
+  TASKS: 'tasks', // NEW - 2025-01-14 - Task Management
 
   // Operation-level prefixes
   LIST: 'list',
   DETAIL: 'detail',
   SEARCH: 'search',
   ANALYTICS: 'analytics',
+  GET: 'get', // NEW - 2025-01-14 - Individual entity retrieval
 } as const;
 
 /**
@@ -67,6 +69,8 @@ export const CACHE_TTL = {
   CONTACTS_SEARCH: 5 * 60,          // 5 minutes - search results vary
   ACTIVITIES_LIST: 10 * 60,         // 10 minutes - activities change often
   INVOICES_LIST: 15 * 60,           // 15 minutes - invoices moderately stable (NEW - VERIFIED)
+  TASKS_LIST: 10 * 60,              // 10 minutes - tasks update frequently (NEW - 2025-01-14)
+  TASKS_DETAIL: 15 * 60,            // 15 minutes - task details moderately stable (NEW - 2025-01-14)
 
   // Entity Detail TTLs
   JOB_DETAIL: 10 * 60,              // 10 minutes - jobs update frequently
