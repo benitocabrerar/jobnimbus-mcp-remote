@@ -1,11 +1,11 @@
 /**
- * Tool Registry - 111 TOOLS (2025-01-14 Enhancement: Added Account API + Budgets Legacy)
+ * Tool Registry - 103 TOOLS (2025-01-14 Enhancement: Added WorkOrders API + Budgets Legacy)
  *
  * REMOVED (Archived - 11 tools):
  * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
  * - AnalyzePricingAnomaliesTool, GetPricingOptimizationTool
  * - GetCompetitiveIntelligenceTool, GetUpsellOpportunitiesTool
- * - GetSystemInfoTool, GetWebhookMonitoringTool, GetFileStorageAnalyticsTool
+ * - GetSystemInfoTool, WebhookMonitoringTool, GetFileStorageAnalyticsTool
  * - GetWebhooksTool, BulkImportContactsTool, ValidateContactInformationTool
  *
  * REMOVED (Experimental - 7 tools):
@@ -14,18 +14,18 @@
  * - GetQualityControlAnalyticsTool, GetSmartSchedulingTool
  * - GetCustomerJourneyAnalyticsTool
  *
- * 2025-01-14 ENHANCEMENT - Account API Tools (11 tools):
- * - get_account_settings: Retrieve account configuration (workflows, file types, task types, etc.)
- * - get_users: Retrieve team members with contact JNIDs (from /account/users)
- * - get_uoms: Retrieve Units of Measurement
- * - create_workflow: Create workflows for contacts/jobs/workorders
- * - create_status: Create statuses within workflows
- * - create_lead_source: Create marketing attribution sources
- * - create_custom_field: Create custom fields with validation
- * - create_file_type: Create file types (attachment categories)
- * - create_task_type: Create task types with calendar/list visibility
- * - create_activity_type: Create activity types with JobShare visibility
- * - create_location: Create locations for multi-location businesses
+ * COMMENTED OUT (Not yet implemented - 13 tools):
+ * - Payment tools (2): get_payments, create_payment
+ * - Account tools (11): get_account_settings, get_users, get_uoms, create_workflow,
+ *   create_status, create_lead_source, create_custom_field, create_file_type,
+ *   create_task_type, create_activity_type, create_location
+ *
+ * 2025-01-14 ENHANCEMENT - WorkOrders API (5 tools):
+ * - get_work_order: Retrieve specific work order by JNID
+ * - get_work_orders: Retrieve all work orders with pagination
+ * - create_work_order: Create new work order
+ * - update_work_order: Update existing work order
+ * - delete_work_order: Soft delete work order
  *
  * 2025-01-14 ENHANCEMENT - Budgets (Legacy):
  * - get_budgets: Retrieve budgets from legacy endpoint (GET /api1/budgets)
@@ -187,22 +187,29 @@ import { CreateMaterialOrderTool } from './materialorders/createMaterialOrder.js
 import { UpdateMaterialOrderTool } from './materialorders/updateMaterialOrder.js';
 import { DeleteMaterialOrderTool } from './materialorders/deleteMaterialOrder.js';
 
-// ===== PAYMENTS =====
-import { GetPaymentsTool } from './payments/getPayments.js';
-import { CreatePaymentTool } from './payments/createPayment.js';
+// ===== WORK ORDERS =====
+import { GetWorkOrderTool } from './workorders/getWorkOrder.js';
+import { GetWorkOrdersTool } from './workorders/getWorkOrders.js';
+import { CreateWorkOrderTool } from './workorders/createWorkOrder.js';
+import { UpdateWorkOrderTool } from './workorders/updateWorkOrder.js';
+import { DeleteWorkOrderTool } from './workorders/deleteWorkOrder.js';
 
-// ===== ACCOUNT SETTINGS & CONFIGURATION =====
-import { GetAccountSettingsTool } from './account/getAccountSettings.js';
-import { GetUsersTool as GetAccountUsersTool } from './account/getUsers.js';
-import { GetUomsTool } from './account/getUoms.js';
-import { CreateWorkflowTool } from './account/createWorkflow.js';
-import { CreateStatusTool } from './account/createStatus.js';
-import { CreateLeadSourceTool } from './account/createLeadSource.js';
-import { CreateCustomFieldTool } from './account/createCustomField.js';
-import { CreateFileTypeTool } from './account/createFileType.js';
-import { CreateTaskTypeTool } from './account/createTaskType.js';
-import { CreateActivityTypeTool } from './account/createActivityType.js';
-import { CreateLocationTool } from './account/createLocation.js';
+// ===== PAYMENTS (COMMENTED OUT - Files not yet implemented) =====
+// import { GetPaymentsTool } from './payments/getPayments.js';
+// import { CreatePaymentTool } from './payments/createPayment.js';
+
+// ===== ACCOUNT SETTINGS & CONFIGURATION (COMMENTED OUT - Files not yet implemented) =====
+// import { GetAccountSettingsTool } from './account/getAccountSettings.js';
+// import { GetUsersTool as GetAccountUsersTool } from './account/getUsers.js';
+// import { GetUomsTool } from './account/getUoms.js';
+// import { CreateWorkflowTool } from './account/createWorkflow.js';
+// import { CreateStatusTool } from './account/createStatus.js';
+// import { CreateLeadSourceTool } from './account/createLeadSource.js';
+// import { CreateCustomFieldTool } from './account/createCustomField.js';
+// import { CreateFileTypeTool } from './account/createFileType.js';
+// import { CreateTaskTypeTool } from './account/createTaskType.js';
+// import { CreateActivityTypeTool } from './account/createActivityType.js';
+// import { CreateLocationTool } from './account/createLocation.js';
 
 // Generic tool generator for remaining tools
 import { createGenericTool, ALL_TOOLS_CONFIG } from './allToolsGenerator.js';
@@ -359,22 +366,29 @@ export class ToolRegistry {
     this.registerTool(new UpdateMaterialOrderTool());
     this.registerTool(new DeleteMaterialOrderTool());
 
-    // === PAYMENTS (2 tools) ===
-    this.registerTool(new GetPaymentsTool());
-    this.registerTool(new CreatePaymentTool());
+    // === WORK ORDERS (5 tools) ===
+    this.registerTool(new GetWorkOrderTool());
+    this.registerTool(new GetWorkOrdersTool());
+    this.registerTool(new CreateWorkOrderTool());
+    this.registerTool(new UpdateWorkOrderTool());
+    this.registerTool(new DeleteWorkOrderTool());
 
-    // === ACCOUNT SETTINGS & CONFIGURATION (11 tools) ===
-    this.registerTool(new GetAccountSettingsTool());
-    this.registerTool(new GetAccountUsersTool());
-    this.registerTool(new GetUomsTool());
-    this.registerTool(new CreateWorkflowTool());
-    this.registerTool(new CreateStatusTool());
-    this.registerTool(new CreateLeadSourceTool());
-    this.registerTool(new CreateCustomFieldTool());
-    this.registerTool(new CreateFileTypeTool());
-    this.registerTool(new CreateTaskTypeTool());
-    this.registerTool(new CreateActivityTypeTool());
-    this.registerTool(new CreateLocationTool());
+    // === PAYMENTS (2 tools - COMMENTED OUT - Not yet implemented) ===
+    // this.registerTool(new GetPaymentsTool());
+    // this.registerTool(new CreatePaymentTool());
+
+    // === ACCOUNT SETTINGS & CONFIGURATION (11 tools - COMMENTED OUT - Not yet implemented) ===
+    // this.registerTool(new GetAccountSettingsTool());
+    // this.registerTool(new GetAccountUsersTool());
+    // this.registerTool(new GetUomsTool());
+    // this.registerTool(new CreateWorkflowTool());
+    // this.registerTool(new CreateStatusTool());
+    // this.registerTool(new CreateLeadSourceTool());
+    // this.registerTool(new CreateCustomFieldTool());
+    // this.registerTool(new CreateFileTypeTool());
+    // this.registerTool(new CreateTaskTypeTool());
+    // this.registerTool(new CreateActivityTypeTool());
+    // this.registerTool(new CreateLocationTool());
 
     // === GENERIC TOOLS ===
     for (const config of ALL_TOOLS_CONFIG) {
