@@ -1,5 +1,5 @@
 /**
- * Tool Registry - 103 TOOLS (2025-01-14 Enhancement: Added WorkOrders API + Budgets Legacy)
+ * Tool Registry - 91 TOOLS (2025-01-14 Phase 1 Optimization: Consolidated Quick Status Tools)
  *
  * REMOVED (Archived - 11 tools):
  * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
@@ -13,6 +13,13 @@
  * - GetSupplierComparisonTool, GetInventoryManagementAnalyticsTool
  * - GetQualityControlAnalyticsTool, GetSmartSchedulingTool
  * - GetCustomerJourneyAnalyticsTool
+ *
+ * REMOVED (Phase 1 Optimization - 12 tools):
+ * - Quick Status Tools: get_leads, get_pending_approval, get_lost_jobs, get_in_progress,
+ *   get_completed, get_paid_closed, get_estimating, get_signed_contracts, get_scheduled,
+ *   get_appointments, get_invoiced, get_deposits
+ * - Replaced by: search_jobs_by_status(status, limit) - single consolidated tool
+ * - See: src/tools/archived/jobs/quick-status/README.md for migration guide
  *
  * COMMENTED OUT (Not yet implemented - 13 tools):
  * - Payment tools (2): get_payments, create_payment
@@ -39,6 +46,8 @@
  * - get_invoices: VERIFIED WORKING (new endpoint)
  * - get_attachments: Uses /files endpoint (documents/orders don't exist)
  * - get_file_by_id: NEW tool for GET /files/<jnid>
+ *
+ * PHASE 1 OPTIMIZATION COMPLETE: 103 → 91 tools (12% reduction)
  */
 
 import { BaseTool } from './baseTool.js';
@@ -52,22 +61,8 @@ import { GetJobTool } from './jobs/getJob.js';
 import { SearchJobNotesTool } from './jobs/searchJobNotes.js';
 import { GetJobTasksTool } from './jobs/getJobTasks.js';
 
-// Quick status search tools (13 tools)
+// Consolidated status search tool (Phase 1 Optimization: 13 → 1 tool)
 import { SearchJobsByStatusTool } from './jobs/searchJobsByStatus.js';
-import {
-  GetLeadsTool,
-  GetPendingApprovalTool,
-  GetLostJobsTool,
-  GetInProgressTool,
-  GetCompletedTool,
-  GetPaidClosedTool,
-  GetEstimatingTool,
-  GetSignedContractsTool,
-  GetScheduledTool,
-  GetAppointmentsTool,
-  GetInvoicedTool,
-  GetDepositsTool,
-} from './jobs/quickStatusTools.js';
 
 import { GetContactsTool } from './contacts/getContacts.js';
 import { GetContactTool } from './contacts/getContact.js';
@@ -221,7 +216,7 @@ export class ToolRegistry {
   private tools = new Map<string, BaseTool>();
 
   constructor() {
-    // === CORE CRUD TOOLS (29 tools) === [Updated: +4 Estimates tools]
+    // === CORE CRUD TOOLS (17 tools) === [Phase 1 Optimization: Removed 12 quick status wrappers]
     this.registerTool(new ValidateApiKeyTool());
     this.registerTool(new GetJobsTool());
     this.registerTool(new SearchJobsTool());
@@ -230,20 +225,8 @@ export class ToolRegistry {
     this.registerTool(new SearchJobNotesTool());
     this.registerTool(new GetJobTasksTool());
 
-    // Quick Status Tools (13 tools)
+    // Consolidated Status Search (Phase 1 Optimization: 13 → 1 tool)
     this.registerTool(new SearchJobsByStatusTool());
-    this.registerTool(new GetLeadsTool());
-    this.registerTool(new GetPendingApprovalTool());
-    this.registerTool(new GetLostJobsTool());
-    this.registerTool(new GetInProgressTool());
-    this.registerTool(new GetCompletedTool());
-    this.registerTool(new GetPaidClosedTool());
-    this.registerTool(new GetEstimatingTool());
-    this.registerTool(new GetSignedContractsTool());
-    this.registerTool(new GetScheduledTool());
-    this.registerTool(new GetAppointmentsTool());
-    this.registerTool(new GetInvoicedTool());
-    this.registerTool(new GetDepositsTool());
 
     // Contacts, Estimates, Activities
     this.registerTool(new GetContactsTool());
