@@ -431,6 +431,118 @@ export class ToolRegistry {
   getToolCount(): number {
     return this.tools.size;
   }
+
+  /**
+   * Search tools by query string (name or description)
+   * Used for MCP search_tools introspection
+   */
+  searchTools(query: string): MCPToolDefinition[] {
+    if (!query || query.trim() === '') {
+      return this.getAllDefinitions();
+    }
+
+    const lowerQuery = query.toLowerCase();
+    return Array.from(this.tools.values())
+      .filter((tool) => {
+        const def = tool.definition;
+        return (
+          def.name.toLowerCase().includes(lowerQuery) ||
+          def.description.toLowerCase().includes(lowerQuery)
+        );
+      })
+      .map((tool) => tool.definition);
+  }
+
+  /**
+   * Get tools by category/prefix
+   * Useful for organizing tools in MCP clients
+   */
+  getToolsByCategory(): Record<string, MCPToolDefinition[]> {
+    const categories: Record<string, MCPToolDefinition[]> = {
+      'Core CRUD': [],
+      'Quick Status': [],
+      'Analytics': [],
+      'Materials': [],
+      'Attachments': [],
+      'Business Intelligence': [],
+      'System': [],
+      'Other': [],
+    };
+
+    Array.from(this.tools.values()).forEach((tool) => {
+      const name = tool.definition.name;
+      const def = tool.definition;
+
+      // Categorize based on tool name patterns
+      if (
+        name.startsWith('get_') ||
+        name.startsWith('search_') ||
+        name.startsWith('create_') ||
+        name.startsWith('update_') ||
+        name.startsWith('delete_')
+      ) {
+        if (name.includes('job') && !name.includes('analytics')) {
+          categories['Core CRUD'].push(def);
+        } else if (name.includes('contact')) {
+          categories['Core CRUD'].push(def);
+        } else if (name.includes('estimate')) {
+          categories['Core CRUD'].push(def);
+        } else if (name.includes('activity') || name.includes('calendar') || name.includes('timeline')) {
+          categories['Core CRUD'].push(def);
+        } else if (name.includes('task') && !name.includes('analytics')) {
+          categories['System'].push(def);
+        } else if (name.includes('material')) {
+          categories['Materials'].push(def);
+        } else if (name.includes('attachment') || name.includes('file')) {
+          categories['Attachments'].push(def);
+        } else {
+          categories['Other'].push(def);
+        }
+      } else if (
+        name.includes('lead') ||
+        name.includes('pending') ||
+        name.includes('lost') ||
+        name.includes('progress') ||
+        name.includes('completed') ||
+        name.includes('paid') ||
+        name.includes('estimating') ||
+        name.includes('signed') ||
+        name.includes('scheduled') ||
+        name.includes('appointment') ||
+        name.includes('invoiced') ||
+        name.includes('deposit')
+      ) {
+        categories['Quick Status'].push(def);
+      } else if (
+        name.includes('analyze') ||
+        name.includes('analytics') ||
+        name.includes('performance') ||
+        name.includes('report') ||
+        name.includes('dashboard') ||
+        name.includes('forecasting') ||
+        name.includes('pipeline') ||
+        name.includes('territory') ||
+        name.includes('optimization')
+      ) {
+        categories['Analytics'].push(def);
+      } else if (name.includes('insurance')) {
+        categories['Business Intelligence'].push(def);
+      } else if (name.includes('validate')) {
+        categories['System'].push(def);
+      } else {
+        categories['Other'].push(def);
+      }
+    });
+
+    return categories;
+  }
+
+  /**
+   * Get all tool names (for quick lookup)
+   */
+  getAllToolNames(): string[] {
+    return Array.from(this.tools.keys()).sort();
+  }
 }
 
 export default new ToolRegistry();

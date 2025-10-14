@@ -66,7 +66,109 @@ app.get('/health', (_req, res) => {
 });
 
 /**
- * Apply authentication and rate limiting to all other routes
+ * MCP Introspection endpoints (no auth required for discovery)
+ * These must be placed before authentication middleware
+ */
+import toolRegistry from '../tools/index.js';
+import { AuthenticatedRequest } from '../types/index.js';
+
+/**
+ * MCP tools/list - Lists all tool definitions
+ */
+app.post('/mcp/tools/list', async (_req, res, next) => {
+  try {
+    const tools = toolRegistry.getAllDefinitions();
+    return res.json({ tools });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+/**
+ * MCP list_resources - Lists all available resources (tools organized by category)
+ * Standard MCP introspection method
+ */
+app.post('/mcp/list_resources', async (_req, res, next) => {
+  try {
+    const toolsByCategory = toolRegistry.getToolsByCategory();
+    const allTools = toolRegistry.getAllDefinitions();
+
+    const resources = {
+      tools: {
+        total: toolRegistry.getToolCount(),
+        categories: Object.keys(toolsByCategory).map(category => ({
+          name: category,
+          count: toolsByCategory[category].length,
+          tools: toolsByCategory[category].map(tool => ({
+            name: tool.name,
+            description: tool.description,
+          })),
+        })),
+        all: allTools.map(tool => ({
+          name: tool.name,
+          description: tool.description,
+        })),
+      },
+      metadata: {
+        version: '1.0.0',
+        server: 'jobnimbus-mcp-remote',
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    return res.json(resources);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+/**
+ * MCP search_tools - Searches tools by query string
+ * Standard MCP introspection method
+ */
+app.post('/mcp/search_tools', async (req, res, next) => {
+  try {
+    const { query } = req.body;
+
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Query string is required',
+      });
+    }
+
+    const results = toolRegistry.searchTools(query);
+
+    return res.json({
+      success: true,
+      query,
+      count: results.length,
+      tools: results,
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+/**
+ * MCP tools/names - Quick list of all tool names
+ * Useful for autocomplete and discovery
+ */
+app.post('/mcp/tools/names', async (_req, res, next) => {
+  try {
+    const names = toolRegistry.getAllToolNames();
+    return res.json({
+      success: true,
+      count: names.length,
+      names,
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+/**
+ * Apply authentication and rate limiting to protected routes
  */
 app.use(extractApiKey);
 app.use(rateLimiter);
@@ -78,20 +180,8 @@ app.use(rateLimiter);
 registerCacheRoutes(app);
 
 /**
- * MCP endpoints
+ * MCP tool execution endpoint (requires authentication)
  */
-import toolRegistry from '../tools/index.js';
-import { AuthenticatedRequest } from '../types/index.js';
-
-app.post('/mcp/tools/list', async (_req, res, next) => {
-  try {
-    const tools = toolRegistry.getAllDefinitions();
-    return res.json({ tools });
-  } catch (error) {
-    return next(error);
-  }
-});
-
 app.post('/mcp/tools/call', async (req: AuthenticatedRequest, res, next) => {
   try {
     const { name, arguments: args } = req.body;
