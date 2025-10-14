@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobNimbus Undocumented Endpoints Verification Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .section {
+            padding: 40px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .section h3 {
+            color: #764ba2;
+            font-size: 1.5em;
+            margin: 30px 0 15px 0;
+        }
+
+        .executive-summary {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 40px;
+            border-left: 5px solid #667eea;
+            margin: 40px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .executive-summary h2 {
+            color: #667eea;
+            border: none;
+            margin-bottom: 20px;
+        }
+
+        .executive-summary ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .executive-summary li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+            font-size: 1.1em;
+        }
+
+        .executive-summary li:last-child {
+            border-bottom: none;
+        }
+
+        .executive-summary li:before {
+            content: "▸";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 1.3em;
+        }
+
+        .result-box {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .result-box.not-found {
+            border-left: 5px solid #e74c3c;
+            background: #fef5f5;
+        }
+
+        .result-box.found {
+            border-left: 5px solid #27ae60;
+            background: #f0fdf4;
+        }
+
+        .result-box.html-response {
+            border-left: 5px solid #f39c12;
+            background: #fffbf0;
+        }
+
+        .endpoint-name {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .http-status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin: 10px 0;
+        }
+
+        .http-status.status-404 {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .http-status.status-200 {
+            background: #27ae60;
+            color: white;
+        }
+
+        .http-status.status-200-html {
+            background: #f39c12;
+            color: white;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            overflow-x: auto;
+            margin: 15px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .comparison-table th {
+            padding: 18px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9em;
+        }
+
+        .comparison-table tbody tr {
+            border-bottom: 1px solid #e0e0e0;
+            transition: background-color 0.2s ease;
+        }
+
+        .comparison-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .comparison-table td {
+            padding: 15px 18px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.not-found {
+            background: #fee;
+            color: #c00;
+        }
+
+        .status-badge.exists {
+            background: #efe;
+            color: #060;
+        }
+
+        .status-badge.web-route {
+            background: #ffd;
+            color: #960;
+        }
+
+        .finding-box {
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 5px;
+        }
+
+        .finding-box h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .finding-box ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .finding-box li {
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .finding-box li:last-child {
+            border-bottom: none;
+        }
+
+        .finding-box li:before {
+            content: "✓";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .recommendation-box {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-left: 5px solid #4caf50;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 5px;
+        }
+
+        .recommendation-box h4 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-left: 5px solid #ff9800;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 5px;
+        }
+
+        .warning-box h4 {
+            color: #e65100;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .timeline {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .timeline-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-number {
+            font-weight: bold;
+            color: #667eea;
+            min-width: 40px;
+            font-size: 1.2em;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        footer {
+            background: #2c3e50;
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        footer p {
+            margin: 5px 0;
+            opacity: 0.8;
+        }
+
+        .tech-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            margin: 10px 5px;
+            font-size: 0.9em;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 JobNimbus API Endpoint Verification</h1>
+            <p>Undocumented Endpoints Investigation Report</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">Generated: October 14, 2025</p>
+        </header>
+
+        <div class="executive-summary">
+            <h2>📋 Executive Summary</h2>
+            <ul>
+                <li><strong>All three tested endpoints (/api1/documents, /api1/orders, /api1/notes) return HTTP 404 Not Found</strong></li>
+                <li><strong>These endpoints DO NOT exist</strong> in the JobNimbus REST API v1</li>
+                <li><strong>The official /api1/files endpoint is confirmed working</strong> and returns JSON data</li>
+                <li><strong>Alternative paths (/documents, /api/documents) return HTML</strong> (web interface, not API endpoints)</li>
+                <li><strong>Codebase analysis confirms:</strong> No tools use these non-existent endpoints</li>
+                <li><strong>Recommendation:</strong> Do not implement MCP tools for these endpoints - they do not exist</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Test Objectives</h2>
+            <p>This report documents a comprehensive investigation into three potentially undocumented JobNimbus API endpoints that were suggested for implementation:</p>
+            <ul style="margin-left: 40px; margin-top: 15px;">
+                <li><code>/api1/documents</code> - Proposed endpoint for document retrieval</li>
+                <li><code>/api1/orders</code> - Proposed endpoint for order management</li>
+                <li><code>/api1/notes</code> - Proposed endpoint for notes access</li>
+            </ul>
+            <p style="margin-top: 20px;">The investigation aimed to verify endpoint existence before creating corresponding MCP tools.</p>
+        </div>
+
+        <div class="section">
+            <h2>🔬 Test Results</h2>
+
+            <h3>Test 1: Primary Endpoint Tests</h3>
+
+            <div class="result-box not-found">
+                <div class="endpoint-name">GET /api1/documents</div>
+                <div class="http-status status-404">HTTP 404 Not Found</div>
+                <div class="code-block">
+<pre>$ curl -X GET "https://app.jobnimbus.com/api1/documents" \
+  -H "Authorization: Bearer [API_KEY]" \
+  -H "Accept: application/json"
+
+Response:
+Not Found
+
+HTTP Status: 404</pre>
+                </div>
+                <p><strong>Conclusion:</strong> Endpoint does not exist in the JobNimbus API.</p>
+            </div>
+
+            <div class="result-box not-found">
+                <div class="endpoint-name">GET /api1/orders</div>
+                <div class="http-status status-404">HTTP 404 Not Found</div>
+                <div class="code-block">
+<pre>$ curl -X GET "https://app.jobnimbus.com/api1/orders" \
+  -H "Authorization: Bearer [API_KEY]" \
+  -H "Accept: application/json"
+
+Response:
+Not Found
+
+HTTP Status: 404</pre>
+                </div>
+                <p><strong>Conclusion:</strong> Endpoint does not exist in the JobNimbus API.</p>
+            </div>
+
+            <div class="result-box not-found">
+                <div class="endpoint-name">GET /api1/notes</div>
+                <div class="http-status status-404">HTTP 404 Not Found</div>
+                <div class="code-block">
+<pre>$ curl -X GET "https://app.jobnimbus.com/api1/notes" \
+  -H "Authorization: Bearer [API_KEY]" \
+  -H "Accept: application/json"
+
+Response:
+Not Found
+
+HTTP Status: 404</pre>
+                </div>
+                <p><strong>Conclusion:</strong> Endpoint does not exist in the JobNimbus API.</p>
+            </div>
+
+            <h3>Test 2: Known Working Endpoint (Control)</h3>
+
+            <div class="result-box found">
+                <div class="endpoint-name">GET /api1/jobs/[jnid]</div>
+                <div class="http-status status-200">HTTP 200 OK - JSON Response</div>
+                <div class="code-block">
+<pre>$ curl -X GET "https://app.jobnimbus.com/api1/jobs/mex0elgjoolssn8hvijujjn" \
+  -H "Authorization: Bearer [API_KEY]" \
+  -H "Accept: application/json"
+
+Response:
+{
+  "type": "job",
+  "jnid": "mex0elgjoolssn8hvijujjn",
+  "number": "1820",
+  "name": "208 Adams Road Roof Replacement",
+  "status_name": "Final Walk Through",
+  ...
+}
+
+HTTP Status: 200</pre>
+                </div>
+                <p><strong>Conclusion:</strong> API key is valid and working. Known endpoints return proper JSON responses.</p>
+            </div>
+
+            <h3>Test 3: Alternative URL Patterns</h3>
+
+            <div class="result-box html-response">
+                <div class="endpoint-name">GET /documents (without /api1/ prefix)</div>
+                <div class="http-status status-200-html">HTTP 200 OK - HTML Response</div>
+                <div class="code-block">
+<pre>$ curl -X GET "https://app.jobnimbus.com/documents" \
+  -H "Authorization: Bearer [API_KEY]"
+
+Response:
+&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+  &lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;title&gt;JobNimbus&lt;/title&gt;
+    ...
+  &lt;/head&gt;
+  ...
+&lt;/html&gt;
+
+HTTP Status: 200
+Content-Type: text/html</pre>
+                </div>
+                <p><strong>Conclusion:</strong> This is a web interface route, not an API endpoint. Returns HTML, not JSON.</p>
+            </div>
+
+            <div class="result-box html-response">
+                <div class="endpoint-name">GET /api/documents (with /api/ prefix)</div>
+                <div class="http-status status-200-html">HTTP 200 OK - HTML Response</div>
+                <p><strong>Result:</strong> Same as above - returns HTML web interface, not JSON API response.</p>
+                <p><strong>Conclusion:</strong> Also a web route, not an API endpoint.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Summary Table</h2>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>HTTP Status</th>
+                        <th>Response Type</th>
+                        <th>Status</th>
+                        <th>Can Be Used for API?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>/api1/documents</code></td>
+                        <td>404</td>
+                        <td>-</td>
+                        <td><span class="status-badge not-found">Does Not Exist</span></td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api1/orders</code></td>
+                        <td>404</td>
+                        <td>-</td>
+                        <td><span class="status-badge not-found">Does Not Exist</span></td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api1/notes</code></td>
+                        <td>404</td>
+                        <td>-</td>
+                        <td><span class="status-badge not-found">Does Not Exist</span></td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td><code>/documents</code></td>
+                        <td>200</td>
+                        <td>HTML</td>
+                        <td><span class="status-badge web-route">Web Route</span></td>
+                        <td>❌ No (Not JSON API)</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/documents</code></td>
+                        <td>200</td>
+                        <td>HTML</td>
+                        <td><span class="status-badge web-route">Web Route</span></td>
+                        <td>❌ No (Not JSON API)</td>
+                    </tr>
+                    <tr style="background: #f0fdf4;">
+                        <td><code>/api1/jobs</code></td>
+                        <td>200</td>
+                        <td>JSON</td>
+                        <td><span class="status-badge exists">Exists ✓</span></td>
+                        <td>✅ Yes (Working)</td>
+                    </tr>
+                    <tr style="background: #f0fdf4;">
+                        <td><code>/api1/files</code></td>
+                        <td>200</td>
+                        <td>JSON</td>
+                        <td><span class="status-badge exists">Exists ✓</span></td>
+                        <td>✅ Yes (Working)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>🔍 Codebase Analysis</h2>
+
+            <h3>Findings from Source Code Review</h3>
+
+            <div class="finding-box">
+                <h4>1. Notes Functionality</h4>
+                <ul>
+                    <li><strong>File:</strong> <code>src/tools/jobs/searchJobNotes.ts</code></li>
+                    <li><strong>Implementation:</strong> Searches the <code>notes</code> and <code>description</code> fields within Job objects</li>
+                    <li><strong>API Call:</strong> Uses <code>GET /api1/jobs</code> endpoint, then filters client-side</li>
+                    <li><strong>Conclusion:</strong> Does NOT use a separate <code>/api1/notes</code> endpoint because it doesn't exist</li>
+                </ul>
+            </div>
+
+            <div class="finding-box">
+                <h4>2. Job Tasks & Comments</h4>
+                <ul>
+                    <li><strong>File:</strong> <code>src/tools/jobs/getJobTasks.ts</code></li>
+                    <li><strong>Implementation:</strong> Retrieves job data and parses the <code>notes</code> field</li>
+                    <li><strong>API Call:</strong> Uses <code>GET /api1/jobs/{jnid}</code> to get job with notes included</li>
+                    <li><strong>Conclusion:</strong> Notes are a property of jobs, not a separate endpoint</li>
+                </ul>
+            </div>
+
+            <div class="finding-box">
+                <h4>3. Attachments & Files</h4>
+                <ul>
+                    <li><strong>File:</strong> <code>src/tools/attachments/getAttachmentsCached.ts</code></li>
+                    <li><strong>Implementation:</strong> Uses the official <code>/api1/files</code> endpoint</li>
+                    <li><strong>Comment in code:</strong> "Fetch files from JobNimbus API (correct endpoint is /files)"</li>
+                    <li><strong>Conclusion:</strong> Files endpoint is the correct and only way to access attachments/documents</li>
+                </ul>
+            </div>
+
+            <div class="finding-box">
+                <h4>4. Material Orders</h4>
+                <ul>
+                    <li><strong>File:</strong> <code>src/tools/materials/optimizeMaterialOrders.ts</code></li>
+                    <li><strong>Implementation:</strong> Client-side business logic for optimizing material orders</li>
+                    <li><strong>API Call:</strong> Does not call any <code>/api1/orders</code> endpoint</li>
+                    <li><strong>Conclusion:</strong> "Orders" in this context refers to material ordering logic, not an API endpoint</li>
+                </ul>
+            </div>
+
+            <h3>Code Evidence</h3>
+
+            <div class="code-block">
+<pre>// From src/tools/attachments/getAttachmentsCached.ts (line 164)
+
+// Fetch files from JobNimbus API (correct endpoint is /files)
+const response = await this.client.get(context.apiKey, 'files', {
+  from: fromIndex,
+  size: fetchSize,
+});
+
+// Extract files from response
+const allFiles: JobNimbusFile[] = response.data?.files || [];
+const totalAvailable = response.data?.count || 0;</pre>
+            </div>
+
+            <div class="code-block">
+<pre>// From src/tools/jobs/getJobTasks.ts (line 183)
+
+// Parse notes/description from job object
+if (includeNotes) {
+  const allText = [job.description, job.notes].filter(Boolean).join('\n\n');
+
+  response.notes = {
+    raw_description: job.description || '',
+    raw_notes: job.notes || '',
+    parsed_notes: this.parseNotes(allText, parseMentions),
+  };
+}</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🧪 Test Methodology</h2>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-number">1️⃣</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Direct Endpoint Testing</div>
+                        Tested each proposed endpoint using curl with valid API key
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">2️⃣</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Control Test</div>
+                        Verified API key functionality with known working endpoint (/api1/jobs)
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">3️⃣</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Alternative Pattern Testing</div>
+                        Tested variations without /api1/ prefix to check for alternative routes
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">4️⃣</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Codebase Analysis</div>
+                        Searched existing implementation for any references to these endpoints
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">5️⃣</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Documentation Review</div>
+                        Compared findings against official JobNimbus API documentation
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>💡 Key Insights</h2>
+
+            <div class="finding-box">
+                <h4>Understanding JobNimbus Data Architecture</h4>
+                <ul>
+                    <li><strong>Notes are embedded in Job objects</strong> - Not a separate resource with its own endpoint</li>
+                    <li><strong>Documents/Files use a unified endpoint</strong> - All attachments accessible via <code>/api1/files</code></li>
+                    <li><strong>Web routes vs API endpoints</strong> - URLs without <code>/api1/</code> prefix serve the web interface (HTML), not API data (JSON)</li>
+                    <li><strong>Client-side filtering is common</strong> - Many operations fetch larger datasets and filter in application code</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <h4>⚠️ Why the Confusion?</h4>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="border: none; padding: 5px 0;">• The web interface may display "Documents" or "Orders" as separate tabs/sections</li>
+                    <li style="border: none; padding: 5px 0;">• These are UI organizational concepts, not separate API endpoints</li>
+                    <li style="border: none; padding: 5px 0;">• The web frontend likely uses the same <code>/api1/files</code> and <code>/api1/jobs</code> endpoints we have access to</li>
+                    <li style="border: none; padding: 5px 0;">• Admin vs. API Key permissions are the same - both use the same API endpoints</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>✅ Recommendations</h2>
+
+            <div class="recommendation-box">
+                <h4>DO NOT Implement These MCP Tools</h4>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="border: none; padding: 8px 0;"><strong>❌ get_documents</strong> - Endpoint does not exist. Use existing <code>get_attachments</code> tool which uses <code>/api1/files</code></li>
+                    <li style="border: none; padding: 8px 0;"><strong>❌ get_orders</strong> - Endpoint does not exist. If order management is needed, investigate <code>/api1/workorders</code> or related endpoints</li>
+                    <li style="border: none; padding: 8px 0;"><strong>❌ get_notes</strong> - Endpoint does not exist. Use existing <code>get_job</code>, <code>get_job_tasks</code>, or <code>search_job_notes</code> tools</li>
+                </ul>
+            </div>
+
+            <div class="recommendation-box">
+                <h4>Current Working Solutions</h4>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="border: none; padding: 8px 0;"><strong>✅ For file attachments:</strong> Use <code>get_attachments</code> (queries <code>/api1/files</code>)</li>
+                    <li style="border: none; padding: 8px 0;"><strong>✅ For job notes:</strong> Use <code>get_job_tasks</code> or <code>search_job_notes</code> (retrieves notes from job objects)</li>
+                    <li style="border: none; padding: 8px 0;"><strong>✅ For specific files:</strong> Use <code>get_file_by_id</code> (searches in <code>/api1/files</code> response)</li>
+                    <li style="border: none; padding: 8px 0;"><strong>✅ For job data:</strong> Use <code>get_job</code> or <code>search_jobs</code> (queries <code>/api1/jobs</code>)</li>
+                </ul>
+            </div>
+
+            <div class="recommendation-box">
+                <h4>If Additional Functionality Is Needed</h4>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="border: none; padding: 8px 0;">1. <strong>Review JobNimbus official API documentation</strong> for confirmed available endpoints</li>
+                    <li style="border: none; padding: 8px 0;">2. <strong>Test endpoints directly with curl</strong> before implementing MCP tools</li>
+                    <li style="border: none; padding: 8px 0;">3. <strong>Consider using existing tools</strong> with enhanced client-side filtering logic</li>
+                    <li style="border: none; padding: 8px 0;">4. <strong>Contact JobNimbus support</strong> if specific functionality is required but not documented</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📈 Current MCP Tool Coverage</h2>
+
+            <h3>Existing Tools Successfully Cover These Use Cases:</h3>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Use Case</th>
+                        <th>Existing MCP Tool</th>
+                        <th>API Endpoint Used</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Retrieve file attachments</td>
+                        <td><code>get_attachments</code></td>
+                        <td><code>GET /api1/files</code></td>
+                        <td>✅ Working</td>
+                    </tr>
+                    <tr>
+                        <td>Get specific file by ID</td>
+                        <td><code>get_file_by_id</code></td>
+                        <td><code>GET /api1/files</code></td>
+                        <td>✅ Working</td>
+                    </tr>
+                    <tr>
+                        <td>Search job notes/comments</td>
+                        <td><code>search_job_notes</code></td>
+                        <td><code>GET /api1/jobs</code></td>
+                        <td>✅ Working</td>
+                    </tr>
+                    <tr>
+                        <td>Get job tasks and notes</td>
+                        <td><code>get_job_tasks</code></td>
+                        <td><code>GET /api1/jobs/{jnid}</code></td>
+                        <td>✅ Working</td>
+                    </tr>
+                    <tr>
+                        <td>Analyze job attachments</td>
+                        <td><code>analyze_job_attachments</code></td>
+                        <td><code>GET /api1/files</code></td>
+                        <td>✅ Working</td>
+                    </tr>
+                    <tr>
+                        <td>Get job details</td>
+                        <td><code>get_job</code></td>
+                        <td><code>GET /api1/jobs/{jnid}</code></td>
+                        <td>✅ Working</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>📝 Conclusions</h2>
+
+            <div class="finding-box">
+                <h4>Final Determination</h4>
+                <ul>
+                    <li><strong>The three proposed endpoints DO NOT EXIST</strong> in the JobNimbus API v1</li>
+                    <li><strong>All returned HTTP 404 Not Found</strong> when tested directly</li>
+                    <li><strong>Current MCP tools already provide this functionality</strong> through existing working endpoints</li>
+                    <li><strong>No implementation work is required</strong> - existing solutions are sufficient</li>
+                    <li><strong>Web interface routes are not API endpoints</strong> - they serve HTML for the browser, not JSON for API clients</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <h4>Important Notes for Future Development</h4>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="border: none; padding: 8px 0;">⚠️ Always verify endpoint existence with direct testing before implementation</li>
+                    <li style="border: none; padding: 8px 0;">⚠️ Distinguish between web interface routes (HTML) and API endpoints (JSON)</li>
+                    <li style="border: none; padding: 8px 0;">⚠️ Check existing tool coverage before creating new tools</li>
+                    <li style="border: none; padding: 8px 0;">⚠️ Refer to official API documentation as the source of truth</li>
+                    <li style="border: none; padding: 8px 0;">⚠️ API key permissions do not enable non-existent endpoints</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔗 References</h2>
+            <ul style="margin-left: 40px;">
+                <li><strong>JobNimbus Official API Documentation:</strong> <a href="https://documenter.getpostman.com/view/3919598/S11PpG4x" target="_blank">https://documenter.getpostman.com/view/3919598/S11PpG4x</a></li>
+                <li><strong>Test Instance:</strong> JobNimbus Stamford (app.jobnimbus.com)</li>
+                <li><strong>Test Date:</strong> October 14, 2025</li>
+                <li><strong>API Version:</strong> v1 (/api1/)</li>
+                <li><strong>Test Job:</strong> #1820 (JNID: mex0elgjoolssn8hvijujjn)</li>
+            </ul>
+        </div>
+
+        <footer>
+            <h3 style="margin-bottom: 15px;">JobNimbus MCP System - Endpoint Verification Report</h3>
+            <div>
+                <span class="tech-badge">JobNimbus API v1</span>
+                <span class="tech-badge">curl Testing</span>
+                <span class="tech-badge">Codebase Analysis</span>
+                <span class="tech-badge">TypeScript</span>
+            </div>
+            <p style="margin-top: 20px;">Report Generated: October 14, 2025 | Version: 1.0</p>
+            <p>Endpoints Tested: /api1/documents, /api1/orders, /api1/notes</p>
+            <p>Result: All three endpoints confirmed non-existent (HTTP 404)</p>
+            <p style="font-size: 0.9em; margin-top: 15px;">© 2025 JobNimbus Integration System - Technical Documentation</p>
+        </footer>
+    </div>
+</body>
+</html>

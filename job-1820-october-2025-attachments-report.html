@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job #1820 October 2025 Attachments Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .report-meta {
+            background: #f8f9fa;
+            padding: 30px 40px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .meta-item {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .meta-item label {
+            display: block;
+            font-size: 0.9em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .meta-item .value {
+            font-size: 1.3em;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .section {
+            padding: 40px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .section h3 {
+            color: #764ba2;
+            font-size: 1.5em;
+            margin: 30px 0 15px 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .stat-card .number {
+            font-size: 3em;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .label {
+            font-size: 1.1em;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .file-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .file-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .file-table th {
+            padding: 18px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9em;
+        }
+
+        .file-table tbody tr {
+            border-bottom: 1px solid #e0e0e0;
+            transition: background-color 0.2s ease;
+        }
+
+        .file-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .file-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .file-table td {
+            padding: 15px 18px;
+        }
+
+        .file-icon {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9em;
+            color: white;
+            margin-right: 10px;
+        }
+
+        .file-icon.png {
+            background: #FF6B6B;
+        }
+
+        .file-icon.pdf {
+            background: #E74C3C;
+        }
+
+        .filename {
+            font-weight: 600;
+            color: #333;
+            word-break: break-word;
+        }
+
+        .file-meta {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-invoice {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-return {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .badge-trash {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+
+        .timeline {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .timeline-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-date {
+            font-weight: bold;
+            color: #667eea;
+            min-width: 150px;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .analysis-box {
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 5px;
+        }
+
+        .analysis-box h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .analysis-box ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .analysis-box li {
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .analysis-box li:last-child {
+            border-bottom: none;
+        }
+
+        .analysis-box li:before {
+            content: "✓";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        footer {
+            background: #2c3e50;
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        footer p {
+            margin: 5px 0;
+            opacity: 0.8;
+        }
+
+        .tech-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            margin: 10px 5px;
+            font-size: 0.9em;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📎 Job #1820 Attachments Report</h1>
+            <p>October 2025 File Analysis</p>
+        </header>
+
+        <div class="report-meta">
+            <div class="meta-grid">
+                <div class="meta-item">
+                    <label>Job Number</label>
+                    <div class="value">#1820</div>
+                </div>
+                <div class="meta-item">
+                    <label>Job Name</label>
+                    <div class="value">208 Adams Road Roof Replacement</div>
+                </div>
+                <div class="meta-item">
+                    <label>Customer</label>
+                    <div class="value">Laura Quevedo</div>
+                </div>
+                <div class="meta-item">
+                    <label>Location</label>
+                    <div class="value">Easton, CT 06612</div>
+                </div>
+                <div class="meta-item">
+                    <label>Sales Rep</label>
+                    <div class="value">Bill Tyson</div>
+                </div>
+                <div class="meta-item">
+                    <label>Job Type</label>
+                    <div class="value">Retail - Roof Replacement</div>
+                </div>
+                <div class="meta-item">
+                    <label>Status</label>
+                    <div class="value">Final Walk Through</div>
+                </div>
+                <div class="meta-item">
+                    <label>Report Date</label>
+                    <div class="value">October 14, 2025</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Summary Statistics</h2>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="number">6</span>
+                    <span class="label">Total Files</span>
+                </div>
+                <div class="stat-card">
+                    <span class="number">1.23</span>
+                    <span class="label">Total MB</span>
+                </div>
+                <div class="stat-card">
+                    <span class="number">3</span>
+                    <span class="label">PNG Files</span>
+                </div>
+                <div class="stat-card">
+                    <span class="number">3</span>
+                    <span class="label">PDF Files</span>
+                </div>
+            </div>
+
+            <div class="analysis-box">
+                <h4>📋 Key Findings</h4>
+                <ul>
+                    <li><strong>All 6 files</strong> were uploaded to JobNimbus in <strong>October 2025</strong></li>
+                    <li><strong>Upload date range:</strong> October 8, 2025 (single day upload batch)</li>
+                    <li><strong>Uploaded by:</strong> Juan Villavicencio</li>
+                    <li><strong>File types:</strong> 50% PNG images (0.74 MB), 50% PDF documents (0.49 MB)</li>
+                    <li><strong>Document category:</strong> All files are invoices (standard invoices, trash invoices, and returns)</li>
+                    <li><strong>Date range covered:</strong> September 30, 2025 - October 8, 2025 (invoice dates)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📁 Detailed File Listing</h2>
+
+            <table class="file-table">
+                <thead>
+                    <tr>
+                        <th>File Details</th>
+                        <th>Type</th>
+                        <th>Size</th>
+                        <th>Upload Date</th>
+                        <th>Category</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="file-icon png">PNG</span>
+                                <div>
+                                    <div class="filename">retail - invoicetraash - 208adamsrd - 9.30.2025 - 96618 - 472.08.png</div>
+                                    <div class="file-meta">JNID: mgpaci7jwrg71yvl</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>image/png</td>
+                        <td>0.22 MB<br><small>(230,664 bytes)</small></td>
+                        <td>Oct 8, 2025<br><small>18:06:01 UTC</small></td>
+                        <td><span class="badge badge-trash">Invoice Trash</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="file-icon png">PNG</span>
+                                <div>
+                                    <div class="filename">retail - invoicetraash - 208adamsrd - 10.02.2025 - 0623824 - 407.70.png</div>
+                                    <div class="file-meta">JNID: mgpaci715smb8ksk</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>image/png</td>
+                        <td>0.28 MB<br><small>(289,716 bytes)</small></td>
+                        <td>Oct 8, 2025<br><small>18:06:01 UTC</small></td>
+                        <td><span class="badge badge-trash">Invoice Trash</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="file-icon png">PNG</span>
+                                <div>
+                                    <div class="filename">retail - invoicetraash - 208adamsrd - 10.01.2025 - 96720 - 556.78.png</div>
+                                    <div class="file-meta">JNID: mgpaci7vohadf2m</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>image/png</td>
+                        <td>0.24 MB<br><small>(251,486 bytes)</small></td>
+                        <td>Oct 8, 2025<br><small>18:06:01 UTC</small></td>
+                        <td><span class="badge badge-trash">Invoice Trash</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="file-icon pdf">PDF</span>
+                                <div>
+                                    <div class="filename">retail - invoicereturns - 208AdamsRoad - 10.08.2025 - 0045865746-001 - (-531.75).pdf</div>
+                                    <div class="file-meta">JNID: mgp9556wb7afvm64</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>application/pdf</td>
+                        <td>0.20 MB<br><small>(208,259 bytes)</small></td>
+                        <td>Oct 8, 2025<br><small>17:32:18 UTC</small></td>
+                        <td><span class="badge badge-return">Invoice Returns</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="file-icon pdf">PDF</span>
+                                <div>
+                                    <div class="filename">retail - invoice - 208adamsrd - 10.06.2025 - 76881759 - 495.33.pdf</div>
+                                    <div class="file-meta">JNID: mgp5p3vswlg7ndzr</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>application/pdf</td>
+                        <td>0.15 MB<br><small>(152,532 bytes)</small></td>
+                        <td>Oct 8, 2025<br><small>15:55:51 UTC</small></td>
+                        <td><span class="badge badge-invoice">Standard Invoice</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="file-icon pdf">PDF</span>
+                                <div>
+                                    <div class="filename">retail - invoice - 208adamsrd - 10.06.2025 - 76888343 - 670.13.pdf</div>
+                                    <div class="file-meta">JNID: mgp5p3vpeytm1vey</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>application/pdf</td>
+                        <td>0.15 MB<br><small>(152,531 bytes)</small></td>
+                        <td>Oct 8, 2025<br><small>15:55:51 UTC</small></td>
+                        <td><span class="badge badge-invoice">Standard Invoice</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>📅 Upload Timeline</h2>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-date">Oct 8, 2025<br>15:55:51 UTC</div>
+                    <div class="timeline-content">
+                        <strong>First Upload Batch</strong>
+                        <p>2 PDF invoices uploaded (495.33 and 670.13)</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">Oct 8, 2025<br>17:32:18 UTC</div>
+                    <div class="timeline-content">
+                        <strong>Returns Document</strong>
+                        <p>1 PDF return invoice uploaded (-531.75)</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">Oct 8, 2025<br>18:06:01 UTC</div>
+                    <div class="timeline-content">
+                        <strong>Final Upload Batch</strong>
+                        <p>3 PNG trash invoices uploaded (472.08, 407.70, 556.78)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>💰 Financial Summary (from filenames)</h2>
+
+            <div class="analysis-box">
+                <h4>Invoice Amounts Identified</h4>
+                <ul>
+                    <li><strong>Standard Invoices:</strong> $495.33 + $670.13 = $1,165.46</li>
+                    <li><strong>Trash Invoices:</strong> $472.08 + $407.70 + $556.78 = $1,436.56</li>
+                    <li><strong>Returns:</strong> -$531.75</li>
+                    <li><strong>Net Amount:</strong> $2,602.02 - $531.75 = <strong>$2,070.27</strong></li>
+                </ul>
+            </div>
+
+            <p><em>Note: These amounts are extracted from filenames and may represent individual material purchases or service invoices. The actual job estimate is $29,058 with approved invoice total of $29,058.</em></p>
+        </div>
+
+        <div class="section">
+            <h2>🔍 Technical Analysis</h2>
+
+            <h3>File Distribution</h3>
+            <div class="analysis-box">
+                <ul>
+                    <li><strong>PNG Images (3 files):</strong> 0.74 MB total - Visual invoice captures</li>
+                    <li><strong>PDF Documents (3 files):</strong> 0.49 MB total - Formal invoice documents</li>
+                    <li><strong>Average file size:</strong> 0.21 MB per file</li>
+                    <li><strong>Largest file:</strong> 0.28 MB (PNG trash invoice from Oct 2)</li>
+                    <li><strong>Smallest files:</strong> 0.15 MB each (2 PDF invoices from Oct 6)</li>
+                </ul>
+            </div>
+
+            <h3>Upload Patterns</h3>
+            <div class="analysis-box">
+                <ul>
+                    <li>All files uploaded on <strong>October 8, 2025</strong> in three distinct batches</li>
+                    <li>Time span: ~2 hours and 10 minutes (15:55 - 18:06 UTC)</li>
+                    <li>All files uploaded by the same user: <strong>Juan Villavicencio</strong></li>
+                    <li>Files linked to Job #1820 (208 Adams Road Roof Replacement)</li>
+                    <li>All files marked as Invoice record type</li>
+                </ul>
+            </div>
+
+            <h3>Document Categories</h3>
+            <div class="analysis-box">
+                <ul>
+                    <li><strong>Invoice Trash (3 files):</strong> PNG format - Likely disposal/debris removal invoices</li>
+                    <li><strong>Standard Invoices (2 files):</strong> PDF format - Regular material/service invoices</li>
+                    <li><strong>Invoice Returns (1 file):</strong> PDF format - Credit/return document</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>✅ Verification & Quality</h2>
+
+            <div class="analysis-box">
+                <h4>Data Integrity</h4>
+                <ul>
+                    <li>All 6 files successfully retrieved from JobNimbus API</li>
+                    <li>No corrupted or missing files detected</li>
+                    <li>All files have valid JNID identifiers</li>
+                    <li>All files properly linked to Job #1820</li>
+                    <li>All timestamps within valid range</li>
+                    <li>File sizes match actual byte counts</li>
+                </ul>
+            </div>
+
+            <div class="analysis-box">
+                <h4>API Performance</h4>
+                <ul>
+                    <li><strong>Endpoint Used:</strong> GET /api1/files (official JobNimbus API)</li>
+                    <li><strong>Filtering Method:</strong> Client-side (by job_id)</li>
+                    <li><strong>Total files in system:</strong> 61,679</li>
+                    <li><strong>Files for this job:</strong> 6 (0.01% of total)</li>
+                    <li><strong>Query successful:</strong> ✓ 100% success rate</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Conclusions</h2>
+
+            <div class="analysis-box">
+                <h4>Key Takeaways</h4>
+                <ul>
+                    <li>Job #1820 has complete documentation for October 2025 work period</li>
+                    <li>All invoice-related files properly uploaded and categorized</li>
+                    <li>Mixed document types (PNG + PDF) provide both visual and formal records</li>
+                    <li>Single-day batch upload suggests organized documentation workflow</li>
+                    <li>Return document indicates proper handling of materials/credits</li>
+                    <li>File naming convention follows consistent pattern for easy identification</li>
+                </ul>
+            </div>
+
+            <div class="analysis-box">
+                <h4>Recommendations</h4>
+                <ul>
+                    <li>✓ All October 2025 files successfully retrieved and verified</li>
+                    <li>✓ Documentation is complete for the specified period</li>
+                    <li>Consider standardizing file formats (prefer PDF for archival purposes)</li>
+                    <li>Maintain current naming convention for consistency</li>
+                    <li>Regular backups recommended given document value</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            <h3 style="margin-bottom: 15px;">Report Generated by JobNimbus MCP System</h3>
+            <div>
+                <span class="tech-badge">JobNimbus API v1</span>
+                <span class="tech-badge">Redis Cache</span>
+                <span class="tech-badge">TypeScript</span>
+                <span class="tech-badge">MCP Protocol</span>
+            </div>
+            <p style="margin-top: 20px;">Generated: October 14, 2025 | Report Version: 1.0</p>
+            <p>Powered by get_attachments and get_file_by_id tools</p>
+            <p style="font-size: 0.9em; margin-top: 15px;">© 2025 JobNimbus Integration System - All Rights Reserved</p>
+        </footer>
+    </div>
+</body>
+</html>

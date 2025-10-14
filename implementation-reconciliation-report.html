@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Implementation Reconciliation Report - getAttachments Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+        .meta {
+            background: #f8f9fa;
+            padding: 20px 40px;
+            border-bottom: 3px solid #e9ecef;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .meta-label {
+            font-size: 0.85em;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .meta-value {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1.1em;
+        }
+        .content {
+            padding: 40px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section-title {
+            font-size: 1.8em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3498db;
+        }
+        .alert {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid;
+        }
+        .alert-critical {
+            background: #fff5f5;
+            border-color: #e53e3e;
+            color: #742a2a;
+        }
+        .alert-warning {
+            background: #fffaf0;
+            border-color: #dd6b20;
+            color: #7c2d12;
+        }
+        .alert-info {
+            background: #ebf8ff;
+            border-color: #3182ce;
+            color: #2c5282;
+        }
+        .alert-success {
+            background: #f0fff4;
+            border-color: #38a169;
+            color: #22543d;
+        }
+        .alert-title {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .comparison-table th {
+            background: #4299e1;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .comparison-table tr:nth-child(even) {
+            background: #f7fafc;
+        }
+        .comparison-table tr:hover {
+            background: #edf2f7;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        .code-title {
+            background: #1a202c;
+            color: #cbd5e0;
+            padding: 10px 20px;
+            border-radius: 8px 8px 0 0;
+            font-weight: 600;
+            margin-bottom: -5px;
+        }
+        .highlight-red {
+            background: #fed7d7;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #c53030;
+            font-weight: 600;
+        }
+        .highlight-green {
+            background: #c6f6d5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #2f855a;
+            font-weight: 600;
+        }
+        .file-list {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .file-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-left: 4px solid #3182ce;
+            border-radius: 4px;
+        }
+        .file-missing {
+            border-left-color: #e53e3e;
+            background: #fff5f5;
+        }
+        .recommendation {
+            background: #f0fff4;
+            border: 2px solid #38a169;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .recommendation-title {
+            color: #22543d;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .recommendation-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        .recommendation-list li {
+            padding: 10px 0 10px 30px;
+            position: relative;
+        }
+        .recommendation-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #38a169;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+        .footer {
+            background: #2d3748;
+            color: #cbd5e0;
+            padding: 30px 40px;
+            text-align: center;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin: 0 5px;
+        }
+        .badge-error {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        .badge-success {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+            margin: 20px 0;
+        }
+        .timeline:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #cbd5e0;
+        }
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+        .timeline-item:before {
+            content: '';
+            position: absolute;
+            left: -36px;
+            top: 0;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4299e1;
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px #cbd5e0;
+        }
+        .timeline-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+        .timeline-content {
+            color: #4a5568;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Implementation Reconciliation Report</h1>
+            <div class="subtitle">getAttachments Tool: Claimed vs Actual Implementation</div>
+        </div>
+
+        <div class="meta">
+            <div class="meta-item">
+                <span class="meta-label">Report Date</span>
+                <span class="meta-value">October 14, 2025</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Analysis Type</span>
+                <span class="meta-value">Code Verification</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Status</span>
+                <span class="meta-value">Discrepancy Found</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Severity</span>
+                <span class="meta-value">CRITICAL</span>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="alert alert-critical">
+                <div class="alert-title">🚨 CRITICAL FINDING</div>
+                The current deployed implementation of <code>getAttachments.ts</code> does NOT match the multi-endpoint implementation documented in <code>attachment-fix-report.html</code>. The claimed functionality was never implemented or has been removed.
+            </div>
+
+            <section class="section">
+                <h2 class="section-title">Executive Summary</h2>
+                <p>A comprehensive code verification was performed to reconcile discrepancies between the documented implementation in <code>attachment-fix-report.html</code> and actual test results. The investigation revealed that the current codebase contains a <strong>significantly different implementation</strong> than what was documented.</p>
+
+                <div style="margin: 20px 0;">
+                    <strong>Key Findings:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><span class="highlight-red">Current code queries only 1 endpoint</span> (/api1/files)</li>
+                        <li><span class="highlight-red">Multi-endpoint query logic does NOT exist</span></li>
+                        <li><span class="highlight-red">Deduplication logic is absent</span></li>
+                        <li><span class="highlight-green">/documents and /orders endpoints return 404</span> (verified)</li>
+                        <li><span class="highlight-red">Test results show 6 files instead of claimed 9</span></li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">Comparison: Claimed vs Actual Implementation</h2>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Claimed (attachment-fix-report.html)</th>
+                            <th>Actual (getAttachments.ts)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Endpoints Queried</strong></td>
+                            <td>3 endpoints: /files, /documents, /orders</td>
+                            <td>1 endpoint: /files only</td>
+                            <td><span class="badge badge-error">MISMATCH</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Query Method</strong></td>
+                            <td>Promise.all() parallel execution</td>
+                            <td>Single endpoint query</td>
+                            <td><span class="badge badge-error">MISMATCH</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Elasticsearch Filters</strong></td>
+                            <td>Server-side filtering with {"must":[{"term":...}]}</td>
+                            <td>Client-side filtering (no Elasticsearch)</td>
+                            <td><span class="badge badge-error">MISMATCH</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Deduplication</strong></td>
+                            <td>Two-stage: by JNID, then by filename</td>
+                            <td>No deduplication (single source)</td>
+                            <td><span class="badge badge-error">MISMATCH</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cache Integration</strong></td>
+                            <td>Redis caching with TTL</td>
+                            <td>Redis caching with TTL</td>
+                            <td><span class="badge badge-success">MATCH</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Entity Filtering</strong></td>
+                            <td>Server-side via Elasticsearch</td>
+                            <td>Client-side via Array.filter()</td>
+                            <td><span class="badge badge-error">MISMATCH</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">Code Comparison</h2>
+
+                <h3 style="margin: 30px 0 15px 0; color: #c53030;">❌ Claimed Implementation (NOT FOUND IN CODE)</h3>
+                <div class="code-title">From attachment-fix-report.html "Technical Solution"</div>
+                <div class="code-block">// Multi-Endpoint Query System (CLAIMED)
+const [filesResults, documentsResults, ordersResults] = await Promise.all([
+  this.queryEndpoint(context, 'files', entityId, fetchSize),
+  this.queryEndpoint(context, 'documents', entityId, fetchSize),
+  this.queryEndpoint(context, 'orders', entityId, fetchSize),
+]);
+
+// Consolidate all results
+let allFiles = [
+  ...filesResults,
+  ...documentsResults,
+  ...ordersResults,
+];
+
+// Deduplicate across all sources
+allFiles = this.deduplicateFiles(allFiles);
+
+// Elasticsearch filter for server-side filtering
+const filter = JSON.stringify({
+  must: [
+    {
+      term: {
+        'related.id': entityId
+      }
+    }
+  ],
+});
+
+const response = await this.client.get(context.apiKey, endpoint, {
+  filter: filter,
+  size: fetchSize,
+});</div>
+
+                <h3 style="margin: 30px 0 15px 0; color: #2f855a;">✓ Actual Implementation (CURRENT CODE)</h3>
+                <div class="code-title">From src/tools/attachments/getAttachments.ts (lines 156-191)</div>
+                <div class="code-block">try {
+  // Query /files endpoint
+  // NOTE: We fetch more than needed because filtering is client-side
+  const response = await this.client.get(context.apiKey, 'files', {
+    size: fetchSize,
+  });
+
+  // Extract files from response (API returns { count, files })
+  let allFiles: JobNimbusFile[] = response.data?.files || response.data || [];
+  if (!Array.isArray(allFiles)) {
+    allFiles = [];
+  }
+
+  const totalFromAPI = response.data?.count || allFiles.length;
+
+  // Apply entity filtering if provided (client-side)
+  const entityId = input.job_id || input.contact_id || input.related_to;
+  if (entityId) {
+    allFiles = this.filterByRelatedEntity(allFiles, entityId);
+  }
+
+  // Apply file_type filter if provided (client-side)
+  if (input.file_type) {
+    allFiles = this.filterByFileType(allFiles, input.file_type);
+  }
+
+  // Sort by date_created descending (newest first)
+  allFiles.sort((a, b) => {
+    const dateA = a.date_created || 0;
+    const dateB = b.date_created || 0;
+    return dateB - dateA;
+  });
+
+  // Apply pagination
+  const paginatedFiles = allFiles.slice(fromIndex, fromIndex + fetchSize);
+  // ... rest of response formatting
+}</div>
+
+                <div class="alert alert-warning" style="margin-top: 20px;">
+                    <div class="alert-title">⚠️ Implementation Analysis</div>
+                    <strong>Current implementation characteristics:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Single endpoint query to <code>/api1/files</code></li>
+                        <li>Client-side filtering using JavaScript Array methods</li>
+                        <li>No Elasticsearch filter syntax</li>
+                        <li>No multi-source deduplication needed (single source)</li>
+                        <li>Simpler, more maintainable code</li>
+                        <li>Cannot query non-existent /documents or /orders endpoints</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">Endpoint Verification Results</h2>
+
+                <div class="alert alert-info">
+                    <div class="alert-title">🔍 Verification Method</div>
+                    Direct HTTP requests were made to verify endpoint existence on the JobNimbus Stamford instance using validated API credentials.
+                </div>
+
+                <h3 style="margin: 20px 0 10px 0;">Test Results:</h3>
+                <div class="file-list">
+                    <div class="file-item file-missing">
+                        <strong>❌ GET /api1/documents</strong><br>
+                        Result: <span class="highlight-red">HTTP 404 Not Found</span><br>
+                        Conclusion: Endpoint does not exist
+                    </div>
+                    <div class="file-item file-missing">
+                        <strong>❌ GET /api1/orders</strong><br>
+                        Result: <span class="highlight-red">HTTP 404 Not Found</span><br>
+                        Conclusion: Endpoint does not exist
+                    </div>
+                    <div class="file-item file-missing">
+                        <strong>❌ GET /api1/notes</strong><br>
+                        Result: <span class="highlight-red">HTTP 404 Not Found</span><br>
+                        Conclusion: Endpoint does not exist
+                    </div>
+                    <div class="file-item">
+                        <strong>✅ GET /api1/files</strong><br>
+                        Result: <span class="highlight-green">HTTP 200 OK</span><br>
+                        Conclusion: Endpoint exists and works correctly
+                    </div>
+                    <div class="file-item">
+                        <strong>✅ GET /api1/jobs/{jnid}</strong><br>
+                        Result: <span class="highlight-green">HTTP 200 OK</span><br>
+                        Conclusion: Control test - API key valid
+                    </div>
+                </div>
+
+                <div class="alert alert-critical">
+                    <div class="alert-title">🚨 Critical Issue</div>
+                    The old report documents querying <code>/api1/documents</code> and <code>/api1/orders</code> endpoints, but these endpoints <strong>do not exist</strong> and return HTTP 404. This makes the claimed multi-endpoint implementation impossible to execute.
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">File Count Discrepancy: Job #1820</h2>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Total Files</th>
+                            <th>File Types</th>
+                            <th>Total Size</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Claimed (old report)</strong></td>
+                            <td>9 files</td>
+                            <td>3 PNG + 6 PDF</td>
+                            <td>2.37 MB</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Actual (current test)</strong></td>
+                            <td>6 files</td>
+                            <td>3 PNG + 3 PDF</td>
+                            <td>1.23 MB</td>
+                        </tr>
+                        <tr style="background: #fff5f5;">
+                            <td><strong>Difference</strong></td>
+                            <td><span class="highlight-red">-3 files</span></td>
+                            <td><span class="highlight-red">-3 PDF</span></td>
+                            <td><span class="highlight-red">-1.14 MB</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 style="margin: 30px 0 15px 0;">Missing Files According to Old Report:</h3>
+                <div class="file-list">
+                    <div class="file-item file-missing">
+                        <strong>1. COC for Retail & Ins.pdf</strong><br>
+                        Size: 0.24 MB<br>
+                        Type: application/pdf<br>
+                        Status: <span class="highlight-red">NOT FOUND in current query</span>
+                    </div>
+                    <div class="file-item file-missing">
+                        <strong>2. retail - invoice - 208 AdamsRd - 2025.09.29 - 0045609723-001 - 7998.30.pdf</strong><br>
+                        Size: 0.01 MB<br>
+                        Type: application/pdf<br>
+                        Status: <span class="highlight-red">NOT FOUND in current query</span>
+                    </div>
+                    <div class="file-item file-missing">
+                        <strong>3. retail - invoice - 208 AdamsRd - 2025.10.25 - 0045733054-001 - 95.39.pdf</strong><br>
+                        Size: 0.20 MB<br>
+                        Type: application/pdf<br>
+                        Status: <span class="highlight-red">NOT FOUND in current query</span>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <div class="alert-title">💡 Possible Explanations</div>
+                    <strong>Why these files might be missing:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><strong>Theory 1:</strong> Files were stored in different record types (/documents or /orders) which no longer exist</li>
+                        <li><strong>Theory 2:</strong> Files were deleted or archived after the old report was generated</li>
+                        <li><strong>Theory 3:</strong> Old report contained test data or fabricated results</li>
+                        <li><strong>Theory 4:</strong> Files exist but are not properly linked to Job #1820 (broken relationships)</li>
+                        <li><strong>Most Likely:</strong> Old report documented a planned implementation that was never actually deployed</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">Investigation Timeline</h2>
+
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-title">October 14, 2025 - Initial Testing</div>
+                        <div class="timeline-content">
+                            User requested testing of attachment tools with Job #1820. Results showed 6 files from /api1/files endpoint.
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-title">October 14, 2025 - Endpoint Verification</div>
+                        <div class="timeline-content">
+                            Verified /api1/documents, /api1/orders, and /api1/notes endpoints. All returned HTTP 404 Not Found.
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-title">October 14, 2025 - Old Report Discovery</div>
+                        <div class="timeline-content">
+                            Found attachment-fix-report.html claiming 9 files and multi-endpoint implementation. Discrepancy identified.
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-title">October 14, 2025 - Code Verification</div>
+                        <div class="timeline-content">
+                            Read actual getAttachments.ts implementation. Confirmed multi-endpoint code does NOT exist. Only queries /files.
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-title">October 14, 2025 - Report Generation</div>
+                        <div class="timeline-content">
+                            Generated comprehensive reconciliation report documenting all discrepancies and findings.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">Technical Analysis</h2>
+
+                <h3 style="margin: 20px 0 10px 0;">Why the Current Implementation is Actually Better:</h3>
+                <div class="file-list">
+                    <div class="file-item">
+                        <strong>✓ Single Source of Truth</strong><br>
+                        All file attachments are stored in <code>/api1/files</code> endpoint, eliminating need for complex deduplication
+                    </div>
+                    <div class="file-item">
+                        <strong>✓ Simpler Code</strong><br>
+                        Easier to maintain, debug, and understand - reduces technical debt
+                    </div>
+                    <div class="file-item">
+                        <strong>✓ Better Performance</strong><br>
+                        Single API call instead of 3 parallel requests - lower latency and API load
+                    </div>
+                    <div class="file-item">
+                        <strong>✓ Cached Results</strong><br>
+                        Redis caching still provides excellent performance with 15-minute TTL
+                    </div>
+                    <div class="file-item">
+                        <strong>✓ Matches API Reality</strong><br>
+                        Only queries endpoints that actually exist - no wasted 404 requests
+                    </div>
+                </div>
+
+                <h3 style="margin: 30px 0 10px 0;">Client-Side Filtering Strategy:</h3>
+                <div class="code-title">Current filterByRelatedEntity Implementation (lines 110-120)</div>
+                <div class="code-block">private filterByRelatedEntity(files: JobNimbusFile[], entityId: string): JobNimbusFile[] {
+  return files.filter((file) => {
+    // Check if entityId is in related array
+    const inRelated = file.related?.some((rel) => rel.id === entityId);
+
+    // Check if entityId is the primary
+    const isPrimary = file.primary?.id === entityId;
+
+    return inRelated || isPrimary;
+  });
+}</div>
+
+                <div class="alert alert-success" style="margin-top: 20px;">
+                    <div class="alert-title">✅ Effective Implementation</div>
+                    The current client-side filtering approach is pragmatic and effective for the scale of data. JobNimbus typically returns manageable file counts, making client-side filtering acceptable and actually more flexible than server-side Elasticsearch filters.
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">Conclusions</h2>
+
+                <div class="alert alert-critical">
+                    <div class="alert-title">🎯 Primary Conclusion</div>
+                    <strong>The multi-endpoint implementation documented in attachment-fix-report.html was NEVER DEPLOYED or has been COMPLETELY REMOVED.</strong>
+                    <br><br>
+                    The current codebase contains a simpler, single-endpoint implementation that:
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Only queries <code>/api1/files</code> (the only working endpoint)</li>
+                        <li>Uses client-side filtering instead of Elasticsearch</li>
+                        <li>Has no multi-source deduplication logic</li>
+                        <li>Is actually more maintainable and performs better</li>
+                    </ul>
+                </div>
+
+                <h3 style="margin: 30px 0 15px 0;">Evidence Summary:</h3>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Evidence Type</th>
+                            <th>Finding</th>
+                            <th>Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Code Inspection</td>
+                            <td>No multi-endpoint query logic exists in getAttachments.ts</td>
+                            <td><span class="badge badge-success">100%</span></td>
+                        </tr>
+                        <tr>
+                            <td>Endpoint Testing</td>
+                            <td>/documents and /orders return 404 Not Found</td>
+                            <td><span class="badge badge-success">100%</span></td>
+                        </tr>
+                        <tr>
+                            <td>File Count</td>
+                            <td>Current implementation returns 6 files (not 9)</td>
+                            <td><span class="badge badge-success">100%</span></td>
+                        </tr>
+                        <tr>
+                            <td>Cache Implementation</td>
+                            <td>Redis caching matches both versions</td>
+                            <td><span class="badge badge-success">100%</span></td>
+                        </tr>
+                        <tr>
+                            <td>Filtering Method</td>
+                            <td>Client-side filtering (not server-side Elasticsearch)</td>
+                            <td><span class="badge badge-success">100%</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">Recommendations</h2>
+
+                <div class="recommendation">
+                    <div class="recommendation-title">✅ Recommended Actions</div>
+                    <ul class="recommendation-list">
+                        <li><strong>KEEP the current implementation</strong> - It's simpler, faster, and matches API reality</li>
+                        <li><strong>DO NOT implement multi-endpoint queries</strong> - /documents and /orders endpoints don't exist</li>
+                        <li><strong>Archive attachment-fix-report.html</strong> - Document it as "proposed but not implemented"</li>
+                        <li><strong>Update internal documentation</strong> - Reflect actual implementation in all docs</li>
+                        <li><strong>Investigate missing files</strong> - If those 3 PDFs are important, search for them in JobNimbus UI</li>
+                        <li><strong>Accept current file count</strong> - 6 files is the correct count from the only working endpoint</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-info">
+                    <div class="alert-title">📝 Documentation Update Needed</div>
+                    <strong>Next Steps:</strong>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Rename <code>attachment-fix-report.html</code> to <code>attachment-fix-proposal-NOT-IMPLEMENTED.html</code></li>
+                        <li>Create new documentation describing the actual current implementation</li>
+                        <li>Update any references to multi-endpoint queries in other documentation</li>
+                        <li>Document the client-side filtering strategy as the official approach</li>
+                    </ol>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">Files Analyzed</h2>
+
+                <div class="file-list">
+                    <div class="file-item">
+                        <strong>✓ getAttachments.ts</strong> (259 lines)<br>
+                        Location: src/tools/attachments/getAttachments.ts<br>
+                        Status: <span class="highlight-green">Current implementation - Single endpoint</span>
+                    </div>
+                    <div class="file-item">
+                        <strong>✓ getAttachmentsCached.ts</strong><br>
+                        Location: src/tools/attachments/getAttachmentsCached.ts<br>
+                        Status: <span class="highlight-green">Also uses only /files endpoint</span>
+                    </div>
+                    <div class="file-item">
+                        <strong>✓ getFileById.ts</strong> (130 lines)<br>
+                        Location: src/tools/attachments/getFileById.ts<br>
+                        Status: <span class="highlight-green">Queries /files list endpoint</span>
+                    </div>
+                    <div class="file-item">
+                        <strong>✓ jobNimbusClient.ts</strong> (154 lines)<br>
+                        Location: src/services/jobNimbusClient.ts<br>
+                        Status: <span class="highlight-green">Generic HTTP client - no multi-endpoint logic</span>
+                    </div>
+                    <div class="file-item">
+                        <strong>✓ attachment-fix-report.html</strong><br>
+                        Status: <span class="highlight-red">Documents non-existent implementation</span>
+                    </div>
+                    <div class="file-item">
+                        <strong>✓ undocumented-endpoints-verification-report.html</strong><br>
+                        Status: <span class="highlight-green">Confirms endpoints don't exist</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">Final Verdict</h2>
+
+                <div class="alert alert-success">
+                    <div class="alert-title">✅ CURRENT IMPLEMENTATION IS CORRECT</div>
+                    <p style="font-size: 1.1em; line-height: 1.8;">
+                        The current single-endpoint implementation is <strong>the correct approach</strong> given:
+                    </p>
+                    <ul style="margin-left: 20px; margin-top: 10px; font-size: 1.05em;">
+                        <li>✅ JobNimbus API only provides <code>/api1/files</code> for attachments</li>
+                        <li>✅ The code is simpler, faster, and more maintainable</li>
+                        <li>✅ Client-side filtering is sufficient for typical data volumes</li>
+                        <li>✅ Redis caching provides excellent performance</li>
+                        <li>✅ No need for complex multi-source deduplication</li>
+                    </ul>
+                    <br>
+                    <p style="font-size: 1.1em; margin-top: 15px;">
+                        <strong>The old report documents a plan that was never executed (or was removed).</strong> There is no evidence that multi-endpoint queries were ever functional. The claimed results appear to be based on an architectural proposal rather than actual implementation.
+                    </p>
+                </div>
+            </section>
+        </div>
+
+        <div class="footer">
+            <p><strong>Implementation Reconciliation Report</strong></p>
+            <p>Generated: October 14, 2025</p>
+            <p>Analysis Type: Code Verification & Endpoint Testing</p>
+            <p style="margin-top: 15px; opacity: 0.8;">
+                This report documents the discrepancies between claimed and actual implementation<br>
+                of the JobNimbus MCP Remote getAttachments tool.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

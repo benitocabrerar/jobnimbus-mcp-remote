@@ -207,12 +207,26 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
             return sum + (file.size || 0) / (1024 * 1024);
           }, 0);
 
-          // Analyze file types
+          // Analyze file types by extension
           const fileTypeMap = new Map<string, number>();
           for (const file of paginatedFiles) {
             const ext = file.filename?.split('.').pop()?.toLowerCase() || 'unknown';
             fileTypeMap.set(ext, (fileTypeMap.get(ext) || 0) + 1);
           }
+
+          // Analyze by record_type_name (Document, Invoice, Photo, etc.)
+          const recordTypeMap = new Map<string, number>();
+          for (const file of allFiles) {
+            const recordType = file.record_type_name || 'Unknown';
+            recordTypeMap.set(recordType, (recordTypeMap.get(recordType) || 0) + 1);
+          }
+
+          // Calculate distribution percentages
+          const recordTypeDistribution = Array.from(recordTypeMap.entries()).map(([type, count]) => ({
+            type,
+            count,
+            percentage: ((count / allFiles.length) * 100).toFixed(1),
+          })).sort((a, b) => b.count - a.count);
 
           return {
             count: paginatedFiles.length,
@@ -229,7 +243,8 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
             },
             total_size_mb: totalSizeMB.toFixed(2),
             file_types: Object.fromEntries(fileTypeMap),
-            has_more: fromIndex + paginatedFiles.length < allFiles.length,
+            record_type_distribution: recordTypeDistribution,
+            has_more: totalFromAPI > fromIndex + paginatedFiles.length,
             files: paginatedFiles.map((file) => ({
               jnid: file.jnid,
               filename: file.filename,
