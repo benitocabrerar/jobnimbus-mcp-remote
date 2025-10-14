@@ -20,6 +20,65 @@ interface GetFileByIdInput {
   jnid: string;
 }
 
+interface FileRelated {
+  id: string;
+  type?: string;
+  name?: string;
+}
+
+interface FilePrimary {
+  id: string;
+  type?: string;
+  number?: string;
+  name?: string;
+}
+
+interface FileOwner {
+  id: string;
+}
+
+/**
+ * Complete File interface matching JobNimbus API
+ * Based on official JobNimbus API documentation for GET /api1/files
+ */
+interface JobNimbusFile {
+  // Core identifiers
+  jnid: string;
+  customer?: string;
+  type?: string;
+
+  // File information
+  filename: string;
+  content_type: string;
+  size: number;
+
+  // Dates
+  date_created: number;
+  date_updated?: number;
+
+  // Relationships
+  related: FileRelated[];
+  primary?: FilePrimary;
+  owners: FileOwner[];
+
+  // Classification
+  record_type?: number;
+  record_type_name?: string;
+
+  // Status
+  is_active: boolean;
+  is_archived: boolean;
+  is_private: boolean;
+
+  // Creator and sales
+  created_by: string;
+  created_by_name: string;
+  sales_rep?: string;
+
+  // Allow additional fields from API
+  [key: string]: any;
+}
+
 export class GetFileByIdTool extends BaseTool<GetFileByIdInput, any> {
   get definition(): MCPToolDefinition {
     return {
@@ -57,7 +116,7 @@ export class GetFileByIdTool extends BaseTool<GetFileByIdInput, any> {
           });
 
           // Extract files from response
-          const allFiles: any[] = response.data?.files || response.data || [];
+          const allFiles: JobNimbusFile[] = response.data?.files || response.data || [];
 
           if (!Array.isArray(allFiles)) {
             return {
@@ -69,7 +128,7 @@ export class GetFileByIdTool extends BaseTool<GetFileByIdInput, any> {
           }
 
           // Find the file with matching JNID
-          const file = allFiles.find((f) => f.jnid === input.jnid);
+          const file: JobNimbusFile | undefined = allFiles.find((f) => f.jnid === input.jnid);
 
           if (!file) {
             // File not found in first batch, try fetching more

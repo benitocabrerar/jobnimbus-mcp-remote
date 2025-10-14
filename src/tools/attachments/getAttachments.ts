@@ -39,19 +39,66 @@ interface GetAttachmentsInput {
   file_type?: string;
 }
 
-interface JobNimbusFile {
-  jnid?: string;
-  filename?: string;
-  content_type?: string;
-  size?: number;
-  date_created?: number;
-  date_file_created?: number;
-  related?: Array<{ id: string; name?: string; type?: string }>;
-  primary?: { id: string; name?: string; number?: string; type?: string };
+interface FileRelated {
+  id: string;
   type?: string;
+  name?: string;
+}
+
+interface FilePrimary {
+  id: string;
+  type?: string;
+  number?: string;
+  name?: string;
+}
+
+interface FileOwner {
+  id: string;
+}
+
+/**
+ * Complete File interface matching JobNimbus API
+ * Based on official JobNimbus API documentation for GET /api1/files
+ */
+interface JobNimbusFile {
+  // Core identifiers
+  jnid: string;
+  customer?: string;
+  type?: string;
+
+  // File information
+  filename: string;
+  content_type: string;
+  size: number;
+
+  // Dates
+  date_created: number;
+  date_updated?: number;
+  date_file_created?: number;
+
+  // Relationships
+  related: FileRelated[];
+  primary?: FilePrimary;
+  owners: FileOwner[];
+
+  // Classification
+  record_type?: number;
+  record_type_name?: string;
+
+  // Status
+  is_active: boolean;
+  is_archived: boolean;
+  is_private: boolean;
+
+  // Creator and sales
+  created_by: string;
+  created_by_name: string;
+  sales_rep?: string;
+
+  // Additional
   url?: string;
-  is_active?: boolean;
-  is_archived?: boolean;
+
+  // Allow additional fields from API
   [key: string]: any;
 }
 
