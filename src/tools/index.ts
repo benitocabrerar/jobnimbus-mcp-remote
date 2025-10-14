@@ -1,5 +1,5 @@
 /**
- * Tool Registry - 97 TOOLS (2025-01-15 Enhancement: Added complete Estimates API coverage)
+ * Tool Registry - 111 TOOLS (2025-01-14 Enhancement: Added Account API + Budgets Legacy)
  *
  * REMOVED (Archived - 11 tools):
  * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
@@ -13,6 +13,22 @@
  * - GetSupplierComparisonTool, GetInventoryManagementAnalyticsTool
  * - GetQualityControlAnalyticsTool, GetSmartSchedulingTool
  * - GetCustomerJourneyAnalyticsTool
+ *
+ * 2025-01-14 ENHANCEMENT - Account API Tools (11 tools):
+ * - get_account_settings: Retrieve account configuration (workflows, file types, task types, etc.)
+ * - get_users: Retrieve team members with contact JNIDs (from /account/users)
+ * - get_uoms: Retrieve Units of Measurement
+ * - create_workflow: Create workflows for contacts/jobs/workorders
+ * - create_status: Create statuses within workflows
+ * - create_lead_source: Create marketing attribution sources
+ * - create_custom_field: Create custom fields with validation
+ * - create_file_type: Create file types (attachment categories)
+ * - create_task_type: Create task types with calendar/list visibility
+ * - create_activity_type: Create activity types with JobShare visibility
+ * - create_location: Create locations for multi-location businesses
+ *
+ * 2025-01-14 ENHANCEMENT - Budgets (Legacy):
+ * - get_budgets: Retrieve budgets from legacy endpoint (GET /api1/budgets)
  *
  * 2025-01-14 ENHANCEMENT - Task Management Tools:
  * - get_task: Retrieve specific task by JNID with full details
@@ -157,6 +173,9 @@ import { CompareMaterialAlternativesTool } from './materials/compareMaterialAlte
 // ===== INVOICES =====
 import { GetInvoicesTool } from './invoices/getInvoices.js';
 
+// ===== BUDGETS (LEGACY) =====
+import { GetBudgetsTool } from './budgets/getBudgets.js';
+
 // ===== PRODUCTS =====
 import { GetProductTool } from './products/getProduct.js';
 import { GetProductsTool } from './products/getProducts.js';
@@ -167,6 +186,23 @@ import { GetMaterialOrdersTool } from './materialorders/getMaterialOrders.js';
 import { CreateMaterialOrderTool } from './materialorders/createMaterialOrder.js';
 import { UpdateMaterialOrderTool } from './materialorders/updateMaterialOrder.js';
 import { DeleteMaterialOrderTool } from './materialorders/deleteMaterialOrder.js';
+
+// ===== PAYMENTS =====
+import { GetPaymentsTool } from './payments/getPayments.js';
+import { CreatePaymentTool } from './payments/createPayment.js';
+
+// ===== ACCOUNT SETTINGS & CONFIGURATION =====
+import { GetAccountSettingsTool } from './account/getAccountSettings.js';
+import { GetUsersTool as GetAccountUsersTool } from './account/getUsers.js';
+import { GetUomsTool } from './account/getUoms.js';
+import { CreateWorkflowTool } from './account/createWorkflow.js';
+import { CreateStatusTool } from './account/createStatus.js';
+import { CreateLeadSourceTool } from './account/createLeadSource.js';
+import { CreateCustomFieldTool } from './account/createCustomField.js';
+import { CreateFileTypeTool } from './account/createFileType.js';
+import { CreateTaskTypeTool } from './account/createTaskType.js';
+import { CreateActivityTypeTool } from './account/createActivityType.js';
+import { CreateLocationTool } from './account/createLocation.js';
 
 // Generic tool generator for remaining tools
 import { createGenericTool, ALL_TOOLS_CONFIG } from './allToolsGenerator.js';
@@ -309,6 +345,9 @@ export class ToolRegistry {
     // === INVOICES (1 tool) ===
     this.registerTool(new GetInvoicesTool());
 
+    // === BUDGETS - LEGACY (1 tool) ===
+    this.registerTool(new GetBudgetsTool());
+
     // === PRODUCTS (2 tools) ===
     this.registerTool(new GetProductTool());
     this.registerTool(new GetProductsTool());
@@ -319,6 +358,23 @@ export class ToolRegistry {
     this.registerTool(new CreateMaterialOrderTool());
     this.registerTool(new UpdateMaterialOrderTool());
     this.registerTool(new DeleteMaterialOrderTool());
+
+    // === PAYMENTS (2 tools) ===
+    this.registerTool(new GetPaymentsTool());
+    this.registerTool(new CreatePaymentTool());
+
+    // === ACCOUNT SETTINGS & CONFIGURATION (11 tools) ===
+    this.registerTool(new GetAccountSettingsTool());
+    this.registerTool(new GetAccountUsersTool());
+    this.registerTool(new GetUomsTool());
+    this.registerTool(new CreateWorkflowTool());
+    this.registerTool(new CreateStatusTool());
+    this.registerTool(new CreateLeadSourceTool());
+    this.registerTool(new CreateCustomFieldTool());
+    this.registerTool(new CreateFileTypeTool());
+    this.registerTool(new CreateTaskTypeTool());
+    this.registerTool(new CreateActivityTypeTool());
+    this.registerTool(new CreateLocationTool());
 
     // === GENERIC TOOLS ===
     for (const config of ALL_TOOLS_CONFIG) {
