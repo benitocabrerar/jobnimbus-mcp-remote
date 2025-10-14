@@ -49,7 +49,14 @@ export class GetFileByIdTool extends BaseTool<GetFileByIdInput, any> {
       async () => {
         try {
           // Query /files/<jnid> endpoint
-          const response = await this.client.get(context.apiKey, `files/${input.jnid}`, {});
+          // NOTE: This endpoint doesn't use /api1/ prefix according to official documentation
+          // GET https://app.jobnimbus.com/files/<jnid> (not /api1/files/<jnid>)
+          const response = await this.client.get(
+            context.apiKey,
+            `files/${input.jnid}`,
+            {},
+            'https://app.jobnimbus.com' // Custom base URL without /api1/
+          );
 
           const file = response.data;
 

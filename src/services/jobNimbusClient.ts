@@ -17,13 +17,15 @@ export class JobNimbusClient {
 
   /**
    * Execute GET request to JobNimbus API
+   * @param customBaseUrl - Optional custom base URL (for endpoints that don't use /api1/)
    */
   async get<T = any>(
     apiKey: string,
     endpoint: string,
-    params?: Record<string, any>
+    params?: Record<string, any>,
+    customBaseUrl?: string
   ): Promise<JobNimbusResponse<T>> {
-    return this.request<T>(apiKey, endpoint, 'GET', params);
+    return this.request<T>(apiKey, endpoint, 'GET', params, undefined, customBaseUrl);
   }
 
   /**
@@ -60,17 +62,20 @@ export class JobNimbusClient {
 
   /**
    * Generic request method
+   * @param customBaseUrl - Optional custom base URL (overrides default baseUrl)
    */
   private async request<T>(
     apiKey: string,
     endpoint: string,
     method: string,
     params?: Record<string, any>,
-    body?: any
+    body?: any,
+    customBaseUrl?: string
   ): Promise<JobNimbusResponse<T>> {
     try {
-      // Build URL with query params
-      const url = new URL(`${this.baseUrl}/${endpoint}`);
+      // Build URL with query params (use custom base URL if provided)
+      const baseUrlToUse = customBaseUrl || this.baseUrl;
+      const url = new URL(`${baseUrlToUse}/${endpoint}`);
       if (params) {
         Object.entries(params).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
