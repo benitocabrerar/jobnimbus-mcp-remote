@@ -71,7 +71,7 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_attachments',
-      description: 'Retrieve file attachments from JobNimbus /files endpoint. Returns all file attachments with metadata including filename, content type, size, related entities, and creation dates. Supports filtering by related entity (job_id, contact_id) and file type. Based on official JobNimbus API documentation.',
+      description: 'Retrieve file attachments from JobNimbus /files endpoint using server-side Elasticsearch filtering. Returns all file attachments with metadata including filename, content type, size, related entities, and creation dates. Supports filtering by related entity (job_id, contact_id) using Elasticsearch query syntax, and file type (client-side). Based on official JobNimbus API.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -93,7 +93,7 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
           },
           size: {
             type: 'number',
-            description: 'Number of records to fetch (default: 100, max: 500). NOTE: Filtering is client-side.',
+            description: 'Number of records to fetch (default: 100, max: 500). Entity filtering is server-side via Elasticsearch.',
           },
           file_type: {
             type: 'string',
@@ -154,11 +154,30 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
       getTTL('ATTACHMENTS_LIST'),
       async () => {
         try {
-          // Query /files endpoint
-          // NOTE: We fetch more than needed because filtering is client-side
-          const response = await this.client.get(context.apiKey, 'files', {
+          // Determine entity ID for filtering
+          const entityId = input.job_id || input.contact_id || input.related_to;
+
+          // Build query parameters with Elasticsearch filter if entity ID provided
+          const params: Record<string, any> = {
             size: fetchSize,
-          });
+          };
+
+          // Use server-side Elasticsearch filtering when entity ID is provided
+          if (entityId) {
+            const filter = JSON.stringify({
+              must: [
+                {
+                  term: {
+                    'related.id': entityId
+                  }
+                }
+              ],
+            });
+            params.filter = filter;
+          }
+
+          // Query /files endpoint with optional Elasticsearch filter
+          const response = await this.client.get(context.apiKey, 'files', params);
 
           // Extract files from response (API returns { count, files })
           let allFiles: JobNimbusFile[] = response.data?.files || response.data || [];
@@ -167,12 +186,6 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
           }
 
           const totalFromAPI = response.data?.count || allFiles.length;
-
-          // Apply entity filtering if provided (client-side)
-          const entityId = input.job_id || input.contact_id || input.related_to;
-          if (entityId) {
-            allFiles = this.filterByRelatedEntity(allFiles, entityId);
-          }
 
           // Apply file_type filter if provided (client-side)
           if (input.file_type) {
@@ -238,7 +251,7 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
               record_type_name: file.record_type_name,
               type: file.type,
             })),
-            _note: 'Uses official /files endpoint. Filtering by entity is client-side. To get ALL files without entity filtering, omit job_id/contact_id/related_to.',
+            _note: 'Uses official /files endpoint with server-side Elasticsearch filtering when entity ID provided. File type filtering is client-side. To get ALL files, omit job_id/contact_id/related_to.',
           };
         } catch (error) {
           return {
