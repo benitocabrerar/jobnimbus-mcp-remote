@@ -60,7 +60,7 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
   get definition(): MCPToolDefinition {
     return {
       name: 'get_job_attachments_distribution',
-      description: 'Comprehensive file distribution analysis for a job. Collects files from job and related entities (estimate, invoice, contact), applies deterministic classification (Invoices, Permit Related, Estimate, Measurements, Photos, Documents), detects discrepancies vs reported attachment_count, and provides detailed statistics with examples.',
+      description: 'Comprehensive file distribution analysis for a job. Collects files from job and related entities (estimate, invoice, contact), uses JobNimbus record_type_name field for classification (Invoices, Permit Related, Estimate, Measurements, Photos, Documents), detects discrepancies vs reported attachment_count, and provides detailed statistics with examples.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -78,7 +78,7 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
           },
           min_file_size_kb: {
             type: 'number',
-            description: 'Minimum file size in KB to include (default: 50, filters thumbnails)',
+            description: 'Minimum file size in KB to include (default: 0, no filtering)',
           },
           enable_related_lookup: {
             type: 'boolean',
@@ -146,56 +146,30 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
   }
 
   /**
-   * Classify file into category using deterministic rules
-   * Priority: invoices > permit_related > estimate > measurements > photos > documents
+   * Classify file using JobNimbus record_type_name field
+   * Maps JobNimbus categories to our FileCategory enum
    */
   private classifyFile(file: NormalizedFile): FileCategory {
-    const filename = file.filename_normalized;
-    const mime = file.mime;
+    const recordTypeName = file.record_type_name || 'Unknown';
 
-    // 1. INVOICES (highest priority)
-    if (file.related_ids.invoices.length > 0) {
-      return FileCategory.INVOICES;
+    // Map JobNimbus record_type_name to FileCategory
+    switch (recordTypeName) {
+      case 'Photo':
+        return FileCategory.PHOTOS;
+      case 'Invoice':
+        return FileCategory.INVOICES;
+      case 'Document':
+        return FileCategory.DOCUMENTS;
+      case 'Permit Related':
+        return FileCategory.PERMIT_RELATED;
+      case 'Estimate':
+        return FileCategory.ESTIMATE;
+      case 'Measurements':
+        return FileCategory.MEASUREMENTS;
+      default:
+        // Unknown or other types default to Documents
+        return FileCategory.DOCUMENTS;
     }
-    if (
-      mime === 'application/pdf' &&
-      /(invoice|inv_|factura|paid|bill|receipt)/i.test(filename)
-    ) {
-      return FileCategory.INVOICES;
-    }
-
-    // 2. PERMIT RELATED
-    if (/(permit|building|zoning|inspection|cofo|cityhall|townhall|permiso)/i.test(filename)) {
-      return FileCategory.PERMIT_RELATED;
-    }
-
-    // 3. ESTIMATE
-    if (file.related_ids.estimates.length > 0) {
-      return FileCategory.ESTIMATE;
-    }
-    if (
-      mime === 'application/pdf' &&
-      /(estimate|quote|proposal|cotizacion|quotation)/i.test(filename)
-    ) {
-      return FileCategory.ESTIMATE;
-    }
-
-    // 4. MEASUREMENTS
-    if (/(measure|measurement|eagleview|hover|sketch|takeoff)/i.test(filename)) {
-      return FileCategory.MEASUREMENTS;
-    }
-    const ext = file.filename.split('.').pop()?.toLowerCase();
-    if (ext && ['esx', 'xml', 'dxf'].includes(ext)) {
-      return FileCategory.MEASUREMENTS;
-    }
-
-    // 5. PHOTOS
-    if (mime.startsWith('image/')) {
-      return FileCategory.PHOTOS;
-    }
-
-    // 6. DOCUMENTS (catch-all)
-    return FileCategory.DOCUMENTS;
   }
 
   /**
@@ -252,7 +226,7 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
   async execute(input: GetJobAttachmentsDistributionInput, context: ToolContext): Promise<any> {
     const pageSize = Math.min(input.page_size || 200, 500);
     const maxPages = input.max_pages || 10;
-    const minFileSizeKb = input.min_file_size_kb !== undefined ? input.min_file_size_kb : 50;
+    const minFileSizeKb = input.min_file_size_kb !== undefined ? input.min_file_size_kb : 0;
     const enableRelatedLookup = input.enable_related_lookup !== undefined ? input.enable_related_lookup : true;
 
     const notes: string[] = [];
@@ -409,8 +383,8 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
         notes.push(`Excluded ${excludedBySize} files below ${minFileSizeKb}KB (likely thumbnails)`);
       }
 
-      // Step 4: Classify files
-      notes.push('Applying deterministic classification (priority: invoices>permit>estimate>measurements>photos>documents)');
+      // Step 4: Classify files using JobNimbus record_type_name
+      notes.push('Classifying files using record_type_name from JobNimbus API');
       const distribution: Record<FileCategory, CategoryStats> = {
         [FileCategory.INVOICES]: { count: 0, total_mb: 0, examples: [] },
         [FileCategory.PERMIT_RELATED]: { count: 0, total_mb: 0, examples: [] },
