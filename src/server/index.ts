@@ -1,5 +1,6 @@
 /**
  * Main Express Server with MCP Protocol Support
+ * FASE 1: Redis cache integration enabled
  */
 
 import express from 'express';
@@ -11,6 +12,7 @@ import { errorHandler } from '../middleware/errorHandler.js';
 import { HealthCheckResponse } from '../types/index.js';
 import config, { validateConfig } from '../config/index.js';
 import logger from '../utils/logger.js';
+import { initializeCache, registerCacheRoutes } from '../services/cacheIntegration.js';
 
 // Validate configuration on startup
 validateConfig(config);
@@ -43,6 +45,11 @@ app.use((req, res, next) => {
 });
 
 /**
+ * Initialize cache on startup (FASE 1)
+ */
+await initializeCache(app);
+
+/**
  * Health check endpoint (no auth required)
  */
 app.get('/health', (_req, res) => {
@@ -63,6 +70,12 @@ app.get('/health', (_req, res) => {
  */
 app.use(extractApiKey);
 app.use(rateLimiter);
+
+/**
+ * Cache management routes (FASE 1)
+ * Protected by authentication middleware above
+ */
+registerCacheRoutes(app);
 
 /**
  * MCP endpoints
