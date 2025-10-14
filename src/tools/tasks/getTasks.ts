@@ -160,19 +160,19 @@ export class GetTasksTool extends BaseTool<GetTasksInput, any> {
       : description;
 
     return {
-      jnid: task.jnid,
-      number: task.number,
-      title: task.title,
-      record_type_name: task.record_type_name,
-      priority: task.priority,
-      is_completed: task.is_completed,
+      jnid: task.jnid || '',
+      number: task.number || '',
+      title: task.title || 'Untitled Task',
+      record_type_name: task.record_type_name || 'Unknown',
+      priority: task.priority || 0,
+      is_completed: task.is_completed || false,
       date_start: task.date_start ? this.formatTimestamp(task.date_start) : null,
       date_end: task.date_end ? this.formatTimestamp(task.date_end) : null,
-      owners_count: task.owners.length,
-      related_count: task.related.length,
-      actual_time: task.actual_time,
-      estimated_time: task.estimated_time,
-      created_by_name: task.created_by_name,
+      owners_count: (task.owners && task.owners.length) || 0,
+      related_count: (task.related && task.related.length) || 0,
+      actual_time: task.actual_time || 0,
+      estimated_time: task.estimated_time || 0,
+      created_by_name: task.created_by_name || 'Unknown',
       description_preview: descriptionPreview || undefined,
     };
   }
