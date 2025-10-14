@@ -44,6 +44,7 @@ interface Task {
   // Dates
   date_start: number;
   date_end: number;
+  date_sort?: number | null;
   date_created: number;
   date_updated: number;
   all_day: boolean;

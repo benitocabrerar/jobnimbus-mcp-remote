@@ -188,6 +188,9 @@ export class GetTaskTool extends BaseTool<GetTaskInput, any> {
               tags: task.tags,
               tags_count: task.tags.length,
               external_id: task.external_id || null,
+              primary: task.primary || null,
+              rules: task.rules || [],
+              date_sort: task.date_sort || null,
 
               _metadata: {
                 api_endpoint: 'GET /api1/tasks/<jnid>',
