@@ -37,6 +37,7 @@ export const CACHE_PREFIXES = {
   TASKS: 'tasks', // NEW - 2025-01-14 - Task Management
   PRODUCTS: 'products', // NEW - 2025-01-14 - Products Management
   MATERIAL_ORDERS: 'materialorders', // NEW - 2025-01-14 - Material Orders Management
+  WORK_ORDERS: 'workorders', // NEW - 2025-01-14 - Work Orders Management
   PAYMENTS: 'payments', // NEW - 2025-01-14 - Payments Management
   ACCOUNT: 'account', // NEW - 2025-01-14 - Account Settings & Configuration
   BUDGETS: 'budgets', // NEW - 2025-01-14 - Budgets (Legacy API)
@@ -78,6 +79,7 @@ export const CACHE_TTL = {
   TASKS_DETAIL: 15 * 60,            // 15 minutes - task details moderately stable (NEW - 2025-01-14)
   PRODUCTS_LIST: 20 * 60,           // 20 minutes - product catalog changes moderately (NEW - 2025-01-14)
   MATERIAL_ORDERS_LIST: 20 * 60,    // 20 minutes - material orders moderately stable (NEW - 2025-01-14)
+  WORK_ORDERS_LIST: 20 * 60,        // 20 minutes - work orders moderately stable (NEW - 2025-01-14)
   PAYMENTS_LIST: 15 * 60,           // 15 minutes - payments update regularly (NEW - 2025-01-14)
   ACCOUNT_SETTINGS: 60 * 60,        // 1 hour - account settings rarely change (NEW - 2025-01-14)
   ACCOUNT_USERS: 30 * 60,           // 30 minutes - users moderately stable (NEW - 2025-01-14)
@@ -91,6 +93,7 @@ export const CACHE_TTL = {
   ACTIVITY_DETAIL: 15 * 60,         // 15 minutes - activities change
   PRODUCT_DETAIL: 30 * 60,          // 30 minutes - products relatively stable (NEW - 2025-01-14)
   MATERIAL_ORDER_DETAIL: 30 * 60,   // 30 minutes - material orders relatively stable (NEW - 2025-01-14)
+  WORK_ORDER_DETAIL: 30 * 60,       // 30 minutes - work orders relatively stable (NEW - 2025-01-14)
 
   // Aggregation/Analytics TTLs
   ANALYTICS: 60 * 60,               // 1 hour - expensive computations
