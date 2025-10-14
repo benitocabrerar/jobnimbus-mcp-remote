@@ -1,5 +1,5 @@
 /**
- * Tool Registry - 88 TOOLS (2025-01-14 Enhancement: Added Products Management get_product, get_products)
+ * Tool Registry - 93 TOOLS (2025-01-14 Enhancement: Added Products + MaterialOrders Management)
  *
  * REMOVED (Archived - 11 tools):
  * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
@@ -157,6 +157,13 @@ import { GetInvoicesTool } from './invoices/getInvoices.js';
 import { GetProductTool } from './products/getProduct.js';
 import { GetProductsTool } from './products/getProducts.js';
 
+// ===== MATERIAL ORDERS =====
+import { GetMaterialOrderTool } from './materialorders/getMaterialOrder.js';
+import { GetMaterialOrdersTool } from './materialorders/getMaterialOrders.js';
+import { CreateMaterialOrderTool } from './materialorders/createMaterialOrder.js';
+import { UpdateMaterialOrderTool } from './materialorders/updateMaterialOrder.js';
+import { DeleteMaterialOrderTool } from './materialorders/deleteMaterialOrder.js';
+
 // Generic tool generator for remaining tools
 import { createGenericTool, ALL_TOOLS_CONFIG } from './allToolsGenerator.js';
 
@@ -294,6 +301,13 @@ export class ToolRegistry {
     // === PRODUCTS (2 tools) ===
     this.registerTool(new GetProductTool());
     this.registerTool(new GetProductsTool());
+
+    // === MATERIAL ORDERS (5 tools) ===
+    this.registerTool(new GetMaterialOrderTool());
+    this.registerTool(new GetMaterialOrdersTool());
+    this.registerTool(new CreateMaterialOrderTool());
+    this.registerTool(new UpdateMaterialOrderTool());
+    this.registerTool(new DeleteMaterialOrderTool());
 
     // === GENERIC TOOLS ===
     for (const config of ALL_TOOLS_CONFIG) {
