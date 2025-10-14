@@ -33,13 +33,7 @@ export const CACHE_PREFIXES = {
   CONTACTS: 'contacts',
   ACTIVITIES: 'activities',
   ESTIMATES: 'estimates',
-  DOCUMENTS: 'documents',
-  ORDERS: 'orders',
-  INVOICES: 'invoices',
-  NOTES: 'notes',
-  LOCATIONS: 'locations',
-  ACTIVITY_TYPES: 'activity_types',
-  TASK_TYPES: 'task_types',
+  INVOICES: 'invoices', // NEW - VERIFIED WORKING endpoint
 
   // Operation-level prefixes
   LIST: 'list',
@@ -72,13 +66,7 @@ export const CACHE_TTL = {
   CONTACTS_LIST: 20 * 60,           // 20 minutes - contacts more stable
   CONTACTS_SEARCH: 5 * 60,          // 5 minutes - search results vary
   ACTIVITIES_LIST: 10 * 60,         // 10 minutes - activities change often
-  DOCUMENTS_LIST: 15 * 60,          // 15 minutes - documents moderately stable
-  ORDERS_LIST: 10 * 60,             // 10 minutes - orders update frequently
-  INVOICES_LIST: 15 * 60,           // 15 minutes - invoices moderately stable
-  NOTES_LIST: 10 * 60,              // 10 minutes - notes change often
-  LOCATIONS_LIST: 60 * 60,          // 1 hour - locations rarely change
-  ACTIVITY_TYPES_LIST: 60 * 60,    // 1 hour - activity types rarely change
-  TASK_TYPES_LIST: 60 * 60,         // 1 hour - task types rarely change
+  INVOICES_LIST: 15 * 60,           // 15 minutes - invoices moderately stable (NEW - VERIFIED)
 
   // Entity Detail TTLs
   JOB_DETAIL: 10 * 60,              // 10 minutes - jobs update frequently

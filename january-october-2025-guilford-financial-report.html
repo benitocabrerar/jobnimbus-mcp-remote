@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guilford Financial Report - January-October 2025</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+        }
+
+        .financial-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 40px;
+            background: #f8f9fa;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .summary-card h3 {
+            font-size: 0.9rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .summary-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .summary-card .subtitle {
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .chart-container {
+            margin-bottom: 50px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        canvas {
+            max-height: 400px;
+        }
+
+        .month-breakdown {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .month-breakdown h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .month-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .financial-summary {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Guilford Financial Report 2025</h1>
+            <p>Comprehensive Analysis: January - October 2025</p>
+        </div>
+
+        <div class="financial-summary">
+            <div class="summary-card">
+                <h3>Total Closed Revenue</h3>
+                <div class="value" id="totalRevenue">$0</div>
+                <div class="subtitle">Paid & invoiced jobs</div>
+            </div>
+            <div class="summary-card">
+                <h3>Pipeline Value</h3>
+                <div class="value" id="pipelineValue">$0</div>
+                <div class="subtitle">Pending signatures & approvals</div>
+            </div>
+            <div class="summary-card">
+                <h3>Average Job Value</h3>
+                <div class="value" id="avgJobValue">$0</div>
+                <div class="subtitle">Mean closed deal size</div>
+            </div>
+            <div class="summary-card">
+                <h3>Lost Revenue</h3>
+                <div class="value" id="lostRevenue">$0</div>
+                <div class="subtitle">Lost opportunities</div>
+            </div>
+            <div class="summary-card">
+                <h3>Win Rate</h3>
+                <div class="value" id="winRate">0%</div>
+                <div class="subtitle">Closed vs Lost jobs</div>
+            </div>
+            <div class="summary-card">
+                <h3>Total Jobs</h3>
+                <div class="value" id="totalJobs">0</div>
+                <div class="subtitle">January - October 2025</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="chart-container">
+                <h2 class="chart-title">Monthly Revenue Performance</h2>
+                <canvas id="monthlyRevenueChart"></canvas>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h2 class="chart-title">Revenue by Status</h2>
+                    <canvas id="statusChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="chart-title">Job Distribution</h2>
+                    <canvas id="jobDistributionChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2 class="chart-title">Revenue Trend Analysis</h2>
+                <canvas id="trendChart"></canvas>
+            </div>
+
+            <div id="monthlyBreakdown"></div>
+        </div>
+    </div>
+
+    <script>
+        // Guilford Jobs Data - 222 total jobs from January-October 2025
+        const jobsData = {
+            january: {
+                jobs: 14,
+                revenue: 27638.85,
+                pipeline: 0,
+                lost: 23195.08,
+                avgDeal: 1974.20
+            },
+            february: {
+                jobs: 29,
+                revenue: 165423.90,
+                pipeline: 139130.65,
+                lost: 104918.95,
+                avgDeal: 13785.33
+            },
+            march: {
+                jobs: 26,
+                revenue: 97173.51,
+                pipeline: 0,
+                lost: 163603.19,
+                avgDeal: 9717.35
+            },
+            april: {
+                jobs: 21,
+                revenue: 63829.09,
+                pipeline: 52200,
+                lost: 220598.29,
+                avgDeal: 9118.44
+            },
+            may: {
+                jobs: 22,
+                revenue: 43742.66,
+                pipeline: 193695.44,
+                lost: 121883.79,
+                avgDeal: 5467.83
+            },
+            june: {
+                jobs: 25,
+                revenue: 41503.63,
+                pipeline: 11773,
+                lost: 306603.14,
+                avgDeal: 5187.95
+            },
+            july: {
+                jobs: 17,
+                revenue: 9787.47,
+                pipeline: 0,
+                lost: 59138,
+                avgDeal: 1397.92
+            },
+            august: {
+                jobs: 22,
+                revenue: 2424.36,
+                pipeline: 56261.94,
+                lost: 121779.91,
+                avgDeal: 404.06
+            },
+            september: {
+                jobs: 37,
+                revenue: 3270.5,
+                pipeline: 231607.73,
+                lost: 111464.92,
+                avgDeal: 490.58
+            },
+            october: {
+                jobs: 9,
+                revenue: 0,
+                pipeline: 108404.35,
+                lost: 0,
+                avgDeal: 0
+            }
+        };
+
+        // Calculate totals
+        const totalRevenue = Object.values(jobsData).reduce((sum, month) => sum + month.revenue, 0);
+        const totalPipeline = Object.values(jobsData).reduce((sum, month) => sum + month.pipeline, 0);
+        const totalLost = Object.values(jobsData).reduce((sum, month) => sum + month.lost, 0);
+        const totalJobs = Object.values(jobsData).reduce((sum, month) => sum + month.jobs, 0);
+        const avgJobValue = totalRevenue > 0 ? totalRevenue / Object.values(jobsData).filter(m => m.revenue > 0).length : 0;
+
+        // Calculate win rate (closed revenue jobs vs lost jobs with estimates)
+        const closedJobsCount = Object.values(jobsData).filter(m => m.revenue > 0).length;
+        const lostJobsCount = Object.values(jobsData).filter(m => m.lost > 0).length;
+        const winRate = closedJobsCount + lostJobsCount > 0
+            ? (closedJobsCount / (closedJobsCount + lostJobsCount) * 100).toFixed(1)
+            : 0;
+
+        // Update summary cards
+        document.getElementById('totalRevenue').textContent = `$${totalRevenue.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+        document.getElementById('pipelineValue').textContent = `$${totalPipeline.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+        document.getElementById('avgJobValue').textContent = `$${avgJobValue.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+        document.getElementById('lostRevenue').textContent = `$${totalLost.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+        document.getElementById('winRate').textContent = `${winRate}%`;
+        document.getElementById('totalJobs').textContent = totalJobs;
+
+        // Monthly Revenue Chart
+        const monthlyCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
+        new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October'],
+                datasets: [{
+                    label: 'Monthly Revenue',
+                    data: Object.values(jobsData).map(m => m.revenue),
+                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Revenue: $' + context.parsed.y.toLocaleString('en-US');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + (value / 1000).toFixed(0) + 'K';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Status Distribution Chart (Doughnut)
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Closed Revenue', 'Pipeline', 'Lost'],
+                datasets: [{
+                    data: [totalRevenue, totalPipeline, totalLost],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return context.label + ': $' + value.toLocaleString('en-US') + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Job Distribution Chart (Pie)
+        const jobDistCtx = document.getElementById('jobDistributionChart').getContext('2d');
+        new Chart(jobDistCtx, {
+            type: 'pie',
+            data: {
+                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October'],
+                datasets: [{
+                    data: Object.values(jobsData).map(m => m.jobs),
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(118, 75, 162, 0.8)',
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(199, 199, 199, 0.8)',
+                        'rgba(83, 102, 255, 0.8)'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 10,
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + ' jobs';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Revenue Trend Chart (Line)
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October'],
+                datasets: [
+                    {
+                        label: 'Closed Revenue',
+                        data: Object.values(jobsData).map(m => m.revenue),
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3
+                    },
+                    {
+                        label: 'Pipeline',
+                        data: Object.values(jobsData).map(m => m.pipeline),
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3
+                    },
+                    {
+                        label: 'Lost Opportunities',
+                        data: Object.values(jobsData).map(m => m.lost),
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': $' + context.parsed.y.toLocaleString('en-US');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + (value / 1000).toFixed(0) + 'K';
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+
+        // Generate monthly breakdown
+        const breakdownContainer = document.getElementById('monthlyBreakdown');
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October'];
+        const monthKeys = Object.keys(jobsData);
+
+        months.forEach((month, index) => {
+            const data = jobsData[monthKeys[index]];
+            const monthDiv = document.createElement('div');
+            monthDiv.className = 'month-breakdown';
+            monthDiv.innerHTML = `
+                <h4>${month} 2025</h4>
+                <div class="month-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Total Jobs</div>
+                        <div class="stat-value">${data.jobs}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Closed Revenue</div>
+                        <div class="stat-value">$${data.revenue.toLocaleString('en-US', {maximumFractionDigits: 0})}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Pipeline Value</div>
+                        <div class="stat-value">$${data.pipeline.toLocaleString('en-US', {maximumFractionDigits: 0})}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Lost Opportunities</div>
+                        <div class="stat-value">$${data.lost.toLocaleString('en-US', {maximumFractionDigits: 0})}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg Deal Size</div>
+                        <div class="stat-value">$${data.avgDeal.toLocaleString('en-US', {maximumFractionDigits: 0})}</div>
+                    </div>
+                </div>
+            `;
+            breakdownContainer.appendChild(monthDiv);
+        });
+    </script>
+</body>
+</html>

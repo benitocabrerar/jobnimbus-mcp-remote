@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobNimbus Pipeline Report - January to October 2025</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.95;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 40px;
+            background: #f8f9fa;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .summary-card h3 {
+            color: #667eea;
+            font-size: 42px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .summary-card p {
+            color: #666;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .month-section {
+            margin-bottom: 50px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .month-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .month-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .status-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .status-card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .status-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .status-count {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .status-percentage {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .pipeline-category {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .pipeline-category h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        /* Status-specific colors */
+        .status-lead { border-left-color: #3498db; }
+        .status-lead .status-count { color: #3498db; }
+
+        .status-appointment { border-left-color: #9b59b6; }
+        .status-appointment .status-count { color: #9b59b6; }
+
+        .status-estimating { border-left-color: #f39c12; }
+        .status-estimating .status-count { color: #f39c12; }
+
+        .status-pending { border-left-color: #e74c3c; }
+        .status-pending .status-count { color: #e74c3c; }
+
+        .status-signed { border-left-color: #1abc9c; }
+        .status-signed .status-count { color: #1abc9c; }
+
+        .status-progress { border-left-color: #2ecc71; }
+        .status-progress .status-count { color: #2ecc71; }
+
+        .status-completed { border-left-color: #27ae60; }
+        .status-completed .status-count { color: #27ae60; }
+
+        .status-paid { border-left-color: #16a085; }
+        .status-paid .status-count { color: #16a085; }
+
+        .status-lost { border-left-color: #95a5a6; }
+        .status-lost .status-count { color: #95a5a6; }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .footer p {
+            margin: 5px 0;
+            opacity: 0.9;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>JobNimbus Pipeline Report</h1>
+            <p>Complete Pipeline Analysis: January - October 2025</p>
+        </div>
+
+        <div class="summary">
+            <div class="summary-card">
+                <h3>315</h3>
+                <p>Total Jobs</p>
+            </div>
+            <div class="summary-card">
+                <h3>10</h3>
+                <p>Months Analyzed</p>
+            </div>
+            <div class="summary-card">
+                <h3>31.5</h3>
+                <p>Avg Jobs/Month</p>
+            </div>
+            <div class="summary-card">
+                <h3>40+</h3>
+                <p>Status Types</p>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- JANUARY 2025 -->
+            <div class="month-section">
+                <div class="month-header">
+                    <span>January 2025</span>
+                    <span>15 Jobs</span>
+                </div>
+                <div class="month-stats">
+                    <div class="status-card status-lost">
+                        <div class="status-name">Lost</div>
+                        <div class="status-count">6</div>
+                        <div class="status-percentage">40.0%</div>
+                    </div>
+                    <div class="status-card status-paid">
+                        <div class="status-name">Paid & Closed</div>
+                        <div class="status-count">3</div>
+                        <div class="status-percentage">20.0%</div>
+                    </div>
+                    <div class="status-card status-pending">
+                        <div class="status-name">Pending Customer Approval</div>
+                        <div class="status-count">3</div>
+                        <div class="status-percentage">20.0%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Following Up</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">13.3%</div>
+                    </div>
+                    <div class="status-card status-lead">
+                        <div class="status-name">Lead</div>
+                        <div class="status-count">1</div>
+                        <div class="status-percentage">6.7%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FEBRUARY 2025 -->
+            <div class="month-section">
+                <div class="month-header">
+                    <span>February 2025</span>
+                    <span>20 Jobs</span>
+                </div>
+                <div class="month-stats">
+                    <div class="status-card status-lost">
+                        <div class="status-name">Lost</div>
+                        <div class="status-count">8</div>
+                        <div class="status-percentage">40.0%</div>
+                    </div>
+                    <div class="status-card status-pending">
+                        <div class="status-name">Pending Customer Approval</div>
+                        <div class="status-count">5</div>
+                        <div class="status-percentage">25.0%</div>
+                    </div>
+                    <div class="status-card status-paid">
+                        <div class="status-name">Paid & Closed</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">10.0%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Appointment Scheduled</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">10.0%</div>
+                    </div>
+                    <div class="status-card status-lead">
+                        <div class="status-name">Lead</div>
+                        <div class="status-count">1</div>
+                        <div class="status-percentage">5.0%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Following Up</div>
+                        <div class="status-count">1</div>
+                        <div class="status-percentage">5.0%</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-name">Job Completed</div>
+                        <div class="status-count">1</div>
+                        <div class="status-percentage">5.0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MARCH 2025 -->
+            <div class="month-section">
+                <div class="month-header">
+                    <span>March 2025</span>
+                    <span>36 Jobs</span>
+                </div>
+                <div class="month-stats">
+                    <div class="status-card status-lost">
+                        <div class="status-name">Lost</div>
+                        <div class="status-count">17</div>
+                        <div class="status-percentage">47.2%</div>
+                    </div>
+                    <div class="status-card status-pending">
+                        <div class="status-name">Pending Customer Approval</div>
+                        <div class="status-count">8</div>
+                        <div class="status-percentage">22.2%</div>
+                    </div>
+                    <div class="status-card status-paid">
+                        <div class="status-name">Paid & Closed</div>
+                        <div class="status-count">4</div>
+                        <div class="status-percentage">11.1%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Appointment Scheduled</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">5.6%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Following Up</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">5.6%</div>
+                    </div>
+                    <div class="status-card status-lead">
+                        <div class="status-name">Lead</div>
+                        <div class="status-count">1</div>
+                        <div class="status-percentage">2.8%</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-name">Others (Inspection, Job Approved, Final Walk Through)</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">5.5%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- APRIL 2025 -->
+            <div class="month-section">
+                <div class="month-header">
+                    <span>April 2025</span>
+                    <span>20 Jobs</span>
+                </div>
+                <div class="month-stats">
+                    <div class="status-card status-lost">
+                        <div class="status-name">Lost</div>
+                        <div class="status-count">8</div>
+                        <div class="status-percentage">40.0%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Following Up</div>
+                        <div class="status-count">3</div>
+                        <div class="status-percentage">15.0%</div>
+                    </div>
+                    <div class="status-card status-paid">
+                        <div class="status-name">Paid & Closed</div>
+                        <div class="status-count">3</div>
+                        <div class="status-percentage">15.0%</div>
+                    </div>
+                    <div class="status-card status-pending">
+                        <div class="status-name">Pending Customer Approval</div>
+                        <div class="status-count">3</div>
+                        <div class="status-percentage">15.0%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Appointment Scheduled</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">10.0%</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-name">Others (Waiting on Scope, Mitigation Needed)</div>
+                        <div class="status-count">1</div>
+                        <div class="status-percentage">5.0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAY 2025 -->
+            <div class="month-section">
+                <div class="month-header">
+                    <span>May 2025</span>
+                    <span>42 Jobs</span>
+                </div>
+                <div class="month-stats">
+                    <div class="status-card status-lost">
+                        <div class="status-name">Lost</div>
+                        <div class="status-count">17</div>
+                        <div class="status-percentage">40.5%</div>
+                    </div>
+                    <div class="status-card status-paid">
+                        <div class="status-name">Paid & Closed</div>
+                        <div class="status-count">10</div>
+                        <div class="status-percentage">23.8%</div>
+                    </div>
+                    <div class="status-card status-pending">
+                        <div class="status-name">Pending Customer Approval</div>
+                        <div class="status-count">6</div>
+                        <div class="status-percentage">14.3%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Appointment Scheduled</div>
+                        <div class="status-count">3</div>
+                        <div class="status-percentage">7.1%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Following Up</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">4.8%</div>
+                    </div>
+                    <div class="status-card status-lead">
+                        <div class="status-name">Lead</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">4.8%</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-name">Others (Schedule Adj, Estimating, Pending Payments)</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">4.7%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JUNE 2025 -->
+            <div class="month-section">
+                <div class="month-header">
+                    <span>June 2025</span>
+                    <span>46 Jobs</span>
+                </div>
+                <div class="month-stats">
+                    <div class="status-card status-lost">
+                        <div class="status-name">Lost</div>
+                        <div class="status-count">17</div>
+                        <div class="status-percentage">37.0%</div>
+                    </div>
+                    <div class="status-card status-paid">
+                        <div class="status-name">Paid & Closed</div>
+                        <div class="status-count">11</div>
+                        <div class="status-percentage">23.9%</div>
+                    </div>
+                    <div class="status-card status-pending">
+                        <div class="status-name">Pending Customer Approval</div>
+                        <div class="status-count">6</div>
+                        <div class="status-percentage">13.0%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Following Up</div>
+                        <div class="status-count">4</div>
+                        <div class="status-percentage">8.7%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Appointment Scheduled</div>
+                        <div class="status-count">3</div>
+                        <div class="status-percentage">6.5%</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-name">Others (Scope Review, Estimating, Waiting on Scope, Pending Payments)</div>
+                        <div class="status-count">5</div>
+                        <div class="status-percentage">10.9%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JULY 2025 -->
+            <div class="month-section">
+                <div class="month-header">
+                    <span>July 2025</span>
+                    <span>77 Jobs</span>
+                </div>
+                <div class="month-stats">
+                    <div class="status-card status-lost">
+                        <div class="status-name">Lost</div>
+                        <div class="status-count">27</div>
+                        <div class="status-percentage">35.1%</div>
+                    </div>
+                    <div class="status-card status-paid">
+                        <div class="status-name">Paid & Closed</div>
+                        <div class="status-count">18</div>
+                        <div class="status-percentage">23.4%</div>
+                    </div>
+                    <div class="status-card status-pending">
+                        <div class="status-name">Pending Customer Approval</div>
+                        <div class="status-count">13</div>
+                        <div class="status-percentage">16.9%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Following Up</div>
+                        <div class="status-count">7</div>
+                        <div class="status-percentage">9.1%</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-name">Pending Payments</div>
+                        <div class="status-count">4</div>
+                        <div class="status-percentage">5.2%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Appointment Scheduled</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">2.6%</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-name">Others (Job Schedule, Signed Contract, Scope Review, Estimating, Supplements Approval, Lead)</div>
+                        <div class="status-count">6</div>
+                        <div class="status-percentage">7.7%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AUGUST 2025 -->
+            <div class="month-section">
+                <div class="month-header">
+                    <span>August 2025</span>
+                    <span>40 Jobs</span>
+                </div>
+                <div class="month-stats">
+                    <div class="status-card status-lost">
+                        <div class="status-name">Lost</div>
+                        <div class="status-count">11</div>
+                        <div class="status-percentage">27.5%</div>
+                    </div>
+                    <div class="status-card status-paid">
+                        <div class="status-name">Paid & Closed</div>
+                        <div class="status-count">11</div>
+                        <div class="status-percentage">27.5%</div>
+                    </div>
+                    <div class="status-card status-pending">
+                        <div class="status-name">Pending Customer Approval</div>
+                        <div class="status-count">7</div>
+                        <div class="status-percentage">17.5%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Following Up</div>
+                        <div class="status-count">5</div>
+                        <div class="status-percentage">12.5%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Appointment Scheduled</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">5.0%</div>
+                    </div>
+                    <div class="status-card status-lead">
+                        <div class="status-name">Lead</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">5.0%</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-name">Others (Estimating, Pending Payments)</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">5.0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEPTEMBER 2025 -->
+            <div class="month-section">
+                <div class="month-header">
+                    <span>September 2025</span>
+                    <span>4 Jobs</span>
+                </div>
+                <div class="month-stats">
+                    <div class="status-card status-paid">
+                        <div class="status-name">Paid & Closed</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">50.0%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Following Up</div>
+                        <div class="status-count">1</div>
+                        <div class="status-percentage">25.0%</div>
+                    </div>
+                    <div class="status-card status-lost">
+                        <div class="status-name">Lost</div>
+                        <div class="status-count">1</div>
+                        <div class="status-percentage">25.0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OCTOBER 2025 -->
+            <div class="month-section">
+                <div class="month-header">
+                    <span>October 2025</span>
+                    <span>15 Jobs</span>
+                </div>
+                <div class="month-stats">
+                    <div class="status-card status-pending">
+                        <div class="status-name">Pending Customer Approval</div>
+                        <div class="status-count">4</div>
+                        <div class="status-percentage">26.7%</div>
+                    </div>
+                    <div class="status-card status-lead">
+                        <div class="status-name">Lead</div>
+                        <div class="status-count">4</div>
+                        <div class="status-percentage">26.7%</div>
+                    </div>
+                    <div class="status-card status-estimating">
+                        <div class="status-name">Estimating</div>
+                        <div class="status-count">3</div>
+                        <div class="status-percentage">20.0%</div>
+                    </div>
+                    <div class="status-card status-appointment">
+                        <div class="status-name">Appointment Scheduled</div>
+                        <div class="status-count">2</div>
+                        <div class="status-percentage">13.3%</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-name">Pending Payments</div>
+                        <div class="status-count">1</div>
+                        <div class="status-percentage">6.7%</div>
+                    </div>
+                    <div class="status-card status-paid">
+                        <div class="status-name">Paid & Closed</div>
+                        <div class="status-count">1</div>
+                        <div class="status-percentage">6.7%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KEY INSIGHTS -->
+            <div class="month-section">
+                <div class="month-header">
+                    <span>Key Insights & Trends</span>
+                </div>
+                <div class="pipeline-category">
+                    <h4>Pipeline Performance</h4>
+                    <div class="category-grid">
+                        <div class="status-card">
+                            <div class="status-name">Overall Conversion Rate</div>
+                            <div class="status-count">20.3%</div>
+                            <div class="status-percentage">64 Paid & Closed / 315 Total Jobs</div>
+                        </div>
+                        <div class="status-card status-lost">
+                            <div class="status-name">Lost Rate</div>
+                            <div class="status-count">35.6%</div>
+                            <div class="status-percentage">112 Lost / 315 Total Jobs</div>
+                        </div>
+                        <div class="status-card status-pending">
+                            <div class="status-name">Active Opportunities</div>
+                            <div class="status-count">139</div>
+                            <div class="status-percentage">44.1% of Total Jobs</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pipeline-category">
+                    <h4>Monthly Trends</h4>
+                    <div class="category-grid">
+                        <div class="status-card">
+                            <div class="status-name">Peak Month</div>
+                            <div class="status-count">July 2025</div>
+                            <div class="status-percentage">77 Jobs - Highest Volume</div>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-name">Best Conversion Month</div>
+                            <div class="status-count">September</div>
+                            <div class="status-percentage">50.0% Close Rate</div>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-name">Slowest Month</div>
+                            <div class="status-count">September</div>
+                            <div class="status-percentage">4 Jobs - Lowest Volume</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pipeline-category">
+                    <h4>Status Distribution Summary</h4>
+                    <div class="category-grid">
+                        <div class="status-card status-lost">
+                            <div class="status-name">Lost Jobs</div>
+                            <div class="status-count">112</div>
+                            <div class="status-percentage">35.6% - Consistent across all months</div>
+                        </div>
+                        <div class="status-card status-paid">
+                            <div class="status-name">Paid & Closed</div>
+                            <div class="status-count">64</div>
+                            <div class="status-percentage">20.3% - Successful completions</div>
+                        </div>
+                        <div class="status-card status-pending">
+                            <div class="status-name">Pending Approval</div>
+                            <div class="status-count">55</div>
+                            <div class="status-percentage">17.5% - Waiting on customers</div>
+                        </div>
+                        <div class="status-card status-appointment">
+                            <div class="status-name">Following Up</div>
+                            <div class="status-count">25</div>
+                            <div class="status-percentage">7.9% - Active engagement</div>
+                        </div>
+                        <div class="status-card status-appointment">
+                            <div class="status-name">Appointment Scheduled</div>
+                            <div class="status-count">18</div>
+                            <div class="status-percentage">5.7% - Ready to meet</div>
+                        </div>
+                        <div class="status-card status-lead">
+                            <div class="status-name">Leads</div>
+                            <div class="status-count">11</div>
+                            <div class="status-percentage">3.5% - New opportunities</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>JobNimbus Pipeline Report</strong></p>
+            <p>Generated on: October 11, 2025</p>
+            <p>Data Source: JobNimbus MCP Server (Stamford)</p>
+            <p>Analysis Period: January 1, 2025 - October 31, 2025</p>
+            <p>Total Jobs Analyzed: 315</p>
+        </div>
+    </div>
+</body>
+</html>

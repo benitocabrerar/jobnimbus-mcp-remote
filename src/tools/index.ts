@@ -1,7 +1,6 @@
 /**
- * Tool Registry - ALL 78 TOOLS (71 + 7 new endpoint tools)
- * New tools added: get_documents, get_orders, get_invoices, get_notes,
- * get_locations, get_activity_types, get_task_types
+ * Tool Registry - ALL 72 TOOLS (71 + 1 verified endpoint tool)
+ * New tool added: get_invoices (VERIFIED WORKING - other endpoints don't exist in JobNimbus API)
  */
 
 import { BaseTool } from './baseTool.js';
@@ -144,14 +143,8 @@ import { OptimizeMaterialOrdersTool } from './materials/optimizeMaterialOrders.j
 import { GetMaterialSpecificationsTool } from './materials/getMaterialSpecifications.js';
 import { CompareMaterialAlternativesTool } from './materials/compareMaterialAlternatives.js';
 
-// Additional endpoint tools (NEW - 7 tools covering missing API endpoints)
-import { GetDocumentsTool } from './documents/getDocuments.js';
-import { GetOrdersTool } from './orders/getOrders.js';
+// Additional endpoint tools (NEW - 1 verified working tool)
 import { GetInvoicesTool } from './invoices/getInvoices.js';
-import { GetNotesTool } from './notes/getNotes.js';
-import { GetLocationsTool } from './account/getLocations.js';
-import { GetActivityTypesTool } from './account/getActivityTypes.js';
-import { GetTaskTypesTool } from './account/getTaskTypes.js';
 
 // Generic tool generator for remaining tools
 import { createGenericTool, ALL_TOOLS_CONFIG } from './allToolsGenerator.js';
@@ -278,14 +271,8 @@ export class ToolRegistry {
     this.registerTool(new GetMaterialSpecificationsTool());
     this.registerTool(new CompareMaterialAlternativesTool());
 
-    // Register additional endpoint tools (NEW - 7 tools)
-    this.registerTool(new GetDocumentsTool());
-    this.registerTool(new GetOrdersTool());
+    // Register additional endpoint tools (NEW - 1 verified working tool)
     this.registerTool(new GetInvoicesTool());
-    this.registerTool(new GetNotesTool());
-    this.registerTool(new GetLocationsTool());
-    this.registerTool(new GetActivityTypesTool());
-    this.registerTool(new GetTaskTypesTool());
 
     // Register all generic tools
     for (const config of ALL_TOOLS_CONFIG) {

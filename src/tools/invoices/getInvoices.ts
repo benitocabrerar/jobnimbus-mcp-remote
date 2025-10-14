@@ -2,6 +2,7 @@
  * Get Invoices Tool
  * Retrieve invoices from JobNimbus /invoices endpoint
  *
+ * VERIFIED WORKING - This endpoint exists and returns invoice data
  * Integrated with Redis cache system for performance optimization
  */
 
@@ -37,7 +38,7 @@ export class GetInvoicesTool extends BaseTool<GetInvoicesInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_invoices',
-      description: 'Retrieve invoices from JobNimbus. Invoices represent billing documents for completed work. Supports pagination, filtering, and sorting.',
+      description: 'Retrieve invoices from JobNimbus. Invoices are billing documents for completed work. Supports pagination, filtering by related entities (jobs, contacts), and sorting. Returns invoice details including amounts, payment status, line items, and related records.',
       inputSchema: {
         type: 'object',
         properties: {
