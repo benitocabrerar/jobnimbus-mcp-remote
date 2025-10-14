@@ -144,10 +144,14 @@ export class GetProductsTool extends BaseTool<GetProductsInput, any> {
           );
 
           // Extract products from response
-          let allProducts: Product[] = response.data || [];
+          // API v2 returns {count, results} structure
+          let allProducts: Product[] = response.data.results || response.data || [];
           if (!Array.isArray(allProducts)) {
             allProducts = [];
           }
+
+          // Get total count from API response
+          const totalCount = response.data.count || allProducts.length;
 
           // Sort by name alphabetically
           allProducts.sort((a, b) => {
@@ -174,7 +178,8 @@ export class GetProductsTool extends BaseTool<GetProductsInput, any> {
           if (includeFullDetails) {
             // Full details mode - return complete product objects
             return {
-              count: allProducts.length,
+              total_count: totalCount,
+              returned_count: allProducts.length,
               from: fromIndex,
               size: fetchSize,
               active_count: activeCount,
@@ -203,7 +208,8 @@ export class GetProductsTool extends BaseTool<GetProductsInput, any> {
           } else {
             // Compact mode - return only essential fields
             return {
-              count: allProducts.length,
+              total_count: totalCount,
+              returned_count: allProducts.length,
               from: fromIndex,
               size: fetchSize,
               active_count: activeCount,
