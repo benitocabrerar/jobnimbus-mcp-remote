@@ -151,7 +151,10 @@ export class UpdateMaterialOrderTool extends BaseTool<UpdateMaterialOrderInput, 
   async execute(input: UpdateMaterialOrderInput, context: ToolContext): Promise<any> {
     try {
       // Build update body with only provided fields
-      const updateBody: any = {};
+      // IMPORTANT: Include jnid in body (JobNimbus API requirement)
+      const updateBody: any = {
+        jnid: input.jnid,
+      };
 
       // Handle items update (calculate totals if items are provided)
       if (input.items) {
