@@ -48,19 +48,33 @@ interface CategoryStats {
 }
 
 enum FileCategory {
-  INVOICES = 'invoices',
-  PERMIT_RELATED = 'permit_related',
-  ESTIMATE = 'estimate',
-  MEASUREMENTS = 'measurements',
   PHOTOS = 'photos',
   DOCUMENTS = 'documents',
+  EMAIL_ATTACHMENTS = 'email_attachments',
+  WORK_ORDERS = 'work_orders',
+  ESTIMATES = 'estimates',
+  INVOICES = 'invoices',
+  PERMIT_RELATED = 'permit_related',
+  FINANCING = 'financing',
+  RECEIPTS = 'receipts',
+  EAGLEVIEW = 'eagleview',
+  CREDIT_MEMOS = 'credit_memos',
+  INSURANCE_SCOPES = 'insurance_scopes',
+  MATERIAL_RECEIPTS = 'material_receipts',
+  MEASUREMENTS = 'measurements',
+  PAYMENTS = 'payments',
+  AGREEMENTS = 'agreements',
+  MATERIAL_ORDERS = 'material_orders',
+  SUBCONTRACTOR_DOCS = 'subcontractor_docs',
+  CHANGE_ORDERS = 'change_orders',
+  OTHER = 'other',
 }
 
 export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachmentsDistributionInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_job_attachments_distribution',
-      description: 'Comprehensive file distribution analysis for a job. Collects files from job and related entities (estimate, invoice, contact), uses JobNimbus record_type_name field for classification (Invoices, Permit Related, Estimate, Measurements, Photos, Documents), detects discrepancies vs reported attachment_count, and provides detailed statistics with examples.',
+      description: 'Comprehensive file distribution analysis for a job. Collects files from job and related entities (estimate, invoice, contact), uses JobNimbus record_type_name field for classification across 20+ categories including: Photos, Documents, Email Attachments, Work Orders, Estimates, Invoices, Permit Related, Financing, Receipts, EagleView, Credit Memos, Insurance Scopes, Material Receipts, Measurements, Payments, Agreements, Material Orders, Subcontractor Docs, Change Orders, and Others. Detects discrepancies vs reported attachment_count, and provides detailed statistics with examples.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -148,27 +162,78 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
   /**
    * Classify file using JobNimbus record_type_name field
    * Maps JobNimbus categories to our FileCategory enum
+   *
+   * Complete list of JobNimbus record_type_name values:
+   * - Photo, Document, Email Attachment, Work Order, Estimate, Invoice
+   * - Permit Related, Financing Information, All Other Receipts, EagleView
+   * - Credit Memo, Insurances Scopes, Material Receipts, G.A Castro Insurances Scope
+   * - Measurements, Payments Received Copy, Agreements, Material Order
+   * - Subcontractor Estimates & Invoices, Roof Materials Receipts
+   * - Change order Doc & Approval, Siding Materials
    */
   private classifyFile(file: NormalizedFile): FileCategory {
     const recordTypeName = file.record_type_name || 'Unknown';
 
     // Map JobNimbus record_type_name to FileCategory
     switch (recordTypeName) {
+      // Core categories
       case 'Photo':
         return FileCategory.PHOTOS;
-      case 'Invoice':
-        return FileCategory.INVOICES;
       case 'Document':
         return FileCategory.DOCUMENTS;
+      case 'Email Attachment':
+        return FileCategory.EMAIL_ATTACHMENTS;
+      case 'Work Order':
+        return FileCategory.WORK_ORDERS;
+      case 'Estimate':
+        return FileCategory.ESTIMATES;
+      case 'Invoice':
+        return FileCategory.INVOICES;
       case 'Permit Related':
         return FileCategory.PERMIT_RELATED;
-      case 'Estimate':
-        return FileCategory.ESTIMATE;
+
+      // Financial categories
+      case 'Financing Information':
+        return FileCategory.FINANCING;
+      case 'Credit Memo':
+        return FileCategory.CREDIT_MEMOS;
+      case 'Payments Received Copy':
+        return FileCategory.PAYMENTS;
+
+      // Receipts categories
+      case 'All Other Receipts':
+        return FileCategory.RECEIPTS;
+      case 'Material Receipts':
+      case 'Roof Materials Receipts':
+        return FileCategory.MATERIAL_RECEIPTS;
+
+      // Measurements & Inspections
       case 'Measurements':
         return FileCategory.MEASUREMENTS;
+      case 'EagleView':
+        return FileCategory.EAGLEVIEW;
+
+      // Insurance categories
+      case 'Insurances Scopes':
+      case 'G.A Castro Insurances Scope':
+        return FileCategory.INSURANCE_SCOPES;
+
+      // Orders & Agreements
+      case 'Agreements':
+        return FileCategory.AGREEMENTS;
+      case 'Material Order':
+      case 'Siding Materials':
+        return FileCategory.MATERIAL_ORDERS;
+
+      // Subcontractor & Changes
+      case 'Subcontractor Estimates & Invoices':
+        return FileCategory.SUBCONTRACTOR_DOCS;
+      case 'Change order Doc & Approval':
+        return FileCategory.CHANGE_ORDERS;
+
       default:
-        // Unknown or other types default to Documents
-        return FileCategory.DOCUMENTS;
+        // Unknown types go to OTHER category
+        return FileCategory.OTHER;
     }
   }
 
@@ -386,12 +451,26 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
       // Step 4: Classify files using JobNimbus record_type_name
       notes.push('Classifying files using record_type_name from JobNimbus API');
       const distribution: Record<FileCategory, CategoryStats> = {
-        [FileCategory.INVOICES]: { count: 0, total_mb: 0, examples: [] },
-        [FileCategory.PERMIT_RELATED]: { count: 0, total_mb: 0, examples: [] },
-        [FileCategory.ESTIMATE]: { count: 0, total_mb: 0, examples: [] },
-        [FileCategory.MEASUREMENTS]: { count: 0, total_mb: 0, examples: [] },
         [FileCategory.PHOTOS]: { count: 0, total_mb: 0, examples: [] },
         [FileCategory.DOCUMENTS]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.EMAIL_ATTACHMENTS]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.WORK_ORDERS]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.ESTIMATES]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.INVOICES]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.PERMIT_RELATED]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.FINANCING]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.RECEIPTS]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.EAGLEVIEW]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.CREDIT_MEMOS]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.INSURANCE_SCOPES]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.MATERIAL_RECEIPTS]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.MEASUREMENTS]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.PAYMENTS]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.AGREEMENTS]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.MATERIAL_ORDERS]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.SUBCONTRACTOR_DOCS]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.CHANGE_ORDERS]: { count: 0, total_mb: 0, examples: [] },
+        [FileCategory.OTHER]: { count: 0, total_mb: 0, examples: [] },
       };
 
       let firstSeenTs: number | null = null;
@@ -450,10 +529,24 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
         distribution: {
           photos: distribution[FileCategory.PHOTOS],
           documents: distribution[FileCategory.DOCUMENTS],
+          email_attachments: distribution[FileCategory.EMAIL_ATTACHMENTS],
+          work_orders: distribution[FileCategory.WORK_ORDERS],
+          estimates: distribution[FileCategory.ESTIMATES],
           invoices: distribution[FileCategory.INVOICES],
           permit_related: distribution[FileCategory.PERMIT_RELATED],
-          estimate: distribution[FileCategory.ESTIMATE],
+          financing: distribution[FileCategory.FINANCING],
+          receipts: distribution[FileCategory.RECEIPTS],
+          eagleview: distribution[FileCategory.EAGLEVIEW],
+          credit_memos: distribution[FileCategory.CREDIT_MEMOS],
+          insurance_scopes: distribution[FileCategory.INSURANCE_SCOPES],
+          material_receipts: distribution[FileCategory.MATERIAL_RECEIPTS],
           measurements: distribution[FileCategory.MEASUREMENTS],
+          payments: distribution[FileCategory.PAYMENTS],
+          agreements: distribution[FileCategory.AGREEMENTS],
+          material_orders: distribution[FileCategory.MATERIAL_ORDERS],
+          subcontractor_docs: distribution[FileCategory.SUBCONTRACTOR_DOCS],
+          change_orders: distribution[FileCategory.CHANGE_ORDERS],
+          other: distribution[FileCategory.OTHER],
         },
         totals: {
           files: actualAttachmentCount,
