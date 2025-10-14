@@ -128,6 +128,7 @@ import { GetTasksTool } from './tasks/getTasks.js';
 import { GetAttachmentsTool } from './attachments/getAttachments.js';
 import { GetFileByIdTool } from './attachments/getFileById.js';
 import { AnalyzeJobAttachmentsTool } from './attachments/analyzeJobAttachments.js';
+import { GetJobAttachmentsDistributionTool } from './attachments/getJobAttachmentsDistribution.js';
 
 // Business intelligence tools
 import { SearchInsuranceJobsTool } from './business/searchInsuranceJobs.js';
@@ -257,6 +258,7 @@ export class ToolRegistry {
     // Register attachment tools
     this.registerTool(new GetFileByIdTool());
     this.registerTool(new AnalyzeJobAttachmentsTool());
+    this.registerTool(new GetJobAttachmentsDistributionTool());
 
     // Register business intelligence tools
     this.registerTool(new SearchInsuranceJobsTool());
