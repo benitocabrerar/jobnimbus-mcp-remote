@@ -35,6 +35,7 @@ export const CACHE_PREFIXES = {
   ESTIMATES: 'estimates',
   INVOICES: 'invoices', // NEW - VERIFIED WORKING endpoint
   TASKS: 'tasks', // NEW - 2025-01-14 - Task Management
+  PRODUCTS: 'products', // NEW - 2025-01-14 - Products Management
 
   // Operation-level prefixes
   LIST: 'list',
@@ -71,12 +72,14 @@ export const CACHE_TTL = {
   INVOICES_LIST: 15 * 60,           // 15 minutes - invoices moderately stable (NEW - VERIFIED)
   TASKS_LIST: 10 * 60,              // 10 minutes - tasks update frequently (NEW - 2025-01-14)
   TASKS_DETAIL: 15 * 60,            // 15 minutes - task details moderately stable (NEW - 2025-01-14)
+  PRODUCTS_LIST: 20 * 60,           // 20 minutes - product catalog changes moderately (NEW - 2025-01-14)
 
   // Entity Detail TTLs
   JOB_DETAIL: 10 * 60,              // 10 minutes - jobs update frequently
   CONTACT_DETAIL: 30 * 60,          // 30 minutes - contacts more stable
   ESTIMATE_DETAIL: 20 * 60,         // 20 minutes - estimates moderately stable
   ACTIVITY_DETAIL: 15 * 60,         // 15 minutes - activities change
+  PRODUCT_DETAIL: 30 * 60,          // 30 minutes - products relatively stable (NEW - 2025-01-14)
 
   // Aggregation/Analytics TTLs
   ANALYTICS: 60 * 60,               // 1 hour - expensive computations

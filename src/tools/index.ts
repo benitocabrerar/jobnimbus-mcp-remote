@@ -1,5 +1,5 @@
 /**
- * Tool Registry - 86 TOOLS (2025-01-14 Enhancement: Added Activities Management get_activity)
+ * Tool Registry - 88 TOOLS (2025-01-14 Enhancement: Added Products Management get_product, get_products)
  *
  * REMOVED (Archived - 11 tools):
  * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
@@ -153,6 +153,10 @@ import { CompareMaterialAlternativesTool } from './materials/compareMaterialAlte
 // ===== INVOICES =====
 import { GetInvoicesTool } from './invoices/getInvoices.js';
 
+// ===== PRODUCTS =====
+import { GetProductTool } from './products/getProduct.js';
+import { GetProductsTool } from './products/getProducts.js';
+
 // Generic tool generator for remaining tools
 import { createGenericTool, ALL_TOOLS_CONFIG } from './allToolsGenerator.js';
 
@@ -163,7 +167,7 @@ export class ToolRegistry {
   private tools = new Map<string, BaseTool>();
 
   constructor() {
-    // === CORE CRUD TOOLS (23 tools) ===
+    // === CORE CRUD TOOLS (25 tools) ===
     this.registerTool(new ValidateApiKeyTool());
     this.registerTool(new GetJobsTool());
     this.registerTool(new SearchJobsTool());
@@ -286,6 +290,10 @@ export class ToolRegistry {
 
     // === INVOICES (1 tool) ===
     this.registerTool(new GetInvoicesTool());
+
+    // === PRODUCTS (2 tools) ===
+    this.registerTool(new GetProductTool());
+    this.registerTool(new GetProductsTool());
 
     // === GENERIC TOOLS ===
     for (const config of ALL_TOOLS_CONFIG) {
