@@ -1,5 +1,5 @@
 /**
- * Tool Registry - 93 TOOLS (2025-01-14 Enhancement: Added Products + MaterialOrders Management)
+ * Tool Registry - 97 TOOLS (2025-01-15 Enhancement: Added complete Estimates API coverage)
  *
  * REMOVED (Archived - 11 tools):
  * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
@@ -58,6 +58,10 @@ import { GetContactTool } from './contacts/getContact.js';
 import { SearchContactsTool } from './contacts/searchContacts.js';
 import { CreateContactTool } from './contacts/createContact.js';
 import { GetEstimatesTool } from './estimates/getEstimates.js';
+import { GetEstimateTool } from './estimates/getEstimate.js';
+import { CreateEstimateTool } from './estimates/createEstimate.js';
+import { UpdateEstimateTool } from './estimates/updateEstimate.js';
+import { DeleteEstimateTool } from './estimates/deleteEstimate.js';
 import { GetActivitiesTool } from './activities/getActivities.js';
 import { GetActivityTool } from './activities/getActivity.js';
 import { CreateActivityTool } from './activities/createActivity.js';
@@ -174,7 +178,7 @@ export class ToolRegistry {
   private tools = new Map<string, BaseTool>();
 
   constructor() {
-    // === CORE CRUD TOOLS (25 tools) ===
+    // === CORE CRUD TOOLS (29 tools) === [Updated: +4 Estimates tools]
     this.registerTool(new ValidateApiKeyTool());
     this.registerTool(new GetJobsTool());
     this.registerTool(new SearchJobsTool());
@@ -203,7 +207,14 @@ export class ToolRegistry {
     this.registerTool(new GetContactTool());
     this.registerTool(new SearchContactsTool());
     this.registerTool(new CreateContactTool());
+
+    // Estimates (5 tools - Complete CRUD coverage)
     this.registerTool(new GetEstimatesTool());
+    this.registerTool(new GetEstimateTool());
+    this.registerTool(new CreateEstimateTool());
+    this.registerTool(new UpdateEstimateTool());
+    this.registerTool(new DeleteEstimateTool());
+
     this.registerTool(new GetActivitiesTool());
     this.registerTool(new GetActivityTool());
     this.registerTool(new CreateActivityTool());
