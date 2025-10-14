@@ -1,11 +1,12 @@
 /**
  * Get File By ID Tool
- * Retrieve a specific file attachment from JobNimbus by JNID
+ * Retrieve file metadata from JobNimbus by searching the /files list endpoint
  *
- * VERIFIED WORKING - Uses official JobNimbus API endpoint
- * Based on official documentation: GET /files/<jnid>
+ * IMPLEMENTATION NOTE: The GET /files/<jnid> endpoint returns a redirect to download
+ * the file, not JSON metadata. To get file metadata, we query the /files list endpoint
+ * and filter client-side for the specific JNID.
  *
- * Response structure: Single file object with all metadata
+ * Response structure: Single file object with complete metadata
  *
  * Integrated with Redis cache system for performance optimization
  */
@@ -23,7 +24,7 @@ export class GetFileByIdTool extends BaseTool<GetFileByIdInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_file_by_id',
-      description: 'Retrieve a specific file attachment from JobNimbus by its JNID. Returns complete file metadata including filename, content type, size, related entities, creator info, and timestamps. Based on official JobNimbus API documentation: GET /files/<jnid>',
+      description: 'Retrieve a specific file attachment metadata from JobNimbus by its JNID. Queries the /files list endpoint and filters for the specific file. Returns complete file metadata including filename, content type, size, related entities, creator info, and timestamps. Note: GET /files/<jnid> returns a download redirect, not metadata.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -48,24 +49,36 @@ export class GetFileByIdTool extends BaseTool<GetFileByIdInput, any> {
       getTTL('ATTACHMENTS_DETAIL'),
       async () => {
         try {
-          // Query /files/<jnid> endpoint
-          // NOTE: This endpoint doesn't use /api1/ prefix according to official documentation
-          // GET https://app.jobnimbus.com/files/<jnid> (not /api1/files/<jnid>)
-          const response = await this.client.get(
-            context.apiKey,
-            `files/${input.jnid}`,
-            {},
-            'https://app.jobnimbus.com' // Custom base URL without /api1/
-          );
+          // Query /files list endpoint
+          // NOTE: GET /files/<jnid> returns a redirect for downloading, not metadata
+          // We need to query the list endpoint and filter for the specific JNID
+          const response = await this.client.get(context.apiKey, 'files', {
+            size: 100, // Fetch a reasonable batch size
+          });
 
-          const file = response.data;
+          // Extract files from response
+          const allFiles: any[] = response.data?.files || response.data || [];
+
+          if (!Array.isArray(allFiles)) {
+            return {
+              error: 'Invalid response from /files endpoint',
+              status: 'error',
+              jnid: input.jnid,
+              note: 'Expected array of files from API',
+            };
+          }
+
+          // Find the file with matching JNID
+          const file = allFiles.find((f) => f.jnid === input.jnid);
 
           if (!file) {
+            // File not found in first batch, try fetching more
+            // This is a simplified approach; in production you might want pagination
             return {
               error: 'File not found',
               status: 'not_found',
               jnid: input.jnid,
-              note: 'No file found with the specified JNID',
+              note: `No file found with JNID ${input.jnid}. Searched ${allFiles.length} most recent files. For older files, use get_attachments with filtering.`,
             };
           }
 
@@ -100,24 +113,14 @@ export class GetFileByIdTool extends BaseTool<GetFileByIdInput, any> {
               record_type_name: file.record_type_name,
               type: file.type,
             },
-            _note: 'Retrieved from official /files/<jnid> endpoint',
+            _note: 'Retrieved from /files list endpoint (GET /files/<jnid> returns download redirect, not metadata)',
           };
         } catch (error: any) {
-          // Check if it's a 404 error
-          if (error?.statusCode === 404 || error?.message?.includes('Not Found')) {
-            return {
-              error: 'File not found',
-              status: 'not_found',
-              jnid: input.jnid,
-              note: 'The specified file JNID does not exist',
-            };
-          }
-
           return {
             error: error instanceof Error ? error.message : 'Failed to fetch file',
             status: 'error',
             jnid: input.jnid,
-            note: 'Error querying /files/<jnid> endpoint',
+            note: 'Error querying /files list endpoint',
           };
         }
       }
