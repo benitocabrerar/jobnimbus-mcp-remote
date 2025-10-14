@@ -1,16 +1,28 @@
 /**
  * Get Attachments Tool
- * Retrieve file attachments and documents from JobNimbus by querying multiple endpoints
+ * Retrieve file attachments from JobNimbus /files endpoint
  *
- * CRITICAL: JobNimbus UI combines data from three endpoints:
- * - /files: Direct file attachments
- * - /documents: Document records
- * - /orders: Order-related documents (optional)
+ * VERIFIED WORKING - Uses official JobNimbus API endpoint
+ * Based on official documentation: GET /files
  *
- * This tool queries all three endpoints in parallel, consolidates results,
- * deduplicates by id/filename, and sorts by date_created desc.
+ * Response structure:
+ * {
+ *   "count": number,
+ *   "files": [
+ *     {
+ *       "jnid": string,
+ *       "filename": string,
+ *       "content_type": string,
+ *       "size": number,
+ *       "date_created": timestamp,
+ *       "related": [...],
+ *       "primary": {...},
+ *       ...
+ *     }
+ *   ]
+ * }
  *
- * FASE 1: Integrated Redis cache system for performance optimization
+ * Integrated with Redis cache system for performance optimization
  */
 
 import { BaseTool } from '../baseTool.js';
@@ -59,17 +71,17 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_attachments',
-      description: 'Get file attachments and documents from JobNimbus by querying /files, /documents, and /orders endpoints. Consolidates and deduplicates results to match JobNimbus UI. Supports filtering by job_id, contact_id, or related entity ID.',
+      description: 'Retrieve file attachments from JobNimbus /files endpoint. Returns all file attachments with metadata including filename, content type, size, related entities, and creation dates. Supports filtering by related entity (job_id, contact_id) and file type. Based on official JobNimbus API documentation.',
       inputSchema: {
         type: 'object',
         properties: {
           job_id: {
             type: 'string',
-            description: 'Filter files by job ID (queries all three endpoints: /files, /documents, /orders)',
+            description: 'Filter files by job ID (searches in related array and primary field)',
           },
           contact_id: {
             type: 'string',
-            description: 'Filter files by contact ID (queries all three endpoints)',
+            description: 'Filter files by contact ID (searches in related array)',
           },
           related_to: {
             type: 'string',
@@ -81,7 +93,7 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
           },
           size: {
             type: 'number',
-            description: 'Number of records to fetch per endpoint (default: 100, max: 500)',
+            description: 'Number of records to fetch (default: 100, max: 500). NOTE: Filtering is client-side.',
           },
           file_type: {
             type: 'string',
@@ -93,76 +105,35 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
   }
 
   /**
-   * Query a specific endpoint with filter for related entity
+   * Filter files by related entity ID (client-side filtering)
    */
-  private async queryEndpoint(
-    context: ToolContext,
-    endpoint: string,
-    entityId: string,
-    size: number
-  ): Promise<JobNimbusFile[]> {
-    try {
-      // Build filter for related.id
-      const filter = JSON.stringify({
-        must: [{ term: { 'related.id': entityId } }],
-      });
+  private filterByRelatedEntity(files: JobNimbusFile[], entityId: string): JobNimbusFile[] {
+    return files.filter((file) => {
+      // Check if entityId is in related array
+      const inRelated = file.related?.some((rel) => rel.id === entityId);
 
-      const response = await this.client.get(context.apiKey, endpoint, {
-        filter,
-        size,
-      });
+      // Check if entityId is the primary
+      const isPrimary = file.primary?.id === entityId;
 
-      // Different endpoints may return data in different formats
-      const results = response.data?.results || response.data?.files || response.data || [];
-      return Array.isArray(results) ? results : [];
-    } catch (error) {
-      // Log error but don't fail - just return empty array
-      console.error(`Error querying ${endpoint}:`, error);
-      return [];
-    }
+      return inRelated || isPrimary;
+    });
   }
 
   /**
-   * Deduplicate files by id (jnid) and filename
+   * Filter files by file type
    */
-  private deduplicateFiles(files: JobNimbusFile[]): JobNimbusFile[] {
-    const seenIds = new Set<string>();
-    const seenFilenames = new Set<string>();
-    const uniqueFiles: JobNimbusFile[] = [];
+  private filterByFileType(files: JobNimbusFile[], fileType: string): JobNimbusFile[] {
+    const fileTypeFilter = fileType.toLowerCase();
+    return files.filter((file) => {
+      const fileName = file.filename || '';
+      const contentType = file.content_type || '';
+      const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
 
-    for (const file of files) {
-      const id = file.jnid;
-      const filename = file.filename;
-
-      // Skip if we've already seen this id
-      if (id && seenIds.has(id)) {
-        continue;
-      }
-
-      // Skip if we've already seen this filename (for files without id)
-      if (filename && seenFilenames.has(filename) && !id) {
-        continue;
-      }
-
-      // Add to results
-      uniqueFiles.push(file);
-
-      // Track what we've seen
-      if (id) seenIds.add(id);
-      if (filename) seenFilenames.add(filename);
-    }
-
-    return uniqueFiles;
-  }
-
-  /**
-   * Sort files by date_created descending
-   */
-  private sortByDateCreated(files: JobNimbusFile[]): JobNimbusFile[] {
-    return [...files].sort((a, b) => {
-      const dateA = a.date_created || 0;
-      const dateB = b.date_created || 0;
-      return dateB - dateA; // Descending order (newest first)
+      return (
+        fileExt === fileTypeFilter ||
+        contentType.toLowerCase().includes(fileTypeFilter) ||
+        fileName.toLowerCase().includes(fileTypeFilter)
+      );
     });
   }
 
@@ -173,7 +144,7 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
     // Generate cache identifier
     const cacheIdentifier = generateCacheIdentifier(input);
 
-    // Wrap with cache layer (FASE 1: Redis cache integration)
+    // Wrap with cache layer (Redis cache integration)
     return await withCache(
       {
         entity: CACHE_PREFIXES.ATTACHMENTS,
@@ -183,56 +154,40 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
       getTTL('ATTACHMENTS_LIST'),
       async () => {
         try {
-          // Get entity ID for filtering
+          // Query /files endpoint
+          // NOTE: We fetch more than needed because filtering is client-side
+          const response = await this.client.get(context.apiKey, 'files', {
+            size: fetchSize,
+          });
+
+          // Extract files from response (API returns { count, files })
+          let allFiles: JobNimbusFile[] = response.data?.files || response.data || [];
+          if (!Array.isArray(allFiles)) {
+            allFiles = [];
+          }
+
+          const totalFromAPI = response.data?.count || allFiles.length;
+
+          // Apply entity filtering if provided (client-side)
           const entityId = input.job_id || input.contact_id || input.related_to;
-
-          if (!entityId) {
-            return {
-              error: 'job_id, contact_id, or related_to is required',
-              status: 'error',
-              note: 'Please provide at least one entity ID to filter documents',
-            };
+          if (entityId) {
+            allFiles = this.filterByRelatedEntity(allFiles, entityId);
           }
 
-          // Query all three endpoints in parallel
-          const [filesResults, documentsResults, ordersResults] = await Promise.all([
-            this.queryEndpoint(context, 'files', entityId, fetchSize),
-            this.queryEndpoint(context, 'documents', entityId, fetchSize),
-            this.queryEndpoint(context, 'orders', entityId, fetchSize),
-          ]);
-
-          // Consolidate all results
-          let allFiles: JobNimbusFile[] = [
-            ...filesResults,
-            ...documentsResults,
-            ...ordersResults,
-          ];
-
-          // Deduplicate by id and filename
-          allFiles = this.deduplicateFiles(allFiles);
-
-          // Sort by date_created descending
-          allFiles = this.sortByDateCreated(allFiles);
-
-          // Apply file_type filter if provided
-          let filteredFiles = allFiles;
+          // Apply file_type filter if provided (client-side)
           if (input.file_type) {
-            const fileTypeFilter = input.file_type.toLowerCase();
-            filteredFiles = allFiles.filter((file) => {
-              const fileName = file.filename || '';
-              const contentType = file.content_type || '';
-              const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
-
-              return (
-                fileExt === fileTypeFilter ||
-                contentType.toLowerCase().includes(fileTypeFilter) ||
-                fileName.toLowerCase().includes(fileTypeFilter)
-              );
-            });
+            allFiles = this.filterByFileType(allFiles, input.file_type);
           }
+
+          // Sort by date_created descending (newest first)
+          allFiles.sort((a, b) => {
+            const dateA = a.date_created || 0;
+            const dateB = b.date_created || 0;
+            return dateB - dateA;
+          });
 
           // Apply pagination
-          const paginatedFiles = filteredFiles.slice(fromIndex, fromIndex + fetchSize);
+          const paginatedFiles = allFiles.slice(fromIndex, fromIndex + fetchSize);
 
           // Calculate total size
           const totalSizeMB = paginatedFiles.reduce((sum, file) => {
@@ -248,15 +203,10 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
 
           return {
             count: paginatedFiles.length,
-            total_available: filteredFiles.length,
-            total_before_deduplication: filesResults.length + documentsResults.length + ordersResults.length,
+            total_from_api: totalFromAPI,
+            total_after_filtering: allFiles.length,
             from: fromIndex,
-            fetch_size: fetchSize,
-            endpoints_queried: {
-              files: filesResults.length,
-              documents: documentsResults.length,
-              orders: ordersResults.length,
-            },
+            size: fetchSize,
             filter_applied: {
               entity_id: entityId,
               job_id: input.job_id,
@@ -266,39 +216,40 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
             },
             total_size_mb: totalSizeMB.toFixed(2),
             file_types: Object.fromEntries(fileTypeMap),
-            has_more: fromIndex + paginatedFiles.length < filteredFiles.length,
+            has_more: fromIndex + paginatedFiles.length < allFiles.length,
             files: paginatedFiles.map((file) => ({
-              id: file.jnid,
+              jnid: file.jnid,
               filename: file.filename,
               content_type: file.content_type,
               file_extension: file.filename?.split('.').pop()?.toLowerCase(),
               size_bytes: file.size,
               size_mb: ((file.size || 0) / (1024 * 1024)).toFixed(2),
               date_created: file.date_created,
-              date_file_created: file.date_file_created,
               is_active: file.is_active,
               is_archived: file.is_archived,
+              is_private: file.is_private,
+              created_by: file.created_by,
+              created_by_name: file.created_by_name,
               primary: file.primary,
               related: file.related,
-              url: file.url,
+              customer: file.customer,
+              sales_rep: file.sales_rep,
+              record_type: file.record_type,
+              record_type_name: file.record_type_name,
               type: file.type,
             })),
-            _debug: {
-              endpoints: ['files', 'documents', 'orders'],
-              note: 'Queries all three endpoints in parallel, consolidates, deduplicates, and sorts by date_created desc',
-              filter_used: `{"must":[{"term":{"related.id":"${entityId}"}}]}`,
-            },
+            _note: 'Uses official /files endpoint. Filtering by entity is client-side. To get ALL files without entity filtering, omit job_id/contact_id/related_to.',
           };
         } catch (error) {
           return {
-            error: error instanceof Error ? error.message : 'Failed to fetch documents',
+            error: error instanceof Error ? error.message : 'Failed to fetch files',
             status: 'error',
             filter_applied: {
               job_id: input.job_id,
               contact_id: input.contact_id,
               related_to: input.related_to,
             },
-            note: 'Error querying /files, /documents, and /orders endpoints',
+            note: 'Error querying /files endpoint',
           };
         }
       }

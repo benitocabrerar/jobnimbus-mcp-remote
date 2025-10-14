@@ -1,6 +1,10 @@
 /**
- * Tool Registry - ALL 72 TOOLS (71 + 1 verified endpoint tool)
- * New tool added: get_invoices (VERIFIED WORKING - other endpoints don't exist in JobNimbus API)
+ * Tool Registry - ALL 73 TOOLS
+ * Recent changes:
+ * - get_invoices: VERIFIED WORKING (new endpoint)
+ * - get_attachments: CORRECTED to use only /files endpoint (removed /documents and /orders - don't exist)
+ * - get_file_by_id: NEW tool for GET /files/<jnid> (retrieve specific file by ID)
+ * - Removed 6 non-existent endpoints: documents, orders, notes, locations, activity_types, task_types
  */
 
 import { BaseTool } from './baseTool.js';
@@ -122,6 +126,7 @@ import { GetTasksTool } from './tasks/getTasks.js';
 
 // Attachments tools
 import { GetAttachmentsTool } from './attachments/getAttachments.js';
+import { GetFileByIdTool } from './attachments/getFileById.js';
 import { AnalyzeJobAttachmentsTool } from './attachments/analyzeJobAttachments.js';
 
 // Business intelligence tools
@@ -249,7 +254,8 @@ export class ToolRegistry {
     this.registerTool(new GetAttachmentsTool());
     // Removed GetTimelineDataTool2 and GetCalendarActivitiesTool2 - they were overriding real implementations
 
-    // Register attachment analysis tools
+    // Register attachment tools
+    this.registerTool(new GetFileByIdTool());
     this.registerTool(new AnalyzeJobAttachmentsTool());
 
     // Register business intelligence tools
