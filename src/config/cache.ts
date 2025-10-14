@@ -135,8 +135,8 @@ export const getCacheConfig = (): CacheConfig => {
     enableReadyCheck: true,
     connectTimeout: 10000, // 10 seconds
 
-    // TLS configuration (required for Render.com in production)
-    ...(isProduction && {
+    // TLS configuration (only if explicitly enabled via REDIS_TLS_ENABLED)
+    ...(process.env.REDIS_TLS_ENABLED === 'true' && {
       tls: {
         rejectUnauthorized: process.env.REDIS_TLS_REJECT_UNAUTHORIZED !== 'false',
       },
