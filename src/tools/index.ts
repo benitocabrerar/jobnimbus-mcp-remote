@@ -1,5 +1,5 @@
 /**
- * Tool Registry - 91 TOOLS (2025-01-14 Phase 1 Optimization: Consolidated Quick Status Tools)
+ * Tool Registry - 89 TOOLS (2025-01-14 Phase 1 Optimization Complete)
  *
  * REMOVED (Archived - 11 tools):
  * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
@@ -47,7 +47,12 @@
  * - get_attachments: Uses /files endpoint (documents/orders don't exist)
  * - get_file_by_id: NEW tool for GET /files/<jnid>
  *
- * PHASE 1 OPTIMIZATION COMPLETE: 103 → 91 tools (12% reduction)
+ * REMOVED (Phase 1 Optimization Part 2 - 2 redundant tools):
+ * - AnalyzeJobAttachmentsTool: Replaced by get_job_attachments_distribution
+ * - SearchInsuranceJobsTool: Replaced by search_jobs_enhanced
+ * - See: src/tools/archived/redundant/README.md for migration guide
+ *
+ * PHASE 1 OPTIMIZATION COMPLETE: 103 → 89 tools (13.6% reduction)
  */
 
 import { BaseTool } from './baseTool.js';
@@ -142,11 +147,11 @@ import { UpdateTaskTool } from './tasks/updateTask.js';
 // ===== ATTACHMENTS TOOLS =====
 import { GetAttachmentsTool } from './attachments/getAttachments.js';
 import { GetFileByIdTool } from './attachments/getFileById.js';
-import { AnalyzeJobAttachmentsTool } from './attachments/analyzeJobAttachments.js';
+// ARCHIVED (Phase 1 Part 2): AnalyzeJobAttachmentsTool - Replaced by GetJobAttachmentsDistributionTool
 import { GetJobAttachmentsDistributionTool } from './attachments/getJobAttachmentsDistribution.js';
 
 // ===== BUSINESS INTELLIGENCE =====
-import { SearchInsuranceJobsTool } from './business/searchInsuranceJobs.js';
+// ARCHIVED (Phase 1 Part 2): SearchInsuranceJobsTool - Replaced by SearchJobsEnhancedTool
 
 // ===== MATERIALS TOOLS =====
 
@@ -306,14 +311,14 @@ export class ToolRegistry {
     this.registerTool(new UpdateTaskTool());
     this.registerTool(new GetUsersTool());
 
-    // === ATTACHMENTS (4 tools) ===
+    // === ATTACHMENTS (2 tools) === [Phase 1 Part 2: Removed analyze_job_attachments - redundant]
     this.registerTool(new GetAttachmentsTool());
     this.registerTool(new GetFileByIdTool());
-    this.registerTool(new AnalyzeJobAttachmentsTool());
+    // ARCHIVED: AnalyzeJobAttachmentsTool - Replaced by GetJobAttachmentsDistributionTool
     this.registerTool(new GetJobAttachmentsDistributionTool());
 
-    // === BUSINESS INTELLIGENCE (1 tool) ===
-    this.registerTool(new SearchInsuranceJobsTool());
+    // === BUSINESS INTELLIGENCE (0 tools) === [Phase 1 Part 2: Removed search_insurance_jobs - redundant]
+    // ARCHIVED: SearchInsuranceJobsTool - Replaced by SearchJobsEnhancedTool
 
     // === MATERIALS (11 tools) ===
 
