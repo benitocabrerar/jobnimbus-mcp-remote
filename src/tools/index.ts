@@ -1,16 +1,29 @@
 /**
- * Tool Registry - ALL 73 TOOLS
- * Recent changes:
+ * Tool Registry - CONSOLIDATED 88 TOOLS (Removed 14 archived/experimental)
+ *
+ * REMOVED (Archived - 11 tools):
+ * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
+ * - AnalyzePricingAnomaliesTool, GetPricingOptimizationTool
+ * - GetCompetitiveIntelligenceTool, GetUpsellOpportunitiesTool
+ * - GetSystemInfoTool, GetWebhookMonitoringTool, GetFileStorageAnalyticsTool
+ * - GetWebhooksTool, BulkImportContactsTool, ValidateContactInformationTool
+ *
+ * REMOVED (Experimental - 7 tools):
+ * - AnalyzePublicAdjusterPipelineTool, GetCustomerLifetimeValueTool
+ * - GetSupplierComparisonTool, GetInventoryManagementAnalyticsTool
+ * - GetQualityControlAnalyticsTool, GetSmartSchedulingTool
+ * - GetCustomerJourneyAnalyticsTool
+ *
+ * Recent verified changes:
  * - get_invoices: VERIFIED WORKING (new endpoint)
- * - get_attachments: CORRECTED to use only /files endpoint (removed /documents and /orders - don't exist)
- * - get_file_by_id: NEW tool for GET /files/<jnid> (retrieve specific file by ID)
- * - Removed 6 non-existent endpoints: documents, orders, notes, locations, activity_types, task_types
+ * - get_attachments: Uses /files endpoint (documents/orders don't exist)
+ * - get_file_by_id: NEW tool for GET /files/<jnid>
  */
 
 import { BaseTool } from './baseTool.js';
 import { MCPToolDefinition } from '../types/index.js';
 
-// Basic tools
+// ===== CORE CRUD TOOLS =====
 import { GetJobsTool } from './jobs/getJobs.js';
 import { SearchJobsTool } from './jobs/searchJobs.js';
 import { SearchJobsEnhancedTool } from './jobs/searchJobsEnhanced.js';
@@ -18,7 +31,7 @@ import { GetJobTool } from './jobs/getJob.js';
 import { SearchJobNotesTool } from './jobs/searchJobNotes.js';
 import { GetJobTasksTool } from './jobs/getJobTasks.js';
 
-// Quick status search tools (NEW - 13 tools)
+// Quick status search tools (13 tools)
 import { SearchJobsByStatusTool } from './jobs/searchJobsByStatus.js';
 import {
   GetLeadsTool,
@@ -34,6 +47,7 @@ import {
   GetInvoicedTool,
   GetDepositsTool,
 } from './jobs/quickStatusTools.js';
+
 import { GetContactsTool } from './contacts/getContacts.js';
 import { SearchContactsTool } from './contacts/searchContacts.js';
 import { CreateContactTool } from './contacts/createContact.js';
@@ -42,105 +56,83 @@ import { GetActivitiesTool } from './activities/getActivities.js';
 import { CreateActivityTool } from './activities/createActivity.js';
 import { GetCalendarActivities } from './activities/getCalendarActivities.js';
 import { GetTimelineData } from './activities/getTimelineData.js';
-import { GetSystemInfoTool } from './system/getSystemInfo.js';
 import { ValidateApiKeyTool } from './system/validateApiKey.js';
 
-// Analytics tools - Comprehensive implementations
+// ===== ANALYTICS TOOLS =====
+
+// Insurance & Retail Pipeline
 import { AnalyzeInsurancePipelineTool } from './analytics/analyzeInsurancePipeline.js';
 import { AnalyzeRetailPipelineTool } from './analytics/analyzeRetailPipeline.js';
+import { AnalyzeServicesRepairPipelineTool } from './analytics/analyzeServicesRepairPipeline.js';
+
+// Financial Analytics
 import { GetSalesRepPerformanceTool } from './analytics/getSalesRepPerformance.js';
 import { GetPerformanceMetricsTool } from './analytics/getPerformanceMetrics.js';
 import { GetAutomatedFollowupTool } from './analytics/getAutomatedFollowup.js';
 import { GetRevenueReportTool } from './analytics/getRevenueReport.js';
 import { GetMarginAnalysisTool } from './analytics/getMarginAnalysis.js';
 import { AnalyzeRevenueLeakageTool } from './analytics/analyzeRevenueLeakage.js';
-import { GetCustomerLifetimeValueTool } from './analytics/getCustomerLifetimeValue.js';
 import { GetProfitabilityDashboardTool } from './analytics/getProfitabilityDashboard.js';
-import {
-  AnalyzeDuplicateContactsTool,
-  AnalyzeDuplicateJobsTool,
-  AnalyzePricingAnomaliesTool,
-  GetPricingOptimizationTool,
-  GetCompetitiveIntelligenceTool,
-  GetUpsellOpportunitiesTool,
-} from './analytics/batchAnalyticsTools.js';
 
-// Comprehensive analytics tools (Batch 1 - 5 tools)
-import { AnalyzeServicesRepairPipelineTool } from './analytics/analyzeServicesRepairPipeline.js';
-import { AnalyzePublicAdjusterPipelineTool } from './analytics/analyzePublicAdjusterPipeline.js';
+// Performance & Forecasting
 import { GetSeasonalTrendsTool } from './analytics/getSeasonalTrends.js';
 import { GetPipelineForecastingTool } from './analytics/getPipelineForecasting.js';
-import { GetSmartSchedulingTool } from './analytics/getSmartScheduling.js';
 
-// Comprehensive analytics tools (Batch 2 - 5 tools)
+// Job & Territory Analytics
 import { GetJobSummaryTool } from './analytics/getJobSummary.js';
 import { GetOptimalDoorRoutesTool } from './analytics/getOptimalDoorRoutes.js';
 import { GetTerritoryHeatMapsTool } from './analytics/getTerritoryHeatMaps.js';
 import { GetActivitiesAnalyticsTool } from './analytics/getActivitiesAnalytics.js';
-import { BulkImportContactsTool } from './analytics/getBulkImportContacts.js';
-
-// Comprehensive analytics tools (Batch 3 - 5 tools)
 import { GetJobsDistributionTool } from './analytics/getJobsDistribution.js';
 import { GetDoorKnockingScriptsByAreaTool } from './analytics/getDoorKnockingScriptsByArea.js';
 import { GetSeasonalDoorTimingTool } from './analytics/getSeasonalDoorTiming.js';
 import { GetEstimatesWithAddressesTool } from './analytics/getEstimatesWithAddresses.js';
-import { ValidateContactInformationTool } from './analytics/validateContactInformation.js';
 
-// Comprehensive analytics tools (Batch 4 - 5 tools)
+// Task & User Productivity
 import { GetTaskManagementAnalyticsTool } from './analytics/getTaskManagementAnalytics.js';
 import { GetUserProductivityAnalyticsTool } from './analytics/getUserProductivityAnalytics.js';
-import { GetWebhookMonitoringTool } from './analytics/getWebhookMonitoring.js';
-import { GetFileStorageAnalyticsTool } from './analytics/getFileStorageAnalytics.js';
 import { GetLeadScoringAnalyticsTool } from './analytics/getLeadScoringAnalytics.js';
 
-// Comprehensive analytics tools (Batch 5 - 5 tools)
+// Communication & Conversion
 import { GetCommunicationAnalyticsTool } from './analytics/getCommunicationAnalytics.js';
 import { GetConversionFunnelAnalyticsTool } from './analytics/getConversionFunnelAnalytics.js';
 import { GetResourceAllocationAnalyticsTool } from './analytics/getResourceAllocationAnalytics.js';
 import { GetCustomerSatisfactionAnalyticsTool } from './analytics/getCustomerSatisfactionAnalytics.js';
 import { GetTimeTrackingAnalyticsTool } from './analytics/getTimeTrackingAnalytics.js';
 
-// Comprehensive analytics tools (Batch 6 - 5 tools)
+// Project & Operations
 import { GetProjectManagementAnalyticsTool } from './analytics/getProjectManagementAnalytics.js';
 import { GetMarketingCampaignAnalyticsTool } from './analytics/getMarketingCampaignAnalytics.js';
 import { GetFinancialForecastingAnalyticsTool } from './analytics/getFinancialForecastingAnalytics.js';
 import { GetCustomerSegmentationAnalyticsTool } from './analytics/getCustomerSegmentationAnalytics.js';
 import { GetOperationalEfficiencyAnalyticsTool } from './analytics/getOperationalEfficiencyAnalytics.js';
 
-// Comprehensive analytics tools (Batch 7 - 5 tools)
+// Sales & Competition
 import { GetSalesVelocityAnalyticsTool } from './analytics/getSalesVelocityAnalytics.js';
 import { GetCompetitiveAnalysisAnalyticsTool } from './analytics/getCompetitiveAnalysisAnalytics.js';
-import { GetCustomerJourneyAnalyticsTool } from './analytics/getCustomerJourneyAnalytics.js';
-import { GetInventoryManagementAnalyticsTool } from './analytics/getInventoryManagementAnalytics.js';
-import { GetQualityControlAnalyticsTool } from './analytics/getQualityControlAnalytics.js';
 
-import {
-  GetWebhooksTool,
-} from './analytics/simplifiedBatchTools.js';
-
-// Users tools
+// ===== SYSTEM TOOLS =====
 import { GetUsersTool } from './users/getUsers.js';
-
-// Tasks tools
 import { GetTasksTool } from './tasks/getTasks.js';
 
-// Attachments tools
+// ===== ATTACHMENTS TOOLS =====
 import { GetAttachmentsTool } from './attachments/getAttachments.js';
 import { GetFileByIdTool } from './attachments/getFileById.js';
 import { AnalyzeJobAttachmentsTool } from './attachments/analyzeJobAttachments.js';
 import { GetJobAttachmentsDistributionTool } from './attachments/getJobAttachmentsDistribution.js';
 
-// Business intelligence tools
+// ===== BUSINESS INTELLIGENCE =====
 import { SearchInsuranceJobsTool } from './business/searchInsuranceJobs.js';
 
-// Material tracking tools
+// ===== MATERIALS TOOLS =====
+
+// Material Tracking
 import { GetEstimateMaterialsTool } from './materials/getEstimateMaterials.js';
 import { AnalyzeMaterialCostsTool } from './materials/analyzeMaterialCosts.js';
 import { GetMaterialUsageReportTool } from './materials/getMaterialUsageReport.js';
-import { GetSupplierComparisonTool } from './materials/getSupplierComparison.js';
 import { GetMaterialInventoryInsightsTool } from './materials/getMaterialInventoryInsights.js';
 
-// Material calculation tools (NEW)
+// Material Calculations
 import { CalculateRoofingMaterialsTool } from './materials/calculateRoofingMaterials.js';
 import { CalculateSidingMaterialsTool } from './materials/calculateSidingMaterials.js';
 import { EstimateMaterialsFromJobTool } from './materials/estimateMaterialsFromJob.js';
@@ -149,7 +141,7 @@ import { OptimizeMaterialOrdersTool } from './materials/optimizeMaterialOrders.j
 import { GetMaterialSpecificationsTool } from './materials/getMaterialSpecifications.js';
 import { CompareMaterialAlternativesTool } from './materials/compareMaterialAlternatives.js';
 
-// Additional endpoint tools (NEW - 1 verified working tool)
+// ===== INVOICES =====
 import { GetInvoicesTool } from './invoices/getInvoices.js';
 
 // Generic tool generator for remaining tools
@@ -162,8 +154,7 @@ export class ToolRegistry {
   private tools = new Map<string, BaseTool>();
 
   constructor() {
-    // Register manually implemented tools
-    this.registerTool(new GetSystemInfoTool());
+    // === CORE CRUD TOOLS (19 tools) ===
     this.registerTool(new ValidateApiKeyTool());
     this.registerTool(new GetJobsTool());
     this.registerTool(new SearchJobsTool());
@@ -172,7 +163,7 @@ export class ToolRegistry {
     this.registerTool(new SearchJobNotesTool());
     this.registerTool(new GetJobTasksTool());
 
-    // Register quick status search tools (NEW - 13 tools)
+    // Quick Status Tools (13 tools)
     this.registerTool(new SearchJobsByStatusTool());
     this.registerTool(new GetLeadsTool());
     this.registerTool(new GetPendingApprovalTool());
@@ -186,6 +177,8 @@ export class ToolRegistry {
     this.registerTool(new GetAppointmentsTool());
     this.registerTool(new GetInvoicedTool());
     this.registerTool(new GetDepositsTool());
+
+    // Contacts, Estimates, Activities
     this.registerTool(new GetContactsTool());
     this.registerTool(new SearchContactsTool());
     this.registerTool(new CreateContactTool());
@@ -194,83 +187,82 @@ export class ToolRegistry {
     this.registerTool(new CreateActivityTool());
     this.registerTool(new GetCalendarActivities());
     this.registerTool(new GetTimelineData());
+
+    // === ANALYTICS TOOLS (35 tools) ===
+
+    // Insurance & Retail
     this.registerTool(new AnalyzeInsurancePipelineTool());
     this.registerTool(new AnalyzeRetailPipelineTool());
+    this.registerTool(new AnalyzeServicesRepairPipelineTool());
+
+    // Financial
     this.registerTool(new GetSalesRepPerformanceTool());
     this.registerTool(new GetPerformanceMetricsTool());
     this.registerTool(new GetAutomatedFollowupTool());
     this.registerTool(new GetRevenueReportTool());
     this.registerTool(new GetMarginAnalysisTool());
     this.registerTool(new AnalyzeRevenueLeakageTool());
-    this.registerTool(new GetCustomerLifetimeValueTool());
     this.registerTool(new GetProfitabilityDashboardTool());
-    this.registerTool(new AnalyzeDuplicateContactsTool());
-    this.registerTool(new AnalyzeDuplicateJobsTool());
-    this.registerTool(new AnalyzePricingAnomaliesTool());
-    this.registerTool(new GetPricingOptimizationTool());
-    this.registerTool(new GetCompetitiveIntelligenceTool());
-    this.registerTool(new GetUpsellOpportunitiesTool());
 
-    // Register comprehensive analytics tools (Batches 1-4)
-    this.registerTool(new AnalyzeServicesRepairPipelineTool());
-    this.registerTool(new AnalyzePublicAdjusterPipelineTool());
+    // Performance & Forecasting
     this.registerTool(new GetSeasonalTrendsTool());
     this.registerTool(new GetPipelineForecastingTool());
-    this.registerTool(new GetSmartSchedulingTool());
+
+    // Job & Territory
     this.registerTool(new GetJobSummaryTool());
     this.registerTool(new GetOptimalDoorRoutesTool());
     this.registerTool(new GetTerritoryHeatMapsTool());
     this.registerTool(new GetActivitiesAnalyticsTool());
-    this.registerTool(new BulkImportContactsTool());
     this.registerTool(new GetJobsDistributionTool());
     this.registerTool(new GetDoorKnockingScriptsByAreaTool());
     this.registerTool(new GetSeasonalDoorTimingTool());
     this.registerTool(new GetEstimatesWithAddressesTool());
-    this.registerTool(new ValidateContactInformationTool());
+
+    // Task & User
     this.registerTool(new GetTaskManagementAnalyticsTool());
     this.registerTool(new GetUserProductivityAnalyticsTool());
-    this.registerTool(new GetWebhookMonitoringTool());
-    this.registerTool(new GetFileStorageAnalyticsTool());
     this.registerTool(new GetLeadScoringAnalyticsTool());
+
+    // Communication & Conversion
     this.registerTool(new GetCommunicationAnalyticsTool());
     this.registerTool(new GetConversionFunnelAnalyticsTool());
     this.registerTool(new GetResourceAllocationAnalyticsTool());
     this.registerTool(new GetCustomerSatisfactionAnalyticsTool());
     this.registerTool(new GetTimeTrackingAnalyticsTool());
+
+    // Project & Operations
     this.registerTool(new GetProjectManagementAnalyticsTool());
     this.registerTool(new GetMarketingCampaignAnalyticsTool());
     this.registerTool(new GetFinancialForecastingAnalyticsTool());
     this.registerTool(new GetCustomerSegmentationAnalyticsTool());
     this.registerTool(new GetOperationalEfficiencyAnalyticsTool());
+
+    // Sales & Competition
     this.registerTool(new GetSalesVelocityAnalyticsTool());
     this.registerTool(new GetCompetitiveAnalysisAnalyticsTool());
-    this.registerTool(new GetCustomerJourneyAnalyticsTool());
-    this.registerTool(new GetInventoryManagementAnalyticsTool());
-    this.registerTool(new GetQualityControlAnalyticsTool());
 
-    // Register remaining simplified tools
+    // === SYSTEM TOOLS (2 tools) ===
     this.registerTool(new GetTasksTool());
     this.registerTool(new GetUsersTool());
-    this.registerTool(new GetWebhooksTool());
-    this.registerTool(new GetAttachmentsTool());
-    // Removed GetTimelineDataTool2 and GetCalendarActivitiesTool2 - they were overriding real implementations
 
-    // Register attachment tools
+    // === ATTACHMENTS (4 tools) ===
+    this.registerTool(new GetAttachmentsTool());
     this.registerTool(new GetFileByIdTool());
     this.registerTool(new AnalyzeJobAttachmentsTool());
     this.registerTool(new GetJobAttachmentsDistributionTool());
 
-    // Register business intelligence tools
+    // === BUSINESS INTELLIGENCE (1 tool) ===
     this.registerTool(new SearchInsuranceJobsTool());
 
-    // Register material tracking tools
+    // === MATERIALS (11 tools) ===
+
+    // Material Tracking
     this.registerTool(new GetEstimateMaterialsTool());
     this.registerTool(new AnalyzeMaterialCostsTool());
     this.registerTool(new GetMaterialUsageReportTool());
-    this.registerTool(new GetSupplierComparisonTool());
     this.registerTool(new GetMaterialInventoryInsightsTool());
 
-    // Register material calculation tools (NEW - 7 tools)
+    // Material Calculations
     this.registerTool(new CalculateRoofingMaterialsTool());
     this.registerTool(new CalculateSidingMaterialsTool());
     this.registerTool(new EstimateMaterialsFromJobTool());
@@ -279,10 +271,10 @@ export class ToolRegistry {
     this.registerTool(new GetMaterialSpecificationsTool());
     this.registerTool(new CompareMaterialAlternativesTool());
 
-    // Register additional endpoint tools (NEW - 1 verified working tool)
+    // === INVOICES (1 tool) ===
     this.registerTool(new GetInvoicesTool());
 
-    // Register all generic tools
+    // === GENERIC TOOLS ===
     for (const config of ALL_TOOLS_CONFIG) {
       const ToolClass = createGenericTool(config);
       this.registerTool(new ToolClass());

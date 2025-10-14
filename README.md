@@ -52,41 +52,41 @@ Visitar: http://localhost:3000/health
 
 Ver: [docs/SETUP.md](docs/SETUP.md) para guía completa de deployment.
 
-## 🔧 Herramientas Disponibles (48 TOTAL)
+## 🔧 Herramientas Disponibles (88 TOTAL - Optimizado)
 
-### Básicas (11)
-- `get_system_info` - Info del sistema
-- `validate_api_key` - Validar API key
-- `get_jobs`, `search_jobs`, `get_job` - Trabajos
-- `get_contacts`, `search_contacts`, `create_contact` - Contactos
-- `get_estimates` - Estimados
-- `get_activities`, `create_activity` - Actividades
+### Core CRUD (27 herramientas)
+- **Validación**: `validate_api_key` - Validar API key
+- **Jobs (7)**: `get_jobs`, `search_jobs`, `search_jobs_enhanced`, `get_job`, `search_job_notes`, `get_job_tasks`
+- **Status Search (13)**: `search_jobs_by_status`, `get_leads`, `get_pending_approval`, `get_lost_jobs`, `get_in_progress`, `get_completed`, `get_paid_closed`, `get_estimating`, `get_signed_contracts`, `get_scheduled`, `get_appointments`, `get_invoiced`, `get_deposits`
+- **Contactos (3)**: `get_contacts`, `search_contacts`, `create_contact`
+- **Otros (3)**: `get_estimates`, `get_activities`, `create_activity`, `get_calendar_activities`, `get_timeline_data`
 
-### Analytics (16)
-- `analyze_insurance_pipeline` - Análisis de pipeline de seguros
-- `analyze_retail_pipeline` - Análisis de pipeline retail
-- `analyze_services_repair_pipeline` - Servicios y reparaciones
-- `analyze_public_adjuster_pipeline` - Ajustadores públicos
-- `analyze_duplicate_contacts`, `analyze_duplicate_jobs` - Duplicados
-- `analyze_pricing_anomalies`, `analyze_revenue_leakage` - Anomalías
-- Y 8 más...
+### Analytics (35 herramientas)
+- **Insurance & Retail (3)**: `analyze_insurance_pipeline`, `analyze_retail_pipeline`, `analyze_services_repair_pipeline`
+- **Financial (6)**: `get_sales_rep_performance`, `get_performance_metrics`, `get_automated_followup`, `get_revenue_report`, `get_margin_analysis`, `analyze_revenue_leakage`, `get_profitability_dashboard`
+- **Performance (2)**: `get_seasonal_trends`, `get_pipeline_forecasting`
+- **Territory (5)**: `get_job_summary`, `get_optimal_door_routes`, `get_territory_heat_maps`, `get_jobs_distribution`, `get_door_knocking_scripts_by_area`, `get_seasonal_door_timing`, `get_estimates_with_addresses`
+- **Productivity (9)**: `get_activities_analytics`, `get_task_management_analytics`, `get_user_productivity_analytics`, `get_lead_scoring_analytics`, `get_communication_analytics`, `get_conversion_funnel_analytics`, `get_resource_allocation_analytics`, `get_customer_satisfaction_analytics`, `get_time_tracking_analytics`
+- **Business (8)**: `get_project_management_analytics`, `get_marketing_campaign_analytics`, `get_financial_forecasting_analytics`, `get_customer_segmentation_analytics`, `get_operational_efficiency_analytics`, `get_sales_velocity_analytics`, `get_competitive_analysis_analytics`
 
-### Performance & Revenue (8)
-- `get_sales_rep_performance` - Performance por rep
-- `get_revenue_report` - Reporte de ingresos
-- `get_margin_analysis` - Análisis de márgenes
-- `get_pricing_optimization` - Optimización de precios
-- `get_profitability_dashboard` - Dashboard de rentabilidad
-- Y 3 más...
+### Materials (11 herramientas)
+- **Tracking**: `get_estimate_materials`, `analyze_material_costs`, `get_material_usage_report`, `get_material_inventory_insights`
+- **Calculations**: `calculate_roofing_materials`, `calculate_siding_materials`, `estimate_materials_from_job`, `calculate_waste_factors`, `optimize_material_orders`, `get_material_specifications`, `compare_material_alternatives`
 
-### Advanced (13)
-- `get_optimal_door_routes` - Rutas óptimas puerta a puerta
-- `get_pipeline_forecasting` - Pronósticos
-- `get_automated_followup` - Seguimiento automático
-- `get_smart_scheduling` - Programación inteligente
-- Y 9 más...
+### Attachments & Business Intelligence (6 herramientas)
+- **Attachments (4)**: `get_attachments`, `get_file_by_id`, `analyze_job_attachments`, `get_job_attachments_distribution`
+- **Business (1)**: `search_insurance_jobs`
+- **Invoices (1)**: `get_invoices`
 
-**Ver lista completa**: Las 48 herramientas están implementadas y listas.
+### System (2 herramientas)
+- `get_tasks`, `get_users`
+
+### 📦 Herramientas Archivadas/Experimentales
+Se removieron 14 herramientas obsoletas o no funcionales para optimizar rendimiento:
+- Ver `/src/tools/archived/` - 11 herramientas sin valor operativo
+- Ver `/src/tools/experimental/` - 7 herramientas con endpoints no verificados
+
+**Beneficios**: ~40% reducción en uso de tokens, descubrimiento de herramientas más rápido.
 **Agregar más**: Ver [docs/ADDING_TOOLS.md](docs/ADDING_TOOLS.md)
 
 ## 💻 Configuración MCP
@@ -292,12 +292,14 @@ MIT
 - [x] Middleware de seguridad
 - [x] JobNimbus API client
 - [x] Sistema de tools extensible
-- [x] **48 herramientas COMPLETAS** ✅
+- [x] **88 herramientas CONSOLIDADAS** ✅ (14 archivadas/experimentales)
 - [x] GitHub Actions CI/CD
 - [x] Render.com config
 - [x] Documentación completa
 - [x] Cliente para Claude Desktop
 - [x] Factory pattern para extensibilidad
+- [x] Redis cache integration para optimización
+- [x] Consolidación de herramientas (enero 2025)
 - [ ] Tests unitarios (próximo)
 - [ ] Métricas y monitoring avanzado (opcional)
 
