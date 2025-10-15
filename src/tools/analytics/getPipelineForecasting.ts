@@ -5,6 +5,7 @@
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { validate_conversion_real } from '../../utils/conversionValidation.js';
 
 interface StageForecast {
   stage_name: string;
@@ -111,25 +112,35 @@ export class GetPipelineForecastingTool extends BaseTool<any, any> {
         totalHistoricalJobs++;
 
         if (isWon) {
-          stage.conversions++;
-          totalConversions++;
-
-          // Calculate revenue
+          // Calculate revenue and count approved estimates first
+          let jobRevenue = 0;
+          let approvedEstimates = 0;
           const jobEstimates = estimatesByJob.get(job.jnid) || [];
+
           for (const est of jobEstimates) {
             if (est.date_signed > 0 || est.status_name === 'approved') {
+              approvedEstimates++;
               const revenue = parseFloat(est.total || 0);
+              jobRevenue += revenue;
               stage.revenue += revenue;
               totalHistoricalRevenue += revenue;
             }
           }
 
-          // Calculate time to convert
-          const startDate = job.date_created || 0;
-          const endDate = job.date_updated || now;
-          if (startDate > 0 && endDate > startDate) {
-            const daysToConvert = (endDate - startDate) / (24 * 60 * 60 * 1000);
-            stage.avgDaysToConvert += daysToConvert;
+          // FIXED: Only count as conversion if financial data exists
+          // Prevents false positives where jobs are marked "won" but have no revenue
+          const validation = validate_conversion_real(jobRevenue, approvedEstimates);
+          if (validation.hasFinancialData) {
+            stage.conversions++;
+            totalConversions++;
+
+            // Calculate time to convert (only for validated conversions)
+            const startDate = job.date_created || 0;
+            const endDate = job.date_updated || now;
+            if (startDate > 0 && endDate > startDate) {
+              const daysToConvert = (endDate - startDate) / (24 * 60 * 60 * 1000);
+              stage.avgDaysToConvert += daysToConvert;
+            }
           }
         }
       }

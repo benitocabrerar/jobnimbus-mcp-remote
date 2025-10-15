@@ -5,6 +5,7 @@
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { validate_conversion_real } from '../../utils/conversionValidation.js';
 
 interface SalesRepPerformance {
   rep_id: string;
@@ -13,6 +14,7 @@ interface SalesRepPerformance {
   total_value: number;
   avg_value: number;
   conversion_rate: number;
+  conversion_verified: boolean; // True if conversion backed by financial data
   won_jobs: number;
   lost_jobs: number;
   pending_jobs: number;
@@ -89,6 +91,7 @@ export class GetSalesRepPerformanceTool extends BaseTool<any, any> {
             total_value: 0,
             avg_value: 0,
             conversion_rate: 0,
+            conversion_verified: false,
             won_jobs: 0,
             lost_jobs: 0,
             pending_jobs: 0,
@@ -146,10 +149,19 @@ export class GetSalesRepPerformanceTool extends BaseTool<any, any> {
       for (const rep of repPerformance.values()) {
         if (rep.jobs_count > 0) {
           rep.avg_value = rep.total_value / rep.jobs_count;
+
+          // FIXED: Validate financial data exists before counting conversion
+          // Prevents false positives where jobs are marked "won" but have no revenue
+          const validation = validate_conversion_real(rep.total_value, rep.estimates_approved);
           const totalDecisions = rep.won_jobs + rep.lost_jobs;
-          if (totalDecisions > 0) {
+
+          if (totalDecisions > 0 && validation.hasFinancialData) {
             rep.conversion_rate = rep.won_jobs / totalDecisions;
+          } else {
+            rep.conversion_rate = 0.0;  // No financial data = no valid conversion
           }
+
+          rep.conversion_verified = validation.hasFinancialData;
         }
       }
 
