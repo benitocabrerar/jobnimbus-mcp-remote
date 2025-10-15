@@ -1,5 +1,5 @@
 /**
- * Tool Registry - 79 TOOLS (2025-01-14 Phase 2 Part 1 Optimization Complete)
+ * Tool Registry - 75 TOOLS (2025-01-14 Phase 2 Part 2 Optimization Complete)
  *
  * REMOVED (Archived - 11 tools):
  * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
@@ -34,6 +34,16 @@
  * - Reason: Generic business intelligence, not construction-industry specific
  * - See: src/tools/archived/analytics/low-value/README.md for alternatives
  *
+ * REMOVED (Phase 2 Part 2 - 7 territory/job analytics tools consolidated into 3):
+ * - Territory Analytics (3 tools → 1): get_optimal_door_routes, get_territory_heat_maps, get_jobs_distribution
+ *   → Replaced by: get_territory_analytics(analysis_type='routes'|'heatmaps'|'distribution')
+ * - Door Sales (2 tools → 1): get_door_knocking_scripts_by_area, get_seasonal_door_timing
+ *   → Replaced by: get_door_sales_analytics(analysis_type='scripts'|'timing')
+ * - Job Analytics (2 tools → 1): get_job_summary, get_estimates_with_addresses
+ *   → Replaced by: get_job_analytics(analysis_type='summary'|'estimates_geo')
+ * - Kept standalone: get_activities_analytics (already comprehensive)
+ * - See: src/tools/archived/analytics/territory-job/README.md for migration guide
+ *
  * COMMENTED OUT (Not yet implemented - 13 tools):
  * - Payment tools (2): get_payments, create_payment
  * - Account tools (11): get_account_settings, get_users, get_uoms, create_workflow,
@@ -63,7 +73,8 @@
  * OPTIMIZATION PROGRESS:
  * - Phase 1 Complete: 103 → 89 tools (13.6% reduction)
  * - Phase 2 Part 1 Complete: 89 → 79 tools (11.2% additional reduction)
- * - Total Reduction: 103 → 79 tools (23.3% overall reduction)
+ * - Phase 2 Part 2 Complete: 79 → 75 tools (5.1% additional reduction)
+ * - Total Reduction: 103 → 75 tools (27.2% overall reduction)
  */
 
 import { BaseTool } from './baseTool.js';
@@ -116,15 +127,14 @@ import { GetProfitabilityDashboardTool } from './analytics/getProfitabilityDashb
 import { GetSeasonalTrendsTool } from './analytics/getSeasonalTrends.js';
 import { GetPipelineForecastingTool } from './analytics/getPipelineForecasting.js';
 
-// Job & Territory Analytics
-import { GetJobSummaryTool } from './analytics/getJobSummary.js';
-import { GetOptimalDoorRoutesTool } from './analytics/getOptimalDoorRoutes.js';
-import { GetTerritoryHeatMapsTool } from './analytics/getTerritoryHeatMaps.js';
+// Job & Territory Analytics - CONSOLIDATED (Phase 2 Part 2: 8 → 4 tools)
+import { GetTerritoryAnalyticsTool } from './analytics/getTerritoryAnalytics.js';
+import { GetDoorSalesAnalyticsTool } from './analytics/getDoorSalesAnalytics.js';
+import { GetJobAnalyticsTool } from './analytics/getJobAnalytics.js';
 import { GetActivitiesAnalyticsTool } from './analytics/getActivitiesAnalytics.js';
-import { GetJobsDistributionTool } from './analytics/getJobsDistribution.js';
-import { GetDoorKnockingScriptsByAreaTool } from './analytics/getDoorKnockingScriptsByArea.js';
-import { GetSeasonalDoorTimingTool } from './analytics/getSeasonalDoorTiming.js';
-import { GetEstimatesWithAddressesTool } from './analytics/getEstimatesWithAddresses.js';
+// ARCHIVED (Phase 2 Part 2): GetJobSummaryTool, GetOptimalDoorRoutesTool, GetTerritoryHeatMapsTool,
+// GetJobsDistributionTool, GetDoorKnockingScriptsByAreaTool, GetSeasonalDoorTimingTool, GetEstimatesWithAddressesTool
+// See: src/tools/archived/analytics/territory-job/README.md for migration guide
 
 // Task & User Productivity
 import { GetTaskManagementAnalyticsTool } from './analytics/getTaskManagementAnalytics.js';
@@ -261,7 +271,7 @@ export class ToolRegistry {
     this.registerTool(new GetCalendarActivities());
     this.registerTool(new GetTimelineData());
 
-    // === ANALYTICS TOOLS (25 tools) === [Phase 2 Part 1: Removed 10 low-value analytics]
+    // === ANALYTICS TOOLS (21 tools) === [Phase 2 Part 2: Consolidated territory/job analytics 8 → 4]
 
     // Insurance & Retail
     this.registerTool(new AnalyzeInsurancePipelineTool());
@@ -281,15 +291,13 @@ export class ToolRegistry {
     this.registerTool(new GetSeasonalTrendsTool());
     this.registerTool(new GetPipelineForecastingTool());
 
-    // Job & Territory
-    this.registerTool(new GetJobSummaryTool());
-    this.registerTool(new GetOptimalDoorRoutesTool());
-    this.registerTool(new GetTerritoryHeatMapsTool());
+    // Job & Territory - CONSOLIDATED (Phase 2 Part 2: 8 → 4 tools)
+    this.registerTool(new GetTerritoryAnalyticsTool());
+    this.registerTool(new GetDoorSalesAnalyticsTool());
+    this.registerTool(new GetJobAnalyticsTool());
     this.registerTool(new GetActivitiesAnalyticsTool());
-    this.registerTool(new GetJobsDistributionTool());
-    this.registerTool(new GetDoorKnockingScriptsByAreaTool());
-    this.registerTool(new GetSeasonalDoorTimingTool());
-    this.registerTool(new GetEstimatesWithAddressesTool());
+    // ARCHIVED: GetJobSummaryTool, GetOptimalDoorRoutesTool, GetTerritoryHeatMapsTool,
+    // GetJobsDistributionTool, GetDoorKnockingScriptsByAreaTool, GetSeasonalDoorTimingTool, GetEstimatesWithAddressesTool
 
     // Task & User
     this.registerTool(new GetTaskManagementAnalyticsTool());
