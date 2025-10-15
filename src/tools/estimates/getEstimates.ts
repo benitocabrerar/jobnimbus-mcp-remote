@@ -2,19 +2,31 @@
  * Get Estimates Tool
  * Enhanced with status filtering, sent/approved date filtering, and sorting capabilities
  *
- * PHASE 2: Integrated Redis cache system for performance optimization
+ * PHASE 3: Handle-based response system for token optimization
+ * - Automatic response size detection and handle storage
+ * - Verbosity levels: summary/compact/detailed/raw
+ * - Field selection support
+ * - Redis cache + handle storage integration
  */
 
 import { BaseTool } from '../baseTool.js';
-import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { MCPToolDefinition, ToolContext, BaseToolInput } from '../../types/index.js';
 import { getCurrentMonth } from '../../utils/dateHelpers.js';
 import { compactEstimate, compactArray } from '../../utils/compactData.js';
 import { withCache } from '../../services/cacheService.js';
 import { CACHE_PREFIXES, getTTL } from '../../config/cache.js';
 
-interface GetEstimatesInput {
+interface GetEstimatesInput extends BaseToolInput {
+  // Pagination
   from?: number;
   size?: number;
+  page_size?: number;
+
+  // Response control (Phase 3: Handle-based system)
+  verbosity?: 'summary' | 'compact' | 'detailed' | 'raw';
+  fields?: string;
+
+  // Date filtering
   date_from?: string;
   date_to?: string;
   sent_from?: string;
@@ -22,9 +34,13 @@ interface GetEstimatesInput {
   approved_from?: string;
   approved_to?: string;
   has_approval?: boolean;
+
+  // Status and sorting
   status?: string;
   sort_by?: 'date_sent' | 'date_approved' | 'date_created' | 'date_updated';
   order?: 'asc' | 'desc';
+
+  // Legacy parameter (replaced by verbosity, but kept for backward compatibility)
   include_full_details?: boolean;
 }
 
@@ -41,11 +57,16 @@ interface Estimate {
 
 /**
  * Generate deterministic cache identifier from input parameters
- * Format: {from}:{size}:{date_from}:{date_to}:{sent_from}:{sent_to}:{approved_from}:{approved_to}:{has_approval}:{status}:{sort_by}:{order}:{full_details}
+ * Format: {from}:{size}:{page_size}:{verbosity}:{fields}:{date_from}:{date_to}:{sent_from}:{sent_to}:{approved_from}:{approved_to}:{has_approval}:{status}:{sort_by}:{order}:{full_details}
+ *
+ * CRITICAL: Must include verbosity and page_size to prevent returning wrong cached responses
  */
 function generateCacheIdentifier(input: GetEstimatesInput): string {
   const from = input.from || 0;
   const size = input.size || 15;
+  const pageSize = input.page_size || 'null';
+  const verbosity = input.verbosity || 'null';
+  const fields = input.fields || 'null';
   const dateFrom = input.date_from || 'null';
   const dateTo = input.date_to || 'null';
   const sentFrom = input.sent_from || 'null';
@@ -58,24 +79,40 @@ function generateCacheIdentifier(input: GetEstimatesInput): string {
   const order = input.order || 'desc';
   const fullDetails = input.include_full_details ? 'full' : 'compact';
 
-  return `${from}:${size}:${dateFrom}:${dateTo}:${sentFrom}:${sentTo}:${approvedFrom}:${approvedTo}:${hasApproval}:${status}:${sortBy}:${order}:${fullDetails}`;
+  return `${from}:${size}:${pageSize}:${verbosity}:${fields}:${dateFrom}:${dateTo}:${sentFrom}:${sentTo}:${approvedFrom}:${approvedTo}:${hasApproval}:${status}:${sortBy}:${order}:${fullDetails}`;
 }
 
 export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_estimates',
-      description: 'Retrieve estimates from JobNimbus with pagination, date filtering, status filtering, sent/approved date filtering, and sorting',
+      description: 'Retrieve estimates from JobNimbus with handle-based response optimization. IMPORTANT: By default returns compact summary (5 estimates, 15 fields each) with result_handle for full data retrieval. Use verbosity parameter to control detail level. Large responses (>25 KB) automatically stored in Redis with 15-min TTL - use fetch_by_handle to retrieve. Supports pagination, date filtering, status filtering, sent/approved date filtering, and sorting.',
       inputSchema: {
         type: 'object',
         properties: {
+          // NEW: Handle-based response control
+          verbosity: {
+            type: 'string',
+            description: 'Response detail level: "summary" (5 fields, max 5 estimates), "compact" (15 fields, max 20 estimates - DEFAULT), "detailed" (50 fields, max 50 estimates), "raw" (all fields). Compact mode prevents chat saturation.',
+            enum: ['summary', 'compact', 'detailed', 'raw'],
+          },
+          fields: {
+            type: 'string',
+            description: 'Comma-separated field names to return. Example: "jnid,number,status_name,date_sent,date_signed". Overrides verbosity-based field selection.',
+          },
+          page_size: {
+            type: 'number',
+            description: 'Number of records per page (default: 20, max: 100). Replaces "size" parameter. Use with cursor for pagination.',
+          },
+
+          // Existing parameters
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0)',
+            description: 'Starting index for pagination (default: 0). NOTE: Prefer page_size + cursor for large datasets.',
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 15, max: 50). Use small values to prevent response saturation.',
+            description: 'Number of records to retrieve (default: 15, max: 50). DEPRECATED: Use page_size instead.',
           },
           date_from: {
             type: 'string',
@@ -121,7 +158,7 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
           },
           include_full_details: {
             type: 'boolean',
-            description: 'Return full estimate details. Default: false (compact mode with only essential fields). Set to true for complete estimate objects.',
+            description: 'LEGACY: Return full estimate details. Default: false. DEPRECATED: Use verbosity="detailed" or verbosity="raw" instead.',
           },
         },
       },
@@ -274,9 +311,9 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
       },
       getTTL('ESTIMATES_LIST'),
       async () => {
+        // Determine page size - prefer page_size (new) over size (legacy)
+        const pageSize = input.page_size || input.size || 15;
         const fromIndex = input.from || 0;
-        // OPTIMIZED: Reduced from 50 to 15 (default) and 100 to 50 (max) to prevent saturation
-        const requestedSize = Math.min(input.size || 15, 50);
         const order = input.order || 'desc';
 
     // Use current date as default if no date filters provided
@@ -356,86 +393,170 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
       }
 
       // Paginate
-      const paginatedEstimates = filteredEstimates.slice(fromIndex, fromIndex + requestedSize);
+      const rawEstimates = filteredEstimates.slice(fromIndex, fromIndex + pageSize);
+      const totalFiltered = filteredEstimates.length;
 
-      // OPTIMIZED: Force compact mode if more than 10 results to prevent saturation
-      const forceCompact = paginatedEstimates.length > 10;
-      const useCompactMode = !input.include_full_details || forceCompact;
-
-      // Apply compaction if not requesting full details
-      const resultEstimates = useCompactMode
-        ? compactArray(paginatedEstimates, compactEstimate)
-        : paginatedEstimates;
-
-      return {
-        _code_version: 'v1.0-optimized-2025-10-10',
-        count: paginatedEstimates.length,
-        total_filtered: filteredEstimates.length,
-        total_fetched: allEstimates.length,
-        iterations: iteration,
-        from: fromIndex,
-        size: requestedSize,
-        has_more: fromIndex + paginatedEstimates.length < filteredEstimates.length,
-        total_pages: Math.ceil(filteredEstimates.length / requestedSize),
-        current_page: Math.floor(fromIndex / requestedSize) + 1,
-        date_filter_applied: !!(dateFrom || dateTo),
-        date_from: dateFrom,
-        date_to: dateTo,
-        sent_date_filter_applied: !!(input.sent_from || input.sent_to),
-        sent_from: input.sent_from,
-        sent_to: input.sent_to,
-        approved_date_filter_applied: !!(
-          input.approved_from ||
-          input.approved_to ||
-          input.has_approval !== undefined
-        ),
-        approved_from: input.approved_from,
-        approved_to: input.approved_to,
-        has_approval: input.has_approval,
-        status_filter_applied: !!input.status,
-        status: input.status,
-        sort_applied: !!input.sort_by,
-        sort_by: input.sort_by,
-        order: order,
-        compact_mode: useCompactMode,
-        compact_mode_forced: forceCompact,
-        results: resultEstimates,
+      // Build page info
+      const pageInfo = {
+        has_more: fromIndex + rawEstimates.length < totalFiltered,
+        total: totalFiltered,
+        current_page: Math.floor(fromIndex / pageSize) + 1,
+        total_pages: Math.ceil(totalFiltered / pageSize),
       };
+
+      // Check if using new handle-based parameters
+      if (this.hasNewParams(input)) {
+        // NEW BEHAVIOR: Use handle-based response system
+        // ResponseBuilder expects the raw data array, not a wrapper object
+        const envelope = await this.wrapResponse(rawEstimates, input, context, {
+          entity: 'estimates',
+          maxRows: pageSize,
+          pageInfo,
+        });
+
+        // Add estimates-specific metadata to the envelope
+        return {
+          ...envelope,
+          query_metadata: {
+            count: rawEstimates.length,
+            total_filtered: totalFiltered,
+            total_fetched: allEstimates.length,
+            iterations: iteration,
+            from: fromIndex,
+            page_size: pageSize,
+            date_filter_applied: !!(dateFrom || dateTo),
+            date_from: dateFrom,
+            date_to: dateTo,
+            sent_date_filter_applied: !!(input.sent_from || input.sent_to),
+            sent_from: input.sent_from,
+            sent_to: input.sent_to,
+            approved_date_filter_applied: !!(
+              input.approved_from ||
+              input.approved_to ||
+              input.has_approval !== undefined
+            ),
+            approved_from: input.approved_from,
+            approved_to: input.approved_to,
+            has_approval: input.has_approval,
+            status_filter_applied: !!input.status,
+            status: input.status,
+            sort_applied: !!input.sort_by,
+            sort_by: input.sort_by,
+            order: order,
+          },
+        };
+      } else {
+        // LEGACY BEHAVIOR: Maintain backward compatibility
+        const forceCompact = rawEstimates.length > 10;
+        const useCompactMode = !input.include_full_details || forceCompact;
+        const resultEstimates = useCompactMode
+          ? compactArray(rawEstimates, compactEstimate)
+          : rawEstimates;
+
+        return {
+          _code_version: 'v1.0-optimized-2025-10-10',
+          count: rawEstimates.length,
+          total_filtered: totalFiltered,
+          total_fetched: allEstimates.length,
+          iterations: iteration,
+          from: fromIndex,
+          size: pageSize,
+          has_more: pageInfo.has_more,
+          total_pages: pageInfo.total_pages,
+          current_page: pageInfo.current_page,
+          date_filter_applied: !!(dateFrom || dateTo),
+          date_from: dateFrom,
+          date_to: dateTo,
+          sent_date_filter_applied: !!(input.sent_from || input.sent_to),
+          sent_from: input.sent_from,
+          sent_to: input.sent_to,
+          approved_date_filter_applied: !!(
+            input.approved_from ||
+            input.approved_to ||
+            input.has_approval !== undefined
+          ),
+          approved_from: input.approved_from,
+          approved_to: input.approved_to,
+          has_approval: input.has_approval,
+          status_filter_applied: !!input.status,
+          status: input.status,
+          sort_applied: !!input.sort_by,
+          sort_by: input.sort_by,
+          order: order,
+          compact_mode: useCompactMode,
+          compact_mode_forced: forceCompact,
+          results: resultEstimates,
+        };
+      }
     } else {
       // Simple pagination without filtering
       const params: any = {
         from: fromIndex,
-        size: requestedSize,
+        size: pageSize,
       };
 
       const result = await this.client.get(context.apiKey, 'estimates', params);
-      const estimates = result.data?.results || [];
+      const rawEstimates = result.data?.results || [];
+      const totalFiltered = rawEstimates.length;
 
-      // OPTIMIZED: Force compact mode if more than 10 results
-      const forceCompact = estimates.length > 10;
-      const useCompactMode = !input.include_full_details || forceCompact;
-
-      // Apply compaction if not requesting full details
-      const resultEstimates = useCompactMode
-        ? compactArray(estimates, compactEstimate)
-        : estimates;
-
-      return {
-        _code_version: 'v1.0-optimized-2025-10-10',
-        count: estimates.length,
-        total_filtered: estimates.length,
-        from: fromIndex,
-        size: requestedSize,
+      // Build page info
+      const pageInfo = {
         has_more: false,
-        date_filter_applied: false,
-        sent_date_filter_applied: false,
-        approved_date_filter_applied: false,
-        status_filter_applied: false,
-        sort_applied: false,
-        compact_mode: useCompactMode,
-        compact_mode_forced: forceCompact,
-        results: resultEstimates,
+        total: totalFiltered,
+        current_page: 1,
+        total_pages: 1,
       };
+
+      // Check if using new handle-based parameters
+      if (this.hasNewParams(input)) {
+        // NEW BEHAVIOR: Use handle-based response system
+        // ResponseBuilder expects the raw data array, not a wrapper object
+        const envelope = await this.wrapResponse(rawEstimates, input, context, {
+          entity: 'estimates',
+          maxRows: pageSize,
+          pageInfo,
+        });
+
+        // Add estimates-specific metadata to the envelope
+        return {
+          ...envelope,
+          query_metadata: {
+            count: rawEstimates.length,
+            total_filtered: totalFiltered,
+            from: fromIndex,
+            page_size: pageSize,
+            date_filter_applied: false,
+            sent_date_filter_applied: false,
+            approved_date_filter_applied: false,
+            status_filter_applied: false,
+            sort_applied: false,
+          },
+        };
+      } else {
+        // LEGACY BEHAVIOR: Maintain backward compatibility
+        const forceCompact = rawEstimates.length > 10;
+        const useCompactMode = !input.include_full_details || forceCompact;
+        const resultEstimates = useCompactMode
+          ? compactArray(rawEstimates, compactEstimate)
+          : rawEstimates;
+
+        return {
+          _code_version: 'v1.0-optimized-2025-10-10',
+          count: rawEstimates.length,
+          total_filtered: totalFiltered,
+          from: fromIndex,
+          size: pageSize,
+          has_more: false,
+          date_filter_applied: false,
+          sent_date_filter_applied: false,
+          approved_date_filter_applied: false,
+          status_filter_applied: false,
+          sort_applied: false,
+          compact_mode: useCompactMode,
+          compact_mode_forced: forceCompact,
+          results: resultEstimates,
+        };
+      }
     }
       }
     );
