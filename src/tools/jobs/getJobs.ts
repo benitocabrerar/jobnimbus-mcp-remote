@@ -17,15 +17,26 @@ import { withCache } from '../../services/cacheService.js';
 import { CACHE_PREFIXES, getTTL } from '../../config/cache.js';
 
 interface GetJobsInput extends BaseToolInput {
+  // Pagination
   from?: number;
   size?: number;
+  page_size?: number;
+
+  // Response control (Phase 3: Handle-based system)
+  verbosity?: 'summary' | 'compact' | 'detailed' | 'raw';
+  fields?: string;
+
+  // Date filtering
   date_from?: string;
   date_to?: string;
   scheduled_from?: string;
   scheduled_to?: string;
   has_schedule?: boolean;
+
+  // Sorting
   sort_by?: 'date_start' | 'date_end' | 'date_created' | 'date_updated' | 'date_status_change';
   order?: 'asc' | 'desc';
+
   // Legacy parameter (replaced by verbosity, but kept for backward compatibility)
   include_full_details?: boolean;
 }
@@ -134,11 +145,16 @@ interface Job {
 
 /**
  * Generate deterministic cache identifier from input parameters
- * Format: {from}:{size}:{date_from}:{date_to}:{scheduled_from}:{scheduled_to}:{has_schedule}:{sort_by}:{order}:{full_details}
+ * Format: {from}:{size}:{page_size}:{verbosity}:{fields}:{date_from}:{date_to}:{scheduled_from}:{scheduled_to}:{has_schedule}:{sort_by}:{order}:{full_details}
+ *
+ * CRITICAL: Must include verbosity and page_size to prevent returning wrong cached responses
  */
 function generateCacheIdentifier(input: GetJobsInput): string {
   const from = input.from || 0;
   const size = input.size || 15;
+  const pageSize = input.page_size || 'null';
+  const verbosity = input.verbosity || 'null';
+  const fields = input.fields || 'null';
   const dateFrom = input.date_from || 'null';
   const dateTo = input.date_to || 'null';
   const scheduledFrom = input.scheduled_from || 'null';
@@ -148,7 +164,7 @@ function generateCacheIdentifier(input: GetJobsInput): string {
   const order = input.order || 'desc';
   const fullDetails = input.include_full_details ? 'full' : 'compact';
 
-  return `${from}:${size}:${dateFrom}:${dateTo}:${scheduledFrom}:${scheduledTo}:${hasSchedule}:${sortBy}:${order}:${fullDetails}`;
+  return `${from}:${size}:${pageSize}:${verbosity}:${fields}:${dateFrom}:${dateTo}:${scheduledFrom}:${scheduledTo}:${hasSchedule}:${sortBy}:${order}:${fullDetails}`;
 }
 
 export class GetJobsTool extends BaseTool<GetJobsInput, any> {
