@@ -438,35 +438,39 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
         // Check if using new handle-based parameters
         if (this.hasNewParams(input)) {
           // NEW BEHAVIOR: Use handle-based response system
-          const responseData = {
-            count: rawJobs.length,
-            total_filtered: totalFiltered,
-            total_fetched: totalFetched || rawJobs.length,
-            iterations: iterations,
-            from: fromIndex,
-            page_size: pageSize,
-            date_filter_applied: !!(dateFrom || dateTo),
-            date_from: dateFrom,
-            date_to: dateTo,
-            schedule_filter_applied: !!(
-              input.scheduled_from ||
-              input.scheduled_to ||
-              input.has_schedule !== undefined
-            ),
-            scheduled_from: input.scheduled_from,
-            scheduled_to: input.scheduled_to,
-            has_schedule: input.has_schedule,
-            sort_applied: !!input.sort_by,
-            sort_by: input.sort_by,
-            order: order,
-            results: rawJobs,
-          };
-
-          return await this.wrapResponse(responseData, input, context, {
+          // ResponseBuilder expects the raw data array, not a wrapper object
+          const envelope = await this.wrapResponse(rawJobs, input, context, {
             entity: 'jobs',
             maxRows: pageSize,
             pageInfo,
           });
+
+          // Add jobs-specific metadata to the envelope
+          return {
+            ...envelope,
+            query_metadata: {
+              count: rawJobs.length,
+              total_filtered: totalFiltered,
+              total_fetched: totalFetched || rawJobs.length,
+              iterations: iterations,
+              from: fromIndex,
+              page_size: pageSize,
+              date_filter_applied: !!(dateFrom || dateTo),
+              date_from: dateFrom,
+              date_to: dateTo,
+              schedule_filter_applied: !!(
+                input.scheduled_from ||
+                input.scheduled_to ||
+                input.has_schedule !== undefined
+              ),
+              scheduled_from: input.scheduled_from,
+              scheduled_to: input.scheduled_to,
+              has_schedule: input.has_schedule,
+              sort_applied: !!input.sort_by,
+              sort_by: input.sort_by,
+              order: order,
+            },
+          };
         } else {
           // LEGACY BEHAVIOR: Maintain backward compatibility
           const forceCompact = rawJobs.length > 10;
