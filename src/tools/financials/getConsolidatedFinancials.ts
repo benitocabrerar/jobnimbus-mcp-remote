@@ -516,7 +516,7 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
               const files = filesResponse.data?.files || filesResponse.data?.results || [];
 
               // Regex patterns for vendor invoices
-              const chargePattern = /retail - invoice[a-z]* - .* - \(([0-9.]+)\)\.(pdf|png)/i;
+              const chargePattern = /retail - invoice[a-z]* - .* - ([0-9.]+)\.(pdf|png)/i;
               const returnPattern = /retail - invoicereturns - .* - \(-([0-9.]+)\)\.(pdf|png)/i;
 
               let vendorCharges = 0;
