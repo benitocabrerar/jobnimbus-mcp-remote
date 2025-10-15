@@ -327,11 +327,11 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
     // Wrap with cache layer (Redis cache integration)
     return await withCache(
       {
-        entity: CACHE_PREFIXES.FINANCIALS || 'financials',
+        entity: CACHE_PREFIXES.INVOICES,
         operation: CACHE_PREFIXES.LIST,
         identifier: cacheIdentifier,
       },
-      getTTL('FINANCIALS_LIST') || 15 * 60, // 15 minutes default
+      getTTL('INVOICES_LIST'),
       async () => {
         try {
           // Determine entity ID for filtering

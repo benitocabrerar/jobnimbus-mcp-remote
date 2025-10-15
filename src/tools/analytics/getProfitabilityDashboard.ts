@@ -89,6 +89,16 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
       let revenueLastMonth = 0;
       let revenuePreviousMonth = 0;
 
+      // Fetch estimates for conversion rate calculation (used in both modes)
+      let estimates: any[] = [];
+      try {
+        const estimatesResponse = await this.client.get(context.apiKey, 'estimates', { size: 100 });
+        estimates = estimatesResponse.data?.results || [];
+      } catch (error) {
+        console.error('Error fetching estimates for conversion rate:', error);
+        estimates = [];
+      }
+
       // MODE 1: INVOICE-BASED REVENUE (uses actual invoiced amounts with NET calculations)
       if (useInvoicedAmounts && consolidatedTool) {
         for (const job of jobs) {
@@ -149,8 +159,7 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
         }
       } else {
         // MODE 2: ESTIMATE-BASED REVENUE (legacy behavior for backward compatibility)
-        const estimatesResponse = await this.client.get(context.apiKey, 'estimates', { size: 100 });
-        const estimates = estimatesResponse.data?.results || [];
+        // Note: estimates already fetched at top level for conversion rate calculation
 
         // Build estimate lookup by job
         const estimatesByJob = new Map<string, any[]>();
