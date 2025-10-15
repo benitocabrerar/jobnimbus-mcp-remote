@@ -1,5 +1,5 @@
 /**
- * Tool Registry - 89 TOOLS (2025-01-14 Phase 1 Optimization Complete)
+ * Tool Registry - 79 TOOLS (2025-01-14 Phase 2 Part 1 Optimization Complete)
  *
  * REMOVED (Archived - 11 tools):
  * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
@@ -20,6 +20,19 @@
  *   get_appointments, get_invoiced, get_deposits
  * - Replaced by: search_jobs_by_status(status, limit) - single consolidated tool
  * - See: src/tools/archived/jobs/quick-status/README.md for migration guide
+ *
+ * REMOVED (Phase 1 Optimization Part 2 - 2 redundant tools):
+ * - AnalyzeJobAttachmentsTool: Replaced by get_job_attachments_distribution
+ * - SearchInsuranceJobsTool: Replaced by search_jobs_enhanced
+ * - See: src/tools/archived/redundant/README.md for migration guide
+ *
+ * REMOVED (Phase 2 Part 1 - 10 low-value analytics tools):
+ * - Communication & Conversion (5): get_communication_analytics, get_conversion_funnel_analytics,
+ *   get_resource_allocation_analytics, get_customer_satisfaction_analytics, get_time_tracking_analytics
+ * - Project & Operations (5): get_project_management_analytics, get_marketing_campaign_analytics,
+ *   get_financial_forecasting_analytics, get_customer_segmentation_analytics, get_operational_efficiency_analytics
+ * - Reason: Generic business intelligence, not construction-industry specific
+ * - See: src/tools/archived/analytics/low-value/README.md for alternatives
  *
  * COMMENTED OUT (Not yet implemented - 13 tools):
  * - Payment tools (2): get_payments, create_payment
@@ -47,12 +60,10 @@
  * - get_attachments: Uses /files endpoint (documents/orders don't exist)
  * - get_file_by_id: NEW tool for GET /files/<jnid>
  *
- * REMOVED (Phase 1 Optimization Part 2 - 2 redundant tools):
- * - AnalyzeJobAttachmentsTool: Replaced by get_job_attachments_distribution
- * - SearchInsuranceJobsTool: Replaced by search_jobs_enhanced
- * - See: src/tools/archived/redundant/README.md for migration guide
- *
- * PHASE 1 OPTIMIZATION COMPLETE: 103 → 89 tools (13.6% reduction)
+ * OPTIMIZATION PROGRESS:
+ * - Phase 1 Complete: 103 → 89 tools (13.6% reduction)
+ * - Phase 2 Part 1 Complete: 89 → 79 tools (11.2% additional reduction)
+ * - Total Reduction: 103 → 79 tools (23.3% overall reduction)
  */
 
 import { BaseTool } from './baseTool.js';
@@ -120,19 +131,17 @@ import { GetTaskManagementAnalyticsTool } from './analytics/getTaskManagementAna
 import { GetUserProductivityAnalyticsTool } from './analytics/getUserProductivityAnalytics.js';
 import { GetLeadScoringAnalyticsTool } from './analytics/getLeadScoringAnalytics.js';
 
-// Communication & Conversion
-import { GetCommunicationAnalyticsTool } from './analytics/getCommunicationAnalytics.js';
-import { GetConversionFunnelAnalyticsTool } from './analytics/getConversionFunnelAnalytics.js';
-import { GetResourceAllocationAnalyticsTool } from './analytics/getResourceAllocationAnalytics.js';
-import { GetCustomerSatisfactionAnalyticsTool } from './analytics/getCustomerSatisfactionAnalytics.js';
-import { GetTimeTrackingAnalyticsTool } from './analytics/getTimeTrackingAnalytics.js';
+// ARCHIVED (Phase 2 Part 1): Communication & Conversion (5 tools)
+// - GetCommunicationAnalyticsTool, GetConversionFunnelAnalyticsTool,
+// - GetResourceAllocationAnalyticsTool, GetCustomerSatisfactionAnalyticsTool,
+// - GetTimeTrackingAnalyticsTool
+// See: src/tools/archived/analytics/low-value/README.md
 
-// Project & Operations
-import { GetProjectManagementAnalyticsTool } from './analytics/getProjectManagementAnalytics.js';
-import { GetMarketingCampaignAnalyticsTool } from './analytics/getMarketingCampaignAnalytics.js';
-import { GetFinancialForecastingAnalyticsTool } from './analytics/getFinancialForecastingAnalytics.js';
-import { GetCustomerSegmentationAnalyticsTool } from './analytics/getCustomerSegmentationAnalytics.js';
-import { GetOperationalEfficiencyAnalyticsTool } from './analytics/getOperationalEfficiencyAnalytics.js';
+// ARCHIVED (Phase 2 Part 1): Project & Operations (5 tools)
+// - GetProjectManagementAnalyticsTool, GetMarketingCampaignAnalyticsTool,
+// - GetFinancialForecastingAnalyticsTool, GetCustomerSegmentationAnalyticsTool,
+// - GetOperationalEfficiencyAnalyticsTool
+// See: src/tools/archived/analytics/low-value/README.md
 
 // Sales & Competition
 import { GetSalesVelocityAnalyticsTool } from './analytics/getSalesVelocityAnalytics.js';
@@ -252,7 +261,7 @@ export class ToolRegistry {
     this.registerTool(new GetCalendarActivities());
     this.registerTool(new GetTimelineData());
 
-    // === ANALYTICS TOOLS (35 tools) ===
+    // === ANALYTICS TOOLS (25 tools) === [Phase 2 Part 1: Removed 10 low-value analytics]
 
     // Insurance & Retail
     this.registerTool(new AnalyzeInsurancePipelineTool());
@@ -287,19 +296,15 @@ export class ToolRegistry {
     this.registerTool(new GetUserProductivityAnalyticsTool());
     this.registerTool(new GetLeadScoringAnalyticsTool());
 
-    // Communication & Conversion
-    this.registerTool(new GetCommunicationAnalyticsTool());
-    this.registerTool(new GetConversionFunnelAnalyticsTool());
-    this.registerTool(new GetResourceAllocationAnalyticsTool());
-    this.registerTool(new GetCustomerSatisfactionAnalyticsTool());
-    this.registerTool(new GetTimeTrackingAnalyticsTool());
+    // ARCHIVED (Phase 2 Part 1): Communication & Conversion (5 tools removed)
+    // - GetCommunicationAnalyticsTool, GetConversionFunnelAnalyticsTool,
+    // - GetResourceAllocationAnalyticsTool, GetCustomerSatisfactionAnalyticsTool,
+    // - GetTimeTrackingAnalyticsTool
 
-    // Project & Operations
-    this.registerTool(new GetProjectManagementAnalyticsTool());
-    this.registerTool(new GetMarketingCampaignAnalyticsTool());
-    this.registerTool(new GetFinancialForecastingAnalyticsTool());
-    this.registerTool(new GetCustomerSegmentationAnalyticsTool());
-    this.registerTool(new GetOperationalEfficiencyAnalyticsTool());
+    // ARCHIVED (Phase 2 Part 1): Project & Operations (5 tools removed)
+    // - GetProjectManagementAnalyticsTool, GetMarketingCampaignAnalyticsTool,
+    // - GetFinancialForecastingAnalyticsTool, GetCustomerSegmentationAnalyticsTool,
+    // - GetOperationalEfficiencyAnalyticsTool
 
     // Sales & Competition
     this.registerTool(new GetSalesVelocityAnalyticsTool());
