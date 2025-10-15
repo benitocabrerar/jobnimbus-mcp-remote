@@ -169,6 +169,7 @@ import { GetUsersTool } from './users/getUsers.js';
 import { GetTasksTool } from './tasks/getTasks.js';
 import { GetTaskTool } from './tasks/getTask.js';
 import { UpdateTaskTool } from './tasks/updateTask.js';
+import { FetchByHandleTool } from './system/fetchByHandle.js';
 
 // ===== ATTACHMENTS TOOLS =====
 import { GetAttachmentsTool } from './attachments/getAttachments.js';
@@ -325,11 +326,12 @@ export class ToolRegistry {
     this.registerTool(new GetSalesVelocityAnalyticsTool());
     this.registerTool(new GetCompetitiveAnalysisAnalyticsTool());
 
-    // === SYSTEM TOOLS (4 tools) ===
+    // === SYSTEM TOOLS (5 tools) ===
     this.registerTool(new GetTasksTool());
     this.registerTool(new GetTaskTool());
     this.registerTool(new UpdateTaskTool());
     this.registerTool(new GetUsersTool());
+    this.registerTool(new FetchByHandleTool());
 
     // === ATTACHMENTS (2 tools) === [Phase 1 Part 2: Removed analyze_job_attachments - redundant]
     this.registerTool(new GetAttachmentsTool());

@@ -2,17 +2,21 @@
  * Get Jobs Tool
  * Enhanced with schedule filtering and sorting capabilities
  *
- * PHASE 2: Integrated Redis cache system for performance optimization
+ * PHASE 3: Handle-based response system for token optimization
+ * - Automatic response size detection and handle storage
+ * - Verbosity levels: summary/compact/detailed/raw
+ * - Field selection support
+ * - Redis cache + handle storage integration
  */
 
 import { BaseTool } from '../baseTool.js';
-import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { MCPToolDefinition, ToolContext, BaseToolInput } from '../../types/index.js';
 import { compactJob, compactArray } from '../../utils/compactData.js';
 import { getCurrentMonth } from '../../utils/dateHelpers.js';
 import { withCache } from '../../services/cacheService.js';
 import { CACHE_PREFIXES, getTTL } from '../../config/cache.js';
 
-interface GetJobsInput {
+interface GetJobsInput extends BaseToolInput {
   from?: number;
   size?: number;
   date_from?: string;
@@ -22,6 +26,7 @@ interface GetJobsInput {
   has_schedule?: boolean;
   sort_by?: 'date_start' | 'date_end' | 'date_created' | 'date_updated' | 'date_status_change';
   order?: 'asc' | 'desc';
+  // Legacy parameter (replaced by verbosity, but kept for backward compatibility)
   include_full_details?: boolean;
 }
 
@@ -150,17 +155,33 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_jobs',
-      description: 'Retrieve jobs from JobNimbus with pagination, date filtering, scheduling filters, and sorting',
+      description: 'Retrieve jobs from JobNimbus with handle-based response optimization. IMPORTANT: By default returns compact summary (5 jobs, 15 fields each) with result_handle for full data retrieval. Use verbosity parameter to control detail level. Large responses (>25 KB) automatically stored in Redis with 15-min TTL - use fetch_by_handle to retrieve. Supports pagination, date filtering, scheduling filters, and sorting.',
       inputSchema: {
         type: 'object',
         properties: {
+          // NEW: Handle-based response control
+          verbosity: {
+            type: 'string',
+            description: 'Response detail level: "summary" (5 fields, max 5 jobs), "compact" (15 fields, max 20 jobs - DEFAULT), "detailed" (50 fields, max 50 jobs), "raw" (all fields). Compact mode prevents chat saturation.',
+            enum: ['summary', 'compact', 'detailed', 'raw'],
+          },
+          fields: {
+            type: 'string',
+            description: 'Comma-separated field names to return. Example: "jnid,number,status_name,sales_rep_name,date_created,last_estimate". Overrides verbosity-based field selection.',
+          },
+          page_size: {
+            type: 'number',
+            description: 'Number of records per page (default: 20, max: 100). Replaces "size" parameter. Use with cursor for pagination.',
+          },
+
+          // Existing parameters
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0)',
+            description: 'Starting index for pagination (default: 0). NOTE: Prefer page_size + cursor for large datasets.',
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 15, max: 50). Use small values to prevent response saturation.',
+            description: 'Number of records to retrieve (default: 15, max: 50). DEPRECATED: Use page_size instead.',
           },
           date_from: {
             type: 'string',
@@ -194,7 +215,7 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
           },
           include_full_details: {
             type: 'boolean',
-            description: 'Return full job details. Default: false (compact mode with only essential fields). Set to true for complete job objects.',
+            description: 'LEGACY: Return full job details. Default: false. DEPRECATED: Use verbosity="detailed" or verbosity="raw" instead.',
           },
         },
       },
@@ -306,146 +327,168 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
       },
       getTTL('JOBS_LIST'),
       async () => {
+        // Determine page size - prefer page_size (new) over size (legacy)
+        const pageSize = input.page_size || input.size || 15;
         const fromIndex = input.from || 0;
-        // OPTIMIZED: Reduced from 50 to 15 (default) and 100 to 50 (max) to prevent saturation
-        const requestedSize = Math.min(input.size || 15, 50);
         const order = input.order || 'desc';
 
-    // Use current month as default if no date filters provided
-    const currentMonth = getCurrentMonth();
-    const dateFrom = input.date_from || currentMonth.date_from;
-    const dateTo = input.date_to || currentMonth.date_to;
+        // Use current month as default if no date filters provided
+        const currentMonth = getCurrentMonth();
+        const dateFrom = input.date_from || currentMonth.date_from;
+        const dateTo = input.date_to || currentMonth.date_to;
 
-    // Determine if we need to fetch all jobs for filtering/sorting
-    // Always do full fetch when dateFrom/dateTo have values to apply date filtering
-    const needsFullFetch =
-      dateFrom ||
-      dateTo ||
-      input.scheduled_from ||
-      input.scheduled_to ||
-      input.has_schedule !== undefined ||
-      input.sort_by;
-
-    if (needsFullFetch) {
-      // Fetch all jobs with pagination
-      const batchSize = 100;
-      // OPTIMIZED: Reduced from 50 to 20 iterations (max 2000 instead of 5000 records)
-      const maxIterations = 20;
-      let allJobs: Job[] = [];
-      let offset = 0;
-      let iteration = 0;
-
-      while (iteration < maxIterations) {
-        const params = { size: batchSize, from: offset };
-        const response = await this.client.get(context.apiKey, 'jobs', params);
-        const batch = response.data?.results || [];
-
-        if (batch.length === 0) {
-          break;
-        }
-
-        allJobs = allJobs.concat(batch);
-        offset += batchSize;
-        iteration++;
-
-        if (batch.length < batchSize) {
-          break;
-        }
-      }
-
-      // Apply date_created filtering
-      let filteredJobs = this.filterByDateCreated(allJobs, dateFrom, dateTo);
-
-      // Apply schedule filtering
-      if (input.scheduled_from || input.scheduled_to || input.has_schedule !== undefined) {
-        filteredJobs = this.filterBySchedule(
-          filteredJobs,
-          input.scheduled_from,
-          input.scheduled_to,
-          input.has_schedule
-        );
-      }
-
-      // Apply sorting
-      if (input.sort_by) {
-        filteredJobs = this.sortJobs(filteredJobs, input.sort_by, order);
-      }
-
-      // Paginate
-      const paginatedJobs = filteredJobs.slice(fromIndex, fromIndex + requestedSize);
-
-      // OPTIMIZED: Force compact mode if more than 10 results to prevent saturation
-      const forceCompact = paginatedJobs.length > 10;
-      const useCompactMode = !input.include_full_details || forceCompact;
-
-      // Apply compaction if not requesting full details
-      const resultJobs = useCompactMode
-        ? compactArray(paginatedJobs, compactJob)
-        : paginatedJobs;
-
-      return {
-        _code_version: 'v1.0-optimized-2025-10-10',
-        count: paginatedJobs.length,
-        total_filtered: filteredJobs.length,
-        total_fetched: allJobs.length,
-        iterations: iteration,
-        from: fromIndex,
-        size: requestedSize,
-        has_more: fromIndex + paginatedJobs.length < filteredJobs.length,
-        total_pages: Math.ceil(filteredJobs.length / requestedSize),
-        current_page: Math.floor(fromIndex / requestedSize) + 1,
-        date_filter_applied: !!(dateFrom || dateTo),
-        date_from: dateFrom,
-        date_to: dateTo,
-        schedule_filter_applied: !!(
+        // Determine if we need to fetch all jobs for filtering/sorting
+        const needsFullFetch =
+          dateFrom ||
+          dateTo ||
           input.scheduled_from ||
           input.scheduled_to ||
-          input.has_schedule !== undefined
-        ),
-        scheduled_from: input.scheduled_from,
-        scheduled_to: input.scheduled_to,
-        has_schedule: input.has_schedule,
-        sort_applied: !!input.sort_by,
-        sort_by: input.sort_by,
-        order: order,
-        compact_mode: useCompactMode,
-        compact_mode_forced: forceCompact,
-        results: resultJobs,
-      };
-    } else {
-      // Simple pagination without filtering
-      const params: any = {
-        from: fromIndex,
-        size: requestedSize,
-      };
+          input.has_schedule !== undefined ||
+          input.sort_by;
 
-      const result = await this.client.get(context.apiKey, 'jobs', params);
-      const jobs = result.data?.results || [];
+        let rawJobs: Job[];
+        let totalFiltered: number;
+        let totalFetched = 0;
+        let iterations = 0;
 
-      // OPTIMIZED: Force compact mode if more than 10 results
-      const forceCompact = jobs.length > 10;
-      const useCompactMode = !input.include_full_details || forceCompact;
+        if (needsFullFetch) {
+          // Fetch all jobs with pagination
+          const batchSize = 100;
+          const maxIterations = 20;
+          let allJobs: Job[] = [];
+          let offset = 0;
 
-      // Apply compaction if not requesting full details
-      const resultJobs = useCompactMode
-        ? compactArray(jobs, compactJob)
-        : jobs;
+          while (iterations < maxIterations) {
+            const params = { size: batchSize, from: offset };
+            const response = await this.client.get(context.apiKey, 'jobs', params);
+            const batch = response.data?.results || [];
 
-      return {
-        _code_version: 'v1.0-optimized-2025-10-10',
-        count: jobs.length,
-        total_filtered: jobs.length,
-        from: fromIndex,
-        size: requestedSize,
-        has_more: false,
-        date_filter_applied: false,
-        schedule_filter_applied: false,
-        sort_applied: false,
-        compact_mode: useCompactMode,
-        compact_mode_forced: forceCompact,
-        results: resultJobs,
-      };
-    }
+            if (batch.length === 0) {
+              break;
+            }
+
+            allJobs = allJobs.concat(batch);
+            offset += batchSize;
+            iterations++;
+
+            if (batch.length < batchSize) {
+              break;
+            }
+          }
+
+          totalFetched = allJobs.length;
+
+          // Apply date_created filtering
+          let filteredJobs = this.filterByDateCreated(allJobs, dateFrom, dateTo);
+
+          // Apply schedule filtering
+          if (input.scheduled_from || input.scheduled_to || input.has_schedule !== undefined) {
+            filteredJobs = this.filterBySchedule(
+              filteredJobs,
+              input.scheduled_from,
+              input.scheduled_to,
+              input.has_schedule
+            );
+          }
+
+          // Apply sorting
+          if (input.sort_by) {
+            filteredJobs = this.sortJobs(filteredJobs, input.sort_by, order);
+          }
+
+          // Paginate
+          rawJobs = filteredJobs.slice(fromIndex, fromIndex + pageSize);
+          totalFiltered = filteredJobs.length;
+        } else {
+          // Simple pagination without filtering
+          const params: any = {
+            from: fromIndex,
+            size: pageSize,
+          };
+
+          const result = await this.client.get(context.apiKey, 'jobs', params);
+          rawJobs = result.data?.results || [];
+          totalFiltered = rawJobs.length;
+        }
+
+        // Build page info
+        const pageInfo = {
+          has_more: fromIndex + rawJobs.length < totalFiltered,
+          total: totalFiltered,
+          current_page: Math.floor(fromIndex / pageSize) + 1,
+          total_pages: Math.ceil(totalFiltered / pageSize),
+        };
+
+        // Check if using new handle-based parameters
+        if (this.hasNewParams(input)) {
+          // NEW BEHAVIOR: Use handle-based response system
+          const responseData = {
+            count: rawJobs.length,
+            total_filtered: totalFiltered,
+            total_fetched: totalFetched || rawJobs.length,
+            iterations: iterations,
+            from: fromIndex,
+            page_size: pageSize,
+            date_filter_applied: !!(dateFrom || dateTo),
+            date_from: dateFrom,
+            date_to: dateTo,
+            schedule_filter_applied: !!(
+              input.scheduled_from ||
+              input.scheduled_to ||
+              input.has_schedule !== undefined
+            ),
+            scheduled_from: input.scheduled_from,
+            scheduled_to: input.scheduled_to,
+            has_schedule: input.has_schedule,
+            sort_applied: !!input.sort_by,
+            sort_by: input.sort_by,
+            order: order,
+            results: rawJobs,
+          };
+
+          return await this.wrapResponse(responseData, input, context, {
+            entity: 'jobs',
+            maxRows: pageSize,
+            pageInfo,
+          });
+        } else {
+          // LEGACY BEHAVIOR: Maintain backward compatibility
+          const forceCompact = rawJobs.length > 10;
+          const useCompactMode = !input.include_full_details || forceCompact;
+          const resultJobs = useCompactMode
+            ? compactArray(rawJobs, compactJob)
+            : rawJobs;
+
+          return {
+            _code_version: 'v1.0-optimized-2025-10-10',
+            count: rawJobs.length,
+            total_filtered: totalFiltered,
+            total_fetched: totalFetched || rawJobs.length,
+            iterations: iterations,
+            from: fromIndex,
+            size: pageSize,
+            has_more: pageInfo.has_more,
+            total_pages: pageInfo.total_pages,
+            current_page: pageInfo.current_page,
+            date_filter_applied: !!(dateFrom || dateTo),
+            date_from: dateFrom,
+            date_to: dateTo,
+            schedule_filter_applied: !!(
+              input.scheduled_from ||
+              input.scheduled_to ||
+              input.has_schedule !== undefined
+            ),
+            scheduled_from: input.scheduled_from,
+            scheduled_to: input.scheduled_to,
+            has_schedule: input.has_schedule,
+            sort_applied: !!input.sort_by,
+            sort_by: input.sort_by,
+            order: order,
+            compact_mode: useCompactMode,
+            compact_mode_forced: forceCompact,
+            results: resultJobs,
+          };
+        }
       }
     );
   }
