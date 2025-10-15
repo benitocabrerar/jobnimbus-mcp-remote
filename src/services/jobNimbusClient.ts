@@ -116,7 +116,20 @@ export class JobNimbusClient {
         data: data as T,
       };
     } catch (error) {
-      logger.error('JobNimbus API request failed', error);
+      // Don't log expected 404s for endpoints that don't exist in JobNimbus API
+      const isExpected404 = error instanceof JobNimbusApiError &&
+                            error.statusCode === 404 &&
+                            (endpoint === 'credit_memos' || endpoint === 'refunds');
+
+      if (!isExpected404) {
+        logger.error('JobNimbus API request failed', error);
+      } else {
+        logger.debug('Expected endpoint not available', {
+          endpoint,
+          status: 404,
+          message: 'This endpoint does not exist in JobNimbus API - gracefully handled'
+        });
+      }
 
       if (error instanceof JobNimbusApiError) {
         throw error;
