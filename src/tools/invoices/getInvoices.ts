@@ -164,7 +164,23 @@ export class GetInvoicesTool extends BaseTool<GetInvoicesInput, any> {
           size: Math.min(input.size || 50, 1000),
         };
 
-        if (input.filter) params.filter = input.filter;
+        // Build Elasticsearch filter from job_id or contact_id if provided
+        // Only if explicit filter not already provided (explicit filter takes precedence)
+        if (!input.filter && (input.job_id || input.contact_id)) {
+          const entityId = input.job_id || input.contact_id;
+          params.filter = JSON.stringify({
+            must: [
+              {
+                term: {
+                  'related.id': entityId,
+                },
+              },
+            ],
+          });
+        } else if (input.filter) {
+          params.filter = input.filter;
+        }
+
         if (input.sort_field) params.sort_field = input.sort_field;
         if (input.sort_direction) params.sort_direction = input.sort_direction;
         if (input.actor) params.actor = input.actor;
