@@ -484,7 +484,7 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
             (sum, inv) => sum + this.getRecordAmount(inv),
             0
           );
-          const totalCreditMemos = creditMemosArray.reduce(
+          let totalCreditMemos = creditMemosArray.reduce(
             (sum, cm) => sum + this.getRecordAmount(cm),
             0
           );
@@ -492,14 +492,66 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
             (sum, p) => sum + this.getRecordAmount(p),
             0
           );
-          const totalRefunds = refundsArray.reduce(
+          let totalRefunds = refundsArray.reduce(
             (sum, r) => sum + this.getRecordAmount(r),
             0
           );
 
           // NET CALCULATIONS (as requested by user)
-          const netInvoiced = totalInvoiced - totalCreditMemos - totalRefunds;
-          const balanceDue = netInvoiced - totalPayments;
+          let netInvoiced = totalInvoiced - totalCreditMemos - totalRefunds;
+          let balanceDue = netInvoiced - totalPayments;
+
+          // YAML FALLBACK: Check for FILE-based vendor costs when RECORDS show $0
+          let usedYamlFallback = false;
+          if (entityId && totalCreditMemos === 0 && totalRefunds === 0) {
+            try {
+              // Query /files endpoint for this job
+              const filesResponse = await this.client.get(context.apiKey, 'files', {
+                filter: JSON.stringify({
+                  must: [{ term: { 'related.id': entityId } }]
+                }),
+                size: 500
+              });
+
+              const files = filesResponse.data?.files || filesResponse.data?.results || [];
+
+              // Regex patterns for vendor invoices
+              const chargePattern = /retail - invoice[a-z]* - .* - \(([0-9.]+)\)\.(pdf|png)/i;
+              const returnPattern = /retail - invoicereturns - .* - \(-([0-9.]+)\)\.(pdf|png)/i;
+
+              let vendorCharges = 0;
+              let vendorReturns = 0;
+
+              for (const file of files) {
+                const filename = file.filename || '';
+
+                // Check for charge invoices
+                const chargeMatch = filename.match(chargePattern);
+                if (chargeMatch) {
+                  vendorCharges += parseFloat(chargeMatch[1]) || 0;
+                  continue;
+                }
+
+                // Check for return invoices
+                const returnMatch = filename.match(returnPattern);
+                if (returnMatch) {
+                  vendorReturns += parseFloat(returnMatch[1]) || 0;
+                }
+              }
+
+              // Apply vendor costs as negative adjustments
+              if (vendorCharges > 0 || vendorReturns > 0) {
+                totalCreditMemos += vendorCharges;
+                totalRefunds -= vendorReturns; // Returns are negative, so subtract
+                netInvoiced = totalInvoiced - totalCreditMemos - totalRefunds;
+                balanceDue = netInvoiced - totalPayments;
+                usedYamlFallback = true;
+              }
+            } catch (error) {
+              // Gracefully handle fallback errors - continue with RECORDS-only data
+              console.error('YAML fallback error:', error);
+            }
+          }
 
           // Build invoice-credit memo reference links
           const invoiceCreditLinks = this.buildInvoiceCreditLinks(invoicesArray, creditMemosArray);
@@ -525,6 +577,7 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
               total_payments: totalPayments.toFixed(2),
               net_invoiced: netInvoiced.toFixed(2),
               balance_due: balanceDue.toFixed(2),
+              used_yaml_fallback: usedYamlFallback,
             },
 
             // Record counts by type
