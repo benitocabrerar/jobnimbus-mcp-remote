@@ -197,8 +197,9 @@ import { OptimizeMaterialOrdersTool } from './materials/optimizeMaterialOrders.j
 import { GetMaterialSpecificationsTool } from './materials/getMaterialSpecifications.js';
 import { CompareMaterialAlternativesTool } from './materials/compareMaterialAlternatives.js';
 
-// ===== INVOICES =====
+// ===== INVOICES & FINANCIALS =====
 import { GetInvoicesTool } from './invoices/getInvoices.js';
+import { GetConsolidatedFinancialsTool } from './financials/getConsolidatedFinancials.js';
 
 // ===== BUDGETS (LEGACY) =====
 import { GetBudgetsTool } from './budgets/getBudgets.js';
@@ -358,8 +359,9 @@ export class ToolRegistry {
     this.registerTool(new GetMaterialSpecificationsTool());
     this.registerTool(new CompareMaterialAlternativesTool());
 
-    // === INVOICES (1 tool) ===
+    // === INVOICES & FINANCIALS (2 tools) ===
     this.registerTool(new GetInvoicesTool());
+    this.registerTool(new GetConsolidatedFinancialsTool());
 
     // === BUDGETS - LEGACY (1 tool) ===
     this.registerTool(new GetBudgetsTool());

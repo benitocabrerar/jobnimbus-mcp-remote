@@ -1,10 +1,15 @@
 /**
  * Get Profitability Dashboard - Real-time profitability and KPI dashboard
  * Comprehensive business health metrics with forecasting
+ *
+ * ENHANCED: Now uses actual invoiced amounts with NET calculations by default
+ * Revenue = Invoiced - Credit Memos - Refunds (NET invoiced)
+ * Supports toggle to legacy estimate-based reporting for comparison
  */
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { GetConsolidatedFinancialsTool } from '../financials/getConsolidatedFinancials.js';
 
 interface KPIMetric {
   name: string;
@@ -20,7 +25,7 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_profitability_dashboard',
-      description: 'Real-time profitability and KPI dashboard',
+      description: 'Real-time profitability and KPI dashboard with comprehensive business health metrics. DEFAULT: Uses actual invoiced amounts with NET calculations (invoiced - credit_memos - refunds). Set use_invoiced_amounts=false for legacy estimate-based reporting for comparison. Provides forecasting, alerts, and actionable recommendations.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -29,6 +34,11 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
             enum: ['executive', 'operational', 'detailed'],
             default: 'executive',
             description: 'Dashboard detail level',
+          },
+          use_invoiced_amounts: {
+            type: 'boolean',
+            default: true,
+            description: 'Use actual invoiced amounts with NET calculations (invoiced - credits - refunds). When true, reports real revenue. When false, uses estimates (legacy behavior).',
           },
           include_forecasts: {
             type: 'boolean',
@@ -49,31 +59,19 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
     try {
       const dashboardType = input.dashboard_type || 'executive';
       const includeForecasts = input.include_forecasts !== false;
+      const useInvoicedAmounts = input.use_invoiced_amounts !== false; // Default: true
+
+      // Initialize consolidated financials tool for invoice-based mode
+      const consolidatedTool = useInvoicedAmounts ? new GetConsolidatedFinancialsTool() : null;
 
       // Fetch comprehensive data
-      const [jobsResponse, estimatesResponse, activitiesResponse] = await Promise.all([
+      const [jobsResponse, activitiesResponse] = await Promise.all([
         this.client.get(context.apiKey, 'jobs', { size: 100 }),
-        this.client.get(context.apiKey, 'estimates', { size: 100 }),
         this.client.get(context.apiKey, 'activities', { size: 100 }),
       ]);
 
       const jobs = jobsResponse.data?.results || [];
-      const estimates = estimatesResponse.data?.results || [];
       const activities = activitiesResponse.data?.activity || activitiesResponse.data?.results || [];
-
-      // Build lookups
-      const estimatesByJob = new Map<string, any[]>();
-      for (const estimate of estimates) {
-        const related = estimate.related || [];
-        for (const rel of related) {
-          if (rel.type === 'job' && rel.id) {
-            if (!estimatesByJob.has(rel.id)) {
-              estimatesByJob.set(rel.id, []);
-            }
-            estimatesByJob.get(rel.id)!.push(estimate);
-          }
-        }
-      }
 
       // Calculate financial metrics
       let totalRevenue = 0;
@@ -91,52 +89,130 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
       let revenueLastMonth = 0;
       let revenuePreviousMonth = 0;
 
-      for (const job of jobs) {
-        if (!job.jnid) continue;
+      // MODE 1: INVOICE-BASED REVENUE (uses actual invoiced amounts with NET calculations)
+      if (useInvoicedAmounts && consolidatedTool) {
+        for (const job of jobs) {
+          if (!job.jnid) continue;
 
-        const jobDate = job.date_created || 0;
-        const statusName = (job.status_name || '').toLowerCase();
+          const jobDate = job.date_created || 0;
+          const statusName = (job.status_name || '').toLowerCase();
 
-        // Categorize jobs
-        if (statusName.includes('complete') || statusName.includes('won') || statusName.includes('sold')) {
-          wonJobs += 1;
-        } else if (statusName.includes('lost') || statusName.includes('cancelled')) {
-          lostJobs += 1;
-        } else {
-          activeJobs += 1;
-        }
-
-        // Calculate revenue
-        const jobEstimates = estimatesByJob.get(job.jnid) || [];
-        let jobRevenue = 0;
-
-        for (const estimate of jobEstimates) {
-          const estimateValue = parseFloat(estimate.total || 0) || 0;
-          const estimateStatus = (estimate.status_name || '').toLowerCase();
-          const isSigned = estimate.date_signed > 0;
-          const isApproved = isSigned || estimateStatus === 'approved' || estimateStatus === 'signed';
-
-          if (isApproved) {
-            jobRevenue += estimateValue;
-            approvedRevenue += estimateValue;
+          // Categorize jobs
+          if (statusName.includes('complete') || statusName.includes('won') || statusName.includes('sold')) {
+            wonJobs += 1;
+          } else if (statusName.includes('lost') || statusName.includes('cancelled')) {
+            lostJobs += 1;
           } else {
-            pendingRevenue += estimateValue;
+            activeJobs += 1;
+          }
+
+          try {
+            // Query consolidated financials for this job
+            const financialsResponse = await consolidatedTool.execute(
+              {
+                job_id: job.jnid,
+                verbosity: 'compact',
+                page_size: 100,
+                include_invoices: true,
+                include_credit_memos: true,
+                include_payments: false, // Don't need payments for revenue calculation
+                include_refunds: true,
+              },
+              context
+            );
+
+            // Extract NET invoiced amount (invoiced - credit_memos - refunds)
+            const netInvoiced = financialsResponse.summary?.net_invoiced || 0;
+            const jobRevenue = netInvoiced;
+
+            if (jobRevenue > 0) {
+              totalRevenue += jobRevenue;
+              approvedRevenue += jobRevenue;
+
+              // Monthly tracking
+              if (jobDate > thirtyDaysAgo) {
+                revenueLastMonth += jobRevenue;
+              } else if (jobDate > sixtyDaysAgo) {
+                revenuePreviousMonth += jobRevenue;
+              }
+
+              // Revenue by month
+              if (jobDate > 0) {
+                const monthKey = new Date(jobDate).toISOString().substring(0, 7);
+                revenueByMonth.set(monthKey, (revenueByMonth.get(monthKey) || 0) + jobRevenue);
+              }
+            }
+          } catch (error) {
+            // Gracefully handle errors for individual jobs
+            console.error(`Error fetching financials for job ${job.jnid}:`, error);
+          }
+        }
+      } else {
+        // MODE 2: ESTIMATE-BASED REVENUE (legacy behavior for backward compatibility)
+        const estimatesResponse = await this.client.get(context.apiKey, 'estimates', { size: 100 });
+        const estimates = estimatesResponse.data?.results || [];
+
+        // Build estimate lookup by job
+        const estimatesByJob = new Map<string, any[]>();
+        for (const estimate of estimates) {
+          const related = estimate.related || [];
+          for (const rel of related) {
+            if (rel.type === 'job' && rel.id) {
+              if (!estimatesByJob.has(rel.id)) {
+                estimatesByJob.set(rel.id, []);
+              }
+              estimatesByJob.get(rel.id)!.push(estimate);
+            }
           }
         }
 
-        totalRevenue += jobRevenue;
+        for (const job of jobs) {
+          if (!job.jnid) continue;
 
-        // Monthly tracking
-        if (jobDate > thirtyDaysAgo) {
-          revenueLastMonth += jobRevenue;
-        } else if (jobDate > sixtyDaysAgo) {
-          revenuePreviousMonth += jobRevenue;
-        }
+          const jobDate = job.date_created || 0;
+          const statusName = (job.status_name || '').toLowerCase();
 
-        // Revenue by month
-        if (jobDate > 0) {
-          const monthKey = new Date(jobDate).toISOString().substring(0, 7);
-          revenueByMonth.set(monthKey, (revenueByMonth.get(monthKey) || 0) + jobRevenue);
+          // Categorize jobs
+          if (statusName.includes('complete') || statusName.includes('won') || statusName.includes('sold')) {
+            wonJobs += 1;
+          } else if (statusName.includes('lost') || statusName.includes('cancelled')) {
+            lostJobs += 1;
+          } else {
+            activeJobs += 1;
+          }
+
+          // Calculate revenue
+          const jobEstimates = estimatesByJob.get(job.jnid) || [];
+          let jobRevenue = 0;
+
+          for (const estimate of jobEstimates) {
+            const estimateValue = parseFloat(estimate.total || 0) || 0;
+            const estimateStatus = (estimate.status_name || '').toLowerCase();
+            const isSigned = estimate.date_signed > 0;
+            const isApproved = isSigned || estimateStatus === 'approved' || estimateStatus === 'signed';
+
+            if (isApproved) {
+              jobRevenue += estimateValue;
+              approvedRevenue += estimateValue;
+            } else {
+              pendingRevenue += estimateValue;
+            }
+          }
+
+          totalRevenue += jobRevenue;
+
+          // Monthly tracking
+          if (jobDate > thirtyDaysAgo) {
+            revenueLastMonth += jobRevenue;
+          } else if (jobDate > sixtyDaysAgo) {
+            revenuePreviousMonth += jobRevenue;
+          }
+
+          // Revenue by month
+          if (jobDate > 0) {
+            const monthKey = new Date(jobDate).toISOString().substring(0, 7);
+            revenueByMonth.set(monthKey, (revenueByMonth.get(monthKey) || 0) + jobRevenue);
+          }
         }
       }
 
