@@ -1,5 +1,5 @@
 /**
- * Tool Registry - 75 TOOLS (2025-01-14 Phase 2 Part 2 Optimization Complete)
+ * Tool Registry - 73 TOOLS (2025-01-14 Phase 3 Part 1 Optimization Complete)
  *
  * REMOVED (Archived - 11 tools):
  * - AnalyzeDuplicateContactsTool, AnalyzeDuplicateJobsTool
@@ -70,11 +70,18 @@
  * - get_attachments: Uses /files endpoint (documents/orders don't exist)
  * - get_file_by_id: NEW tool for GET /files/<jnid>
  *
+ * REMOVED (Phase 3 Part 1 - 3 materials tracking tools consolidated into 1):
+ * - Materials Tracking (3 tools → 1): analyze_material_costs, get_material_usage_report, get_material_inventory_insights
+ *   → Replaced by: get_materials_tracking(analysis_type='costs'|'usage'|'inventory')
+ * - Kept standalone: get_estimate_materials (estimate-specific analysis)
+ * - See: src/tools/archived/materials/tracking/README.md for migration guide
+ *
  * OPTIMIZATION PROGRESS:
  * - Phase 1 Complete: 103 → 89 tools (13.6% reduction)
  * - Phase 2 Part 1 Complete: 89 → 79 tools (11.2% additional reduction)
  * - Phase 2 Part 2 Complete: 79 → 75 tools (5.1% additional reduction)
- * - Total Reduction: 103 → 75 tools (27.2% overall reduction)
+ * - Phase 3 Part 1 Complete: 75 → 73 tools (2.7% additional reduction)
+ * - Total Reduction: 103 → 73 tools (29.1% overall reduction)
  */
 
 import { BaseTool } from './baseTool.js';
@@ -174,11 +181,11 @@ import { GetJobAttachmentsDistributionTool } from './attachments/getJobAttachmen
 
 // ===== MATERIALS TOOLS =====
 
-// Material Tracking
+// Material Tracking - CONSOLIDATED (Phase 3 Part 1: 4 → 2 tools)
 import { GetEstimateMaterialsTool } from './materials/getEstimateMaterials.js';
-import { AnalyzeMaterialCostsTool } from './materials/analyzeMaterialCosts.js';
-import { GetMaterialUsageReportTool } from './materials/getMaterialUsageReport.js';
-import { GetMaterialInventoryInsightsTool } from './materials/getMaterialInventoryInsights.js';
+import { GetMaterialsTrackingTool } from './materials/getMaterialsTracking.js';
+// ARCHIVED (Phase 3 Part 1): AnalyzeMaterialCostsTool, GetMaterialUsageReportTool, GetMaterialInventoryInsightsTool
+// See: src/tools/archived/materials/tracking/README.md for migration guide
 
 // Material Calculations
 import { CalculateRoofingMaterialsTool } from './materials/calculateRoofingMaterials.js';
@@ -333,13 +340,12 @@ export class ToolRegistry {
     // === BUSINESS INTELLIGENCE (0 tools) === [Phase 1 Part 2: Removed search_insurance_jobs - redundant]
     // ARCHIVED: SearchInsuranceJobsTool - Replaced by SearchJobsEnhancedTool
 
-    // === MATERIALS (11 tools) ===
+    // === MATERIALS (9 tools) === [Phase 3 Part 1: Consolidated tracking 4 → 2]
 
-    // Material Tracking
+    // Material Tracking - CONSOLIDATED (Phase 3 Part 1: 4 → 2 tools)
     this.registerTool(new GetEstimateMaterialsTool());
-    this.registerTool(new AnalyzeMaterialCostsTool());
-    this.registerTool(new GetMaterialUsageReportTool());
-    this.registerTool(new GetMaterialInventoryInsightsTool());
+    this.registerTool(new GetMaterialsTrackingTool());
+    // ARCHIVED: AnalyzeMaterialCostsTool, GetMaterialUsageReportTool, GetMaterialInventoryInsightsTool
 
     // Material Calculations
     this.registerTool(new CalculateRoofingMaterialsTool());

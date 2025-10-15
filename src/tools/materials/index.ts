@@ -3,12 +3,11 @@
  * Export all material tracking and calculation tools
  */
 
-// Material Tracking Tools (existing)
+// Material Tracking Tools - CONSOLIDATED (Phase 3 Part 1: 4 → 2 tools)
 export { default as getEstimateMaterialsTool } from './getEstimateMaterials.js';
-export { default as analyzeMaterialCostsTool } from './analyzeMaterialCosts.js';
-export { default as getMaterialUsageReportTool } from './getMaterialUsageReport.js';
-// export { default as getSupplierComparisonTool } from './getSupplierComparison.js'; // ARCHIVED/EXPERIMENTAL
-export { default as getMaterialInventoryInsightsTool } from './getMaterialInventoryInsights.js';
+export { default as getMaterialsTrackingTool } from './getMaterialsTracking.js';
+// ARCHIVED (Phase 3 Part 1): analyzeMaterialCostsTool, getMaterialUsageReportTool, getMaterialInventoryInsightsTool
+// See: src/tools/archived/materials/tracking/README.md for migration guide
 
 // Material Calculation Tools (new)
 export { default as calculateRoofingMaterialsTool } from './calculateRoofingMaterials.js';
@@ -19,12 +18,10 @@ export { default as optimizeMaterialOrdersTool } from './optimizeMaterialOrders.
 export { default as getMaterialSpecificationsTool } from './getMaterialSpecifications.js';
 export { default as compareMaterialAlternativesTool } from './compareMaterialAlternatives.js';
 
-// Re-export tool classes for type checking
+// Re-export tool classes for type checking - CONSOLIDATED (Phase 3 Part 1)
 export { GetEstimateMaterialsTool } from './getEstimateMaterials.js';
-export { AnalyzeMaterialCostsTool } from './analyzeMaterialCosts.js';
-export { GetMaterialUsageReportTool } from './getMaterialUsageReport.js';
-// export { GetSupplierComparisonTool } from './getSupplierComparison.js'; // ARCHIVED/EXPERIMENTAL
-export { GetMaterialInventoryInsightsTool } from './getMaterialInventoryInsights.js';
+export { GetMaterialsTrackingTool } from './getMaterialsTracking.js';
+// ARCHIVED (Phase 3 Part 1): AnalyzeMaterialCostsTool, GetMaterialUsageReportTool, GetMaterialInventoryInsightsTool
 export { CalculateRoofingMaterialsTool } from './calculateRoofingMaterials.js';
 export { CalculateSidingMaterialsTool } from './calculateSidingMaterials.js';
 export { EstimateMaterialsFromJobTool } from './estimateMaterialsFromJob.js';
