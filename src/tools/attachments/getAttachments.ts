@@ -1,26 +1,16 @@
 /**
  * Get Attachments Tool
- * Retrieve file attachments from JobNimbus /files endpoint
+ * Retrieve file attachments from multiple JobNimbus endpoints
  *
- * VERIFIED WORKING - Uses official JobNimbus API endpoint
- * Based on official documentation: GET /files
+ * MULTI-SOURCE DOCUMENT RETRIEVAL - Matches JobNimbus UI behavior
+ * Queries THREE sources in parallel:
+ * 1. /api1/files - Direct file attachments
+ * 2. /api1/documents - Documents
+ * 3. /api1/orders - Orders (optional)
  *
- * Response structure:
- * {
- *   "count": number,
- *   "files": [
- *     {
- *       "jnid": string,
- *       "filename": string,
- *       "content_type": string,
- *       "size": number,
- *       "date_created": timestamp,
- *       "related": [...],
- *       "primary": {...},
- *       ...
- *     }
- *   ]
- * }
+ * Response structure is normalized across all sources and deduplicated.
+ * This ensures we retrieve ALL documents that appear in the JobNimbus UI,
+ * not just direct file attachments.
  *
  * Integrated with Redis cache system for performance optimization
  */
@@ -118,7 +108,7 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_attachments',
-      description: 'Retrieve file attachments from JobNimbus /files endpoint using server-side Elasticsearch filtering. Accepts job NUMBER (e.g., "1820") or internal JNID - both work automatically. Returns all file attachments with metadata including filename, content type, size, related entities, and creation dates. Supports filtering by related entity (job_id, contact_id) using Elasticsearch query syntax, and file type (client-side). Based on official JobNimbus API.',
+      description: 'MULTI-SOURCE document retrieval matching JobNimbus UI behavior. Queries /files, /documents, and /orders endpoints in parallel to get complete document list. Accepts job NUMBER (e.g., "1820") or internal JNID - both work automatically. Returns all documents with metadata including filename, content type, size, source endpoint, related entities, and creation dates. Supports filtering by related entity (job_id, contact_id) using Elasticsearch query syntax, and file type (client-side). Automatically deduplicates across sources.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -204,35 +194,90 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
           // Determine entity ID for filtering
           const entityId = input.job_id || input.contact_id || input.related_to;
 
-          // Build query parameters with Elasticsearch filter if entity ID provided
-          const params: Record<string, any> = {
-            size: fetchSize,
-          };
-
-          // Use server-side Elasticsearch filtering when entity ID is provided
-          if (entityId) {
-            const filter = JSON.stringify({
+          // Build Elasticsearch filters for each source endpoint
+          const buildFilter = (fieldPath: string) => {
+            if (!entityId) return undefined;
+            return JSON.stringify({
               must: [
                 {
                   term: {
-                    'related.id': entityId
+                    [fieldPath]: entityId
                   }
                 }
               ],
             });
-            params.filter = filter;
+          };
+
+          const filesFilter = buildFilter('related.id');
+          const documentsFilter = buildFilter('related.id');
+          const ordersFilter = buildFilter('related.id');
+
+          // Execute 3 parallel queries to match JobNimbus UI behavior
+          const [filesResponse, documentsResponse, ordersResponse] = await Promise.all([
+            this.client.get(context.apiKey, 'files', {
+              filter: filesFilter,
+              size: fetchSize
+            }).catch(err => {
+              // Graceful degradation - if endpoint fails, return empty array
+              return { data: { files: [] }, error: err };
+            }),
+            this.client.get(context.apiKey, 'documents', {
+              filter: documentsFilter,
+              size: fetchSize
+            }).catch(err => {
+              return { data: { documents: [] }, error: err };
+            }),
+            this.client.get(context.apiKey, 'orders', {
+              filter: ordersFilter,
+              size: fetchSize
+            }).catch(err => {
+              return { data: { orders: [] }, error: err };
+            }),
+          ]);
+
+          // Extract arrays from each response - handle different response structures
+          const filesArray = filesResponse.data?.files || filesResponse.data || [];
+          const documentsArray = documentsResponse.data?.documents || documentsResponse.data || [];
+          const ordersArray = ordersResponse.data?.orders || ordersResponse.data || [];
+
+          // Track source counts for metadata
+          const sourceCounts = {
+            files: Array.isArray(filesArray) ? filesArray.length : 0,
+            documents: Array.isArray(documentsArray) ? documentsArray.length : 0,
+            orders: Array.isArray(ordersArray) ? ordersArray.length : 0,
+          };
+
+          // Combine all sources
+          let allFiles: JobNimbusFile[] = [
+            ...(Array.isArray(filesArray) ? filesArray : []),
+            ...(Array.isArray(documentsArray) ? documentsArray : []),
+            ...(Array.isArray(ordersArray) ? ordersArray : []),
+          ];
+
+          // Deduplicate by jnid (primary) or fallback to composite key
+          const seenIds = new Set<string>();
+          const deduplicatedFiles: JobNimbusFile[] = [];
+
+          for (const file of allFiles) {
+            // Primary deduplication by jnid, fallback to composite key
+            const fileId = file.jnid || file.id || `${file.filename}_${file.size}_${file.date_created}`;
+
+            if (!seenIds.has(fileId)) {
+              seenIds.add(fileId);
+              deduplicatedFiles.push(file);
+            }
           }
 
-          // Query /files endpoint with optional Elasticsearch filter
-          const response = await this.client.get(context.apiKey, 'files', params);
+          // Sort by date_created descending (newest first)
+          deduplicatedFiles.sort((a, b) => {
+            const dateA = a.date_created || 0;
+            const dateB = b.date_created || 0;
+            return dateB - dateA;
+          });
 
-          // Extract files from response (API returns { count, files })
-          let allFiles: JobNimbusFile[] = response.data?.files || response.data || [];
-          if (!Array.isArray(allFiles)) {
-            allFiles = [];
-          }
-
-          const totalFromAPI = response.data?.count || allFiles.length;
+          // Use deduplicated files for further processing
+          allFiles = deduplicatedFiles;
+          const totalFromAPI = allFiles.length;
 
           // Apply file_type filter if provided (client-side)
           if (input.file_type) {
@@ -281,6 +326,14 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
             total_after_filtering: allFiles.length,
             from: fromIndex,
             size: fetchSize,
+            sources_queried: {
+              files_endpoint: sourceCounts.files,
+              documents_endpoint: sourceCounts.documents,
+              orders_endpoint: sourceCounts.orders,
+              total_before_deduplication: sourceCounts.files + sourceCounts.documents + sourceCounts.orders,
+              total_after_deduplication: totalFromAPI,
+              duplicates_removed: (sourceCounts.files + sourceCounts.documents + sourceCounts.orders) - totalFromAPI,
+            },
             filter_applied: {
               entity_id: entityId,
               job_id: input.job_id,
@@ -313,7 +366,7 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
               record_type_name: file.record_type_name,
               type: file.type,
             })),
-            _note: 'Uses official /files endpoint with server-side Elasticsearch filtering. Accepts job NUMBER (users only see numbers like "1820") or internal JNID - both work. File type filtering is client-side. To get ALL files, omit job_id/contact_id/related_to.',
+            _note: 'MULTI-SOURCE RETRIEVAL: Queries /files, /documents, and /orders endpoints in parallel to match JobNimbus UI behavior. Automatically deduplicates across sources. Accepts job NUMBER (users only see numbers like "1820") or internal JNID - both work. File type filtering is client-side. To get ALL files, omit job_id/contact_id/related_to.',
           };
         } catch (error) {
           return {

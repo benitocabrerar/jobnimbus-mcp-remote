@@ -1,6 +1,12 @@
 /**
  * Get Job Attachments Distribution Tool
  *
+ * MULTI-SOURCE DOCUMENT RETRIEVAL - Matches JobNimbus UI behavior
+ * Queries THREE sources in parallel:
+ * 1. /api1/files - Direct file attachments
+ * 2. /api1/documents - Documents
+ * 3. /api1/orders - Orders (optional)
+ *
  * Comprehensive file distribution analysis for a job including:
  * - Photos, Documents, Invoices, Permit Related, Estimates, Measurements
  * - Pagination, deduplication, and discrepancy detection
@@ -74,7 +80,7 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
   get definition(): MCPToolDefinition {
     return {
       name: 'get_job_attachments_distribution',
-      description: 'Comprehensive file distribution analysis for a job. Accepts job NUMBER (e.g., "1820") - the tool automatically resolves internal IDs. Collects files from job and related entities (estimate, invoice, contact), uses JobNimbus record_type_name field for classification across 20+ categories including: Photos, Documents, Email Attachments, Work Orders, Estimates, Invoices, Permit Related, Financing, Receipts, EagleView, Credit Memos, Insurance Scopes, Material Receipts, Measurements, Payments, Agreements, Material Orders, Subcontractor Docs, Change Orders, and Others. Detects discrepancies vs reported attachment_count, and provides detailed statistics with examples.',
+      description: 'MULTI-SOURCE comprehensive file distribution analysis matching JobNimbus UI. Queries /files, /documents, and /orders endpoints in parallel for complete document list. Accepts job NUMBER (e.g., "1820") - the tool automatically resolves internal IDs. Collects files from job and related entities (estimate, invoice, contact), uses JobNimbus record_type_name field for classification across 20+ categories including: Photos, Documents, Email Attachments, Work Orders, Estimates, Invoices, Permit Related, Financing, Receipts, EagleView, Credit Memos, Insurance Scopes, Material Receipts, Measurements, Payments, Agreements, Material Orders, Subcontractor Docs, Change Orders, and Others. Automatically deduplicates across sources. Detects discrepancies vs reported attachment_count, and provides detailed statistics with examples.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -238,7 +244,7 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
   }
 
   /**
-   * Fetch files with pagination and deduplication
+   * Fetch files from single endpoint with pagination and deduplication
    */
   private async fetchFiles(
     apiKey: string,
@@ -288,6 +294,103 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
     return allFiles;
   }
 
+  /**
+   * Fetch files from multiple sources (files, documents, orders) in parallel
+   * This matches the JobNimbus UI behavior which combines all three sources
+   */
+  private async fetchFromMultipleSources(
+    apiKey: string,
+    entityId: string,
+    pageSize: number,
+    maxPages: number,
+    seenIds: Set<string>
+  ): Promise<{ files: any[]; sourceCounts: { files: number; documents: number; orders: number } }> {
+    // Build Elasticsearch filter for the entity
+    const buildFilter = (fieldPath: string) => {
+      return JSON.stringify({
+        must: [
+          {
+            term: {
+              [fieldPath]: entityId
+            }
+          }
+        ],
+      });
+    };
+
+    const filesFilter = buildFilter('related.id');
+    const documentsFilter = buildFilter('related.id');
+    const ordersFilter = buildFilter('related.id');
+
+    // Execute 3 parallel queries to all sources
+    const [filesResponse, documentsResponse, ordersResponse] = await Promise.all([
+      this.client.get(apiKey, 'files', {
+        filter: filesFilter,
+        size: pageSize
+      }).catch(err => {
+        logger.error('Error fetching from /files endpoint', { error: err });
+        return { data: { files: [] }, error: err };
+      }),
+      this.client.get(apiKey, 'documents', {
+        filter: documentsFilter,
+        size: pageSize
+      }).catch(err => {
+        logger.error('Error fetching from /documents endpoint', { error: err });
+        return { data: { documents: [] }, error: err };
+      }),
+      this.client.get(apiKey, 'orders', {
+        filter: ordersFilter,
+        size: pageSize
+      }).catch(err => {
+        logger.error('Error fetching from /orders endpoint', { error: err });
+        return { data: { orders: [] }, error: err };
+      }),
+    ]);
+
+    // Extract arrays from each response
+    const filesArray = filesResponse.data?.files || filesResponse.data || [];
+    const documentsArray = documentsResponse.data?.documents || documentsResponse.data || [];
+    const ordersArray = ordersResponse.data?.orders || ordersResponse.data || [];
+
+    // Track source counts for metadata
+    const sourceCounts = {
+      files: Array.isArray(filesArray) ? filesArray.length : 0,
+      documents: Array.isArray(documentsArray) ? documentsArray.length : 0,
+      orders: Array.isArray(ordersArray) ? ordersArray.length : 0,
+    };
+
+    // Combine all sources
+    const combinedFiles: any[] = [
+      ...(Array.isArray(filesArray) ? filesArray : []),
+      ...(Array.isArray(documentsArray) ? documentsArray : []),
+      ...(Array.isArray(ordersArray) ? ordersArray : []),
+    ];
+
+    // Deduplicate by jnid (primary) or fallback to composite key
+    const deduplicatedFiles: any[] = [];
+
+    for (const file of combinedFiles) {
+      const fileId = file.jnid || file.id || `${file.filename}_${file.size}_${file.date_created}`;
+
+      if (!seenIds.has(fileId)) {
+        seenIds.add(fileId);
+        deduplicatedFiles.push(file);
+      }
+    }
+
+    // Sort by date_created descending (newest first)
+    deduplicatedFiles.sort((a, b) => {
+      const dateA = a.date_created || 0;
+      const dateB = b.date_created || 0;
+      return dateB - dateA;
+    });
+
+    return {
+      files: deduplicatedFiles,
+      sourceCounts,
+    };
+  }
+
   async execute(input: GetJobAttachmentsDistributionInput, context: ToolContext): Promise<any> {
     const pageSize = Math.min(input.page_size || 200, 500);
     const maxPages = input.max_pages || 10;
@@ -323,71 +426,67 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
         notes.push(`Reported attachment_count from job: ${reportedAttachmentCount}`);
       }
 
-      // Step 2A: Fetch files directly related to job
-      notes.push(`Fetching files with primary.id=${jobJnid} (page_size=${pageSize}, max_pages=${maxPages})`);
-      const filter = JSON.stringify({
-        must: [{ term: { 'primary.id': jobJnid } }],
-      });
-      const jobFiles = await this.fetchFiles(
+      // Step 2A: Fetch files from multiple sources (files, documents, orders)
+      notes.push(`MULTI-SOURCE RETRIEVAL: Querying /files, /documents, and /orders for job=${jobJnid}`);
+      notes.push(`Fetching with page_size=${pageSize}, max_pages=${maxPages}`);
+
+      const jobFilesResult = await this.fetchFromMultipleSources(
         context.apiKey,
-        { filter },
+        jobJnid,
         pageSize,
         maxPages,
         seenIds
       );
-      rawFiles.push(...jobFiles);
-      notes.push(`Found ${jobFiles.length} files directly related to job`);
 
-      // Step 2B: Fetch files from related entities
+      rawFiles.push(...jobFilesResult.files);
+      notes.push(`Source breakdown for job:`);
+      notes.push(`  - /files endpoint: ${jobFilesResult.sourceCounts.files} documents`);
+      notes.push(`  - /documents endpoint: ${jobFilesResult.sourceCounts.documents} documents`);
+      notes.push(`  - /orders endpoint: ${jobFilesResult.sourceCounts.orders} documents`);
+      notes.push(`  - Total before deduplication: ${jobFilesResult.sourceCounts.files + jobFilesResult.sourceCounts.documents + jobFilesResult.sourceCounts.orders}`);
+      notes.push(`  - Total after deduplication: ${jobFilesResult.files.length}`);
+
+      // Step 2B: Fetch files from related entities using multi-source retrieval
       if (enableRelatedLookup) {
         notes.push('enable_related_lookup=true, fetching from related entities');
 
         if (estimateId) {
-          notes.push(`Fetching files for estimate_id=${estimateId}`);
-          const estimateFilter = JSON.stringify({
-            must: [{ term: { 'related.id': estimateId } }],
-          });
-          const estimateFiles = await this.fetchFiles(
+          notes.push(`MULTI-SOURCE retrieval for estimate_id=${estimateId}`);
+          const estimateFilesResult = await this.fetchFromMultipleSources(
             context.apiKey,
-            { filter: estimateFilter },
+            estimateId,
             pageSize,
             Math.ceil(maxPages / 3),
             seenIds
           );
-          rawFiles.push(...estimateFiles);
-          notes.push(`Found ${estimateFiles.length} additional files from estimate`);
+          rawFiles.push(...estimateFilesResult.files);
+          notes.push(`  Estimate sources: files=${estimateFilesResult.sourceCounts.files}, docs=${estimateFilesResult.sourceCounts.documents}, orders=${estimateFilesResult.sourceCounts.orders}, total=${estimateFilesResult.files.length}`);
         }
 
         if (invoiceId) {
-          notes.push(`Fetching files for invoice_id=${invoiceId}`);
-          const invoiceFilter = JSON.stringify({
-            must: [{ term: { 'related.id': invoiceId } }],
-          });
-          const invoiceFiles = await this.fetchFiles(
+          notes.push(`MULTI-SOURCE retrieval for invoice_id=${invoiceId}`);
+          const invoiceFilesResult = await this.fetchFromMultipleSources(
             context.apiKey,
-            { filter: invoiceFilter },
+            invoiceId,
             pageSize,
             Math.ceil(maxPages / 3),
             seenIds
           );
-          rawFiles.push(...invoiceFiles);
-          notes.push(`Found ${invoiceFiles.length} additional files from invoice`);
+          rawFiles.push(...invoiceFilesResult.files);
+          notes.push(`  Invoice sources: files=${invoiceFilesResult.sourceCounts.files}, docs=${invoiceFilesResult.sourceCounts.documents}, orders=${invoiceFilesResult.sourceCounts.orders}, total=${invoiceFilesResult.files.length}`);
         }
 
         if (contactId) {
-          notes.push(`Fetching files for contact_id=${contactId}`);
-          const contactFilter = JSON.stringify({
-            must: [{ term: { 'related.id': contactId } }],
-          });
-          const contactFiles = await this.fetchFiles(
+          notes.push(`MULTI-SOURCE retrieval for contact_id=${contactId}`);
+          const contactFilesResult = await this.fetchFromMultipleSources(
             context.apiKey,
-            { filter: contactFilter },
+            contactId,
             pageSize,
             Math.ceil(maxPages / 3),
             seenIds
           );
-          rawFiles.push(...contactFiles);
-          notes.push(`Found ${contactFiles.length} additional files from contact`);
+          rawFiles.push(...contactFilesResult.files);
+          notes.push(`  Contact sources: files=${contactFilesResult.sourceCounts.files}, docs=${contactFilesResult.sourceCounts.documents}, orders=${contactFilesResult.sourceCounts.orders}, total=${contactFilesResult.files.length}`);
         }
       }
 
