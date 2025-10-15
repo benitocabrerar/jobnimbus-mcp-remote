@@ -12,20 +12,34 @@
  * This ensures we retrieve ALL documents that appear in the JobNimbus UI,
  * not just direct file attachments.
  *
- * Integrated with Redis cache system for performance optimization
+ * PHASE 3: Handle-based response system for token optimization
+ * - Automatic response size detection and handle storage
+ * - Verbosity levels: summary/compact/detailed/raw
+ * - Field selection support
+ * - Redis cache + handle storage integration
  */
 
 import { BaseTool } from '../baseTool.js';
-import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { MCPToolDefinition, ToolContext, BaseToolInput } from '../../types/index.js';
 import { withCache } from '../../services/cacheService.js';
 import { CACHE_PREFIXES, getTTL } from '../../config/cache.js';
 
-interface GetAttachmentsInput {
+interface GetAttachmentsInput extends BaseToolInput {
+  // Entity filtering
   job_id?: string;
   contact_id?: string;
   related_to?: string;
+
+  // Pagination
   from?: number;
   size?: number;
+  page_size?: number;
+
+  // Response control (Phase 3: Handle-based system)
+  verbosity?: 'summary' | 'compact' | 'detailed' | 'raw';
+  fields?: string;
+
+  // File filtering
   file_type?: string;
 }
 
@@ -94,24 +108,45 @@ interface JobNimbusFile {
 
 /**
  * Generate deterministic cache identifier from input parameters
- * Format: {entity_id}:{file_type}:{from}:{size}
+ * Format: {entity_id}:{file_type}:{from}:{size}:{page_size}:{verbosity}:{fields}
+ *
+ * CRITICAL: Must include verbosity and page_size to prevent returning wrong cached responses
  */
 function generateCacheIdentifier(input: GetAttachmentsInput): string {
   const entityId = input.job_id || input.contact_id || input.related_to || 'all';
   const fileType = input.file_type || 'all';
   const from = input.from || 0;
   const size = input.size || 100;
-  return `${entityId}:${fileType}:${from}:${size}`;
+  const pageSize = input.page_size || 'null';
+  const verbosity = input.verbosity || 'null';
+  const fields = input.fields || 'null';
+  return `${entityId}:${fileType}:${from}:${size}:${pageSize}:${verbosity}:${fields}`;
 }
 
 export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_attachments',
-      description: 'MULTI-SOURCE document retrieval matching JobNimbus UI behavior. Queries /files, /documents, and /orders endpoints in parallel to get complete document list. Accepts job NUMBER (e.g., "1820") or internal JNID - both work automatically. Returns all documents with metadata including filename, content type, size, source endpoint, related entities, and creation dates. Supports filtering by related entity (job_id, contact_id) using Elasticsearch query syntax, and file type (client-side). Automatically deduplicates across sources.',
+      description: 'MULTI-SOURCE document retrieval with handle-based response optimization. IMPORTANT: By default returns compact summary (5 files, 15 fields each) with result_handle for full data retrieval. Use verbosity parameter to control detail level. Large responses (>25 KB) automatically stored in Redis with 15-min TTL - use fetch_by_handle to retrieve. Queries /files, /documents, and /orders endpoints in parallel to match JobNimbus UI behavior. Accepts job NUMBER (e.g., "1820") or internal JNID - both work automatically. Supports entity filtering (job_id, contact_id), file type filtering, and automatic deduplication.',
       inputSchema: {
         type: 'object',
         properties: {
+          // NEW: Handle-based response control
+          verbosity: {
+            type: 'string',
+            description: 'Response detail level: "summary" (5 fields, max 5 files), "compact" (15 fields, max 20 files - DEFAULT), "detailed" (50 fields, max 50 files), "raw" (all fields). Compact mode prevents chat saturation.',
+            enum: ['summary', 'compact', 'detailed', 'raw'],
+          },
+          fields: {
+            type: 'string',
+            description: 'Comma-separated field names to return. Example: "jnid,filename,size_bytes,content_type,date_created,record_type_name". Overrides verbosity-based field selection.',
+          },
+          page_size: {
+            type: 'number',
+            description: 'Number of records per page (default: 20, max: 100). Replaces "size" parameter. Use with cursor for pagination.',
+          },
+
+          // Entity filtering
           job_id: {
             type: 'string',
             description: 'Filter files by job number (e.g., "1820") or internal JNID. Both formats work automatically.',
@@ -124,14 +159,18 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
             type: 'string',
             description: 'Filter files by any related entity ID (job, contact, estimate, etc.)',
           },
+
+          // Legacy pagination
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0)',
+            description: 'Starting index for pagination (default: 0). NOTE: Prefer page_size + cursor for large datasets.',
           },
           size: {
             type: 'number',
-            description: 'Number of records to fetch (default: 100, max: 500). Entity filtering is server-side via Elasticsearch.',
+            description: 'Number of records to fetch (default: 100, max: 500). DEPRECATED: Use page_size instead. Entity filtering is server-side via Elasticsearch.',
           },
+
+          // File filtering
           file_type: {
             type: 'string',
             description: 'Filter by file type (e.g., "pdf", "jpg", "png", "application/pdf")',
@@ -175,8 +214,10 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
   }
 
   async execute(input: GetAttachmentsInput, context: ToolContext): Promise<any> {
+    // Determine page size - prefer page_size (new) over size (legacy)
+    const pageSize = input.page_size || input.size || 100;
     const fromIndex = input.from || 0;
-    const fetchSize = Math.min(input.size || 100, 500);
+    const fetchSize = Math.min(pageSize, 500);
 
     // Generate cache identifier
     const cacheIdentifier = generateCacheIdentifier(input);
@@ -320,54 +361,107 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
             percentage: ((count / allFiles.length) * 100).toFixed(1),
           })).sort((a, b) => b.count - a.count);
 
-          return {
-            count: paginatedFiles.length,
-            total_from_api: totalFromAPI,
-            total_after_filtering: allFiles.length,
-            from: fromIndex,
-            size: fetchSize,
-            sources_queried: {
-              files_endpoint: sourceCounts.files,
-              documents_endpoint: sourceCounts.documents,
-              orders_endpoint: sourceCounts.orders,
-              total_before_deduplication: sourceCounts.files + sourceCounts.documents + sourceCounts.orders,
-              total_after_deduplication: totalFromAPI,
-              duplicates_removed: (sourceCounts.files + sourceCounts.documents + sourceCounts.orders) - totalFromAPI,
-            },
-            filter_applied: {
-              entity_id: entityId,
-              job_id: input.job_id,
-              contact_id: input.contact_id,
-              related_to: input.related_to,
-              file_type: input.file_type,
-            },
-            total_size_mb: totalSizeMB.toFixed(2),
-            file_types: Object.fromEntries(fileTypeMap),
-            record_type_distribution: recordTypeDistribution,
+          // Build page info
+          const pageInfo = {
             has_more: totalFromAPI > fromIndex + paginatedFiles.length,
-            files: paginatedFiles.map((file) => ({
-              jnid: file.jnid,
-              filename: file.filename,
-              content_type: file.content_type,
-              file_extension: file.filename?.split('.').pop()?.toLowerCase(),
-              size_bytes: file.size,
-              size_mb: ((file.size || 0) / (1024 * 1024)).toFixed(2),
-              date_created: file.date_created,
-              is_active: file.is_active,
-              is_archived: file.is_archived,
-              is_private: file.is_private,
-              created_by: file.created_by,
-              created_by_name: file.created_by_name,
-              primary: file.primary,
-              related: file.related,
-              customer: file.customer,
-              sales_rep: file.sales_rep,
-              record_type: file.record_type,
-              record_type_name: file.record_type_name,
-              type: file.type,
-            })),
-            _note: 'MULTI-SOURCE RETRIEVAL: Queries /files, /documents, and /orders endpoints in parallel to match JobNimbus UI behavior. Automatically deduplicates across sources. Accepts job NUMBER (users only see numbers like "1820") or internal JNID - both work. File type filtering is client-side. To get ALL files, omit job_id/contact_id/related_to.',
+            total: allFiles.length,
+            current_page: Math.floor(fromIndex / pageSize) + 1,
+            total_pages: Math.ceil(allFiles.length / pageSize),
           };
+
+          // Map files to clean output format
+          const mappedFiles = paginatedFiles.map((file) => ({
+            jnid: file.jnid,
+            filename: file.filename,
+            content_type: file.content_type,
+            file_extension: file.filename?.split('.').pop()?.toLowerCase(),
+            size_bytes: file.size,
+            size_mb: ((file.size || 0) / (1024 * 1024)).toFixed(2),
+            date_created: file.date_created,
+            is_active: file.is_active,
+            is_archived: file.is_archived,
+            is_private: file.is_private,
+            created_by: file.created_by,
+            created_by_name: file.created_by_name,
+            primary: file.primary,
+            related: file.related,
+            customer: file.customer,
+            sales_rep: file.sales_rep,
+            record_type: file.record_type,
+            record_type_name: file.record_type_name,
+            type: file.type,
+          }));
+
+          // Check if using new handle-based parameters
+          if (this.hasNewParams(input)) {
+            // NEW BEHAVIOR: Use handle-based response system
+            // ResponseBuilder expects the raw data array, not a wrapper object
+            const envelope = await this.wrapResponse(mappedFiles, input, context, {
+              entity: 'attachments',
+              maxRows: pageSize,
+              pageInfo,
+            });
+
+            // Add attachments-specific metadata to the envelope
+            return {
+              ...envelope,
+              query_metadata: {
+                count: paginatedFiles.length,
+                total_from_api: totalFromAPI,
+                total_after_filtering: allFiles.length,
+                from: fromIndex,
+                page_size: pageSize,
+                sources_queried: {
+                  files_endpoint: sourceCounts.files,
+                  documents_endpoint: sourceCounts.documents,
+                  orders_endpoint: sourceCounts.orders,
+                  total_before_deduplication: sourceCounts.files + sourceCounts.documents + sourceCounts.orders,
+                  total_after_deduplication: totalFromAPI,
+                  duplicates_removed: (sourceCounts.files + sourceCounts.documents + sourceCounts.orders) - totalFromAPI,
+                },
+                filter_applied: {
+                  entity_id: entityId,
+                  job_id: input.job_id,
+                  contact_id: input.contact_id,
+                  related_to: input.related_to,
+                  file_type: input.file_type,
+                },
+                total_size_mb: totalSizeMB.toFixed(2),
+                file_types: Object.fromEntries(fileTypeMap),
+                record_type_distribution: recordTypeDistribution,
+              },
+            };
+          } else {
+            // LEGACY BEHAVIOR: Maintain backward compatibility
+            return {
+              count: paginatedFiles.length,
+              total_from_api: totalFromAPI,
+              total_after_filtering: allFiles.length,
+              from: fromIndex,
+              size: fetchSize,
+              sources_queried: {
+                files_endpoint: sourceCounts.files,
+                documents_endpoint: sourceCounts.documents,
+                orders_endpoint: sourceCounts.orders,
+                total_before_deduplication: sourceCounts.files + sourceCounts.documents + sourceCounts.orders,
+                total_after_deduplication: totalFromAPI,
+                duplicates_removed: (sourceCounts.files + sourceCounts.documents + sourceCounts.orders) - totalFromAPI,
+              },
+              filter_applied: {
+                entity_id: entityId,
+                job_id: input.job_id,
+                contact_id: input.contact_id,
+                related_to: input.related_to,
+                file_type: input.file_type,
+              },
+              total_size_mb: totalSizeMB.toFixed(2),
+              file_types: Object.fromEntries(fileTypeMap),
+              record_type_distribution: recordTypeDistribution,
+              has_more: pageInfo.has_more,
+              files: mappedFiles,
+              _note: 'MULTI-SOURCE RETRIEVAL: Queries /files, /documents, and /orders endpoints in parallel to match JobNimbus UI behavior. Automatically deduplicates across sources. Accepts job NUMBER (users only see numbers like "1820") or internal JNID - both work. File type filtering is client-side. To get ALL files, omit job_id/contact_id/related_to.',
+            };
+          }
         } catch (error) {
           return {
             error: error instanceof Error ? error.message : 'Failed to fetch files',
