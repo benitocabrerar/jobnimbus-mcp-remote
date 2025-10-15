@@ -1,65 +1,100 @@
 /**
  * Get Contacts Tool
  *
- * PHASE 2: Integrated Redis cache system for performance optimization
+ * PHASE 3: Handle-based response system for token optimization
+ * - Automatic response size detection and handle storage
+ * - Verbosity levels: summary/compact/detailed/raw
+ * - Field selection support
+ * - Redis cache + handle storage integration
  */
 
 import { BaseTool } from '../baseTool.js';
-import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { MCPToolDefinition, ToolContext, BaseToolInput } from '../../types/index.js';
 import { compactContact, compactArray } from '../../utils/compactData.js';
 import { getCurrentMonth } from '../../utils/dateHelpers.js';
 import { withCache } from '../../services/cacheService.js';
 import { CACHE_PREFIXES, getTTL } from '../../config/cache.js';
 
-interface GetContactsInput {
+interface GetContactsInput extends BaseToolInput {
+  // Pagination
   from?: number;
   size?: number;
+  page_size?: number;
+
+  // Response control (Phase 3: Handle-based system)
+  verbosity?: 'summary' | 'compact' | 'detailed' | 'raw';
+  fields?: string;
+
+  // Date filtering
   date_from?: string;
   date_to?: string;
+
+  // Legacy parameter (replaced by verbosity, but kept for backward compatibility)
   include_full_details?: boolean;
 }
 
 /**
  * Generate deterministic cache identifier from input parameters
- * Format: {from}:{size}:{date_from}:{date_to}:{full_details}
+ * Format: {from}:{size}:{page_size}:{verbosity}:{fields}:{date_from}:{date_to}:{full_details}
+ *
+ * CRITICAL: Must include verbosity and page_size to prevent returning wrong cached responses
  */
 function generateCacheIdentifier(input: GetContactsInput): string {
   const from = input.from || 0;
   const size = input.size || 15;
+  const pageSize = input.page_size || 'null';
+  const verbosity = input.verbosity || 'null';
+  const fields = input.fields || 'null';
   const dateFrom = input.date_from || 'null';
   const dateTo = input.date_to || 'null';
   const fullDetails = input.include_full_details ? 'full' : 'compact';
 
-  return `${from}:${size}:${dateFrom}:${dateTo}:${fullDetails}`;
+  return `${from}:${size}:${pageSize}:${verbosity}:${fields}:${dateFrom}:${dateTo}:${fullDetails}`;
 }
 
 export class GetContactsTool extends BaseTool<GetContactsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_contacts',
-      description: 'Retrieve contacts from JobNimbus with pagination and date filtering',
+      description: 'Retrieve contacts from JobNimbus with handle-based response optimization. IMPORTANT: By default returns compact summary (5 contacts, 15 fields each) with result_handle for full data retrieval. Use verbosity parameter to control detail level. Large responses (>25 KB) automatically stored in Redis with 15-min TTL - use fetch_by_handle to retrieve. Supports pagination and date filtering.',
       inputSchema: {
         type: 'object',
         properties: {
+          // NEW: Handle-based response control
+          verbosity: {
+            type: 'string',
+            description: 'Response detail level: "summary" (5 fields, max 5 contacts), "compact" (15 fields, max 20 contacts - DEFAULT), "detailed" (50 fields, max 50 contacts), "raw" (all fields). Compact mode prevents chat saturation.',
+            enum: ['summary', 'compact', 'detailed', 'raw'],
+          },
+          fields: {
+            type: 'string',
+            description: 'Comma-separated field names to return. Example: "jnid,display_name,email,phone,address_line1". Overrides verbosity-based field selection.',
+          },
+          page_size: {
+            type: 'number',
+            description: 'Number of records per page (default: 20, max: 100). Replaces "size" parameter. Use with cursor for pagination.',
+          },
+
+          // Existing parameters
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0)',
+            description: 'Starting index for pagination (default: 0). NOTE: Prefer page_size + cursor for large datasets.',
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 15, max: 50). Use small values to prevent response saturation.',
+            description: 'Number of records to retrieve (default: 15, max: 50). DEPRECATED: Use page_size instead.',
           },
           date_from: {
             type: 'string',
-            description: 'Start date filter (YYYY-MM-DD format)',
+            description: 'Start date filter for date_created (YYYY-MM-DD format)',
           },
           date_to: {
             type: 'string',
-            description: 'End date filter (YYYY-MM-DD format)',
+            description: 'End date filter for date_created (YYYY-MM-DD format)',
           },
           include_full_details: {
             type: 'boolean',
-            description: 'Return full contact details. Default: false (compact mode with only essential fields). Set to true for complete contact objects.',
+            description: 'LEGACY: Return full contact details. Default: false. DEPRECATED: Use verbosity="detailed" or verbosity="raw" instead.',
           },
         },
       },
@@ -111,17 +146,17 @@ export class GetContactsTool extends BaseTool<GetContactsInput, any> {
       },
       getTTL('CONTACTS_LIST'),
       async () => {
+        // Determine page size - prefer page_size (new) over size (legacy)
+        const pageSize = input.page_size || input.size || 15;
         const fromIndex = input.from || 0;
-        // OPTIMIZED: Reduced from 50 to 15 (default) and 100 to 50 (max) to prevent saturation
-        const requestedSize = Math.min(input.size || 15, 50);
 
-    // Use current month as default if no date filters provided
-    const currentMonth = getCurrentMonth();
-    const dateFrom = input.date_from || currentMonth.date_from;
-    const dateTo = input.date_to || currentMonth.date_to;
+        // Use current month as default if no date filters provided
+        const currentMonth = getCurrentMonth();
+        const dateFrom = input.date_from || currentMonth.date_from;
+        const dateTo = input.date_to || currentMonth.date_to;
 
-    // Determine if we need to fetch all contacts for date filtering
-    const needsFullFetch = dateFrom || dateTo;
+        // Determine if we need to fetch all contacts for date filtering
+        const needsFullFetch = dateFrom || dateTo;
 
     if (needsFullFetch) {
       // Fetch all contacts with pagination
@@ -154,66 +189,130 @@ export class GetContactsTool extends BaseTool<GetContactsInput, any> {
       let filteredContacts = this.filterByDateCreated(allContacts, dateFrom, dateTo);
 
       // Paginate
-      const paginatedContacts = filteredContacts.slice(fromIndex, fromIndex + requestedSize);
+      const rawContacts = filteredContacts.slice(fromIndex, fromIndex + pageSize);
+      const totalFiltered = filteredContacts.length;
 
-      // OPTIMIZED: Force compact mode if more than 10 results to prevent saturation
-      const forceCompact = paginatedContacts.length > 10;
-      const useCompactMode = !input.include_full_details || forceCompact;
-
-      // Apply compaction if not requesting full details
-      const resultContacts = useCompactMode
-        ? compactArray(paginatedContacts, compactContact)
-        : paginatedContacts;
-
-      return {
-        _code_version: 'v1.0-optimized-2025-10-10',
-        count: paginatedContacts.length,
-        total_filtered: filteredContacts.length,
-        total_fetched: allContacts.length,
-        iterations: iteration,
-        from: fromIndex,
-        size: requestedSize,
-        has_more: fromIndex + paginatedContacts.length < filteredContacts.length,
-        total_pages: Math.ceil(filteredContacts.length / requestedSize),
-        current_page: Math.floor(fromIndex / requestedSize) + 1,
-        date_filter_applied: !!(dateFrom || dateTo),
-        date_from: dateFrom,
-        date_to: dateTo,
-        compact_mode: useCompactMode,
-        compact_mode_forced: forceCompact,
-        results: resultContacts,
+      // Build page info
+      const pageInfo = {
+        has_more: fromIndex + rawContacts.length < totalFiltered,
+        total: totalFiltered,
+        current_page: Math.floor(fromIndex / pageSize) + 1,
+        total_pages: Math.ceil(totalFiltered / pageSize),
       };
+
+      // Check if using new handle-based parameters
+      if (this.hasNewParams(input)) {
+        // NEW BEHAVIOR: Use handle-based response system
+        // ResponseBuilder expects the raw data array, not a wrapper object
+        const envelope = await this.wrapResponse(rawContacts, input, context, {
+          entity: 'contacts',
+          maxRows: pageSize,
+          pageInfo,
+        });
+
+        // Add contacts-specific metadata to the envelope
+        return {
+          ...envelope,
+          query_metadata: {
+            count: rawContacts.length,
+            total_filtered: totalFiltered,
+            total_fetched: allContacts.length,
+            iterations: iteration,
+            from: fromIndex,
+            page_size: pageSize,
+            date_filter_applied: !!(dateFrom || dateTo),
+            date_from: dateFrom,
+            date_to: dateTo,
+          },
+        };
+      } else {
+        // LEGACY BEHAVIOR: Maintain backward compatibility
+        const forceCompact = rawContacts.length > 10;
+        const useCompactMode = !input.include_full_details || forceCompact;
+        const resultContacts = useCompactMode
+          ? compactArray(rawContacts, compactContact)
+          : rawContacts;
+
+        return {
+          _code_version: 'v1.0-optimized-2025-10-10',
+          count: rawContacts.length,
+          total_filtered: totalFiltered,
+          total_fetched: allContacts.length,
+          iterations: iteration,
+          from: fromIndex,
+          size: pageSize,
+          has_more: pageInfo.has_more,
+          total_pages: pageInfo.total_pages,
+          current_page: pageInfo.current_page,
+          date_filter_applied: !!(dateFrom || dateTo),
+          date_from: dateFrom,
+          date_to: dateTo,
+          compact_mode: useCompactMode,
+          compact_mode_forced: forceCompact,
+          results: resultContacts,
+        };
+      }
     } else {
       // Simple pagination without filtering
       const params: any = {
         from: fromIndex,
-        size: requestedSize,
+        size: pageSize,
       };
 
       const result = await this.client.get(context.apiKey, 'contacts', params);
-      const contacts = result.data?.results || [];
+      const rawContacts = result.data?.results || [];
+      const totalFiltered = rawContacts.length;
 
-      // OPTIMIZED: Force compact mode if more than 10 results
-      const forceCompact = contacts.length > 10;
-      const useCompactMode = !input.include_full_details || forceCompact;
-
-      // Apply compaction if not requesting full details
-      const resultContacts = useCompactMode
-        ? compactArray(contacts, compactContact)
-        : contacts;
-
-      return {
-        _code_version: 'v1.0-optimized-2025-10-10',
-        count: contacts.length,
-        total_filtered: contacts.length,
-        from: fromIndex,
-        size: requestedSize,
+      // Build page info
+      const pageInfo = {
         has_more: false,
-        date_filter_applied: false,
-        compact_mode: useCompactMode,
-        compact_mode_forced: forceCompact,
-        results: resultContacts,
+        total: totalFiltered,
+        current_page: 1,
+        total_pages: 1,
       };
+
+      // Check if using new handle-based parameters
+      if (this.hasNewParams(input)) {
+        // NEW BEHAVIOR: Use handle-based response system
+        // ResponseBuilder expects the raw data array, not a wrapper object
+        const envelope = await this.wrapResponse(rawContacts, input, context, {
+          entity: 'contacts',
+          maxRows: pageSize,
+          pageInfo,
+        });
+
+        // Add contacts-specific metadata to the envelope
+        return {
+          ...envelope,
+          query_metadata: {
+            count: rawContacts.length,
+            total_filtered: totalFiltered,
+            from: fromIndex,
+            page_size: pageSize,
+            date_filter_applied: false,
+          },
+        };
+      } else {
+        // LEGACY BEHAVIOR: Maintain backward compatibility
+        const forceCompact = rawContacts.length > 10;
+        const useCompactMode = !input.include_full_details || forceCompact;
+        const resultContacts = useCompactMode
+          ? compactArray(rawContacts, compactContact)
+          : rawContacts;
+
+        return {
+          _code_version: 'v1.0-optimized-2025-10-10',
+          count: rawContacts.length,
+          total_filtered: totalFiltered,
+          from: fromIndex,
+          size: pageSize,
+          has_more: false,
+          date_filter_applied: false,
+          compact_mode: useCompactMode,
+          compact_mode_forced: forceCompact,
+          results: resultContacts,
+        };
+      }
     }
       }
     );
