@@ -5,12 +5,20 @@
  * Queries FOUR sources in parallel:
  * 1. /api1/invoices - Customer invoices
  * 2. /api1/credit_memos - Credit memos (deductions from invoiced amounts)
- * 3. /api1/payments - Payment records
+ * 3. /api1/payments - Payment records (FILTERED: excludes zero-value placeholders)
  * 4. /api1/refunds - Refund records
  *
- * Provides NET financial calculations:
+ * Provides DUAL financial summaries:
+ * - financial_summary: HISTORICAL totals (all records, no date filter)
+ * - period_summary: DATE-FILTERED totals (date_from to date_to range)
+ *
+ * NET financial calculations:
  * - net_invoiced = total_invoiced - total_credit_memos - total_refunds
  * - balance_due = net_invoiced - total_payments
+ *
+ * FILTERING:
+ * - Zero-value payments (QuickBooks sync artifacts) are automatically excluded
+ * - Date filtering applies only to period_summary, not financial_summary
  *
  * PHASE 3: Handle-based response system for token optimization
  * - Automatic response size detection and handle storage
@@ -430,6 +438,13 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
           if (includePayments) {
             const paymentsResponse = responses[queryIndex++];
             paymentsArray = paymentsResponse.data?.results || paymentsResponse.data || [];
+
+            // FILTER: Remove zero-value payment placeholders (QuickBooks sync artifacts)
+            // Only keep payments with actual credit amounts > 0
+            paymentsArray = paymentsArray.filter((payment) => {
+              const amount = this.getRecordAmount(payment);
+              return amount > 0;
+            });
           }
           if (includeRefunds) {
             const refundsResponse = responses[queryIndex++];
@@ -468,9 +483,37 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
           allRecords = deduplicatedRecords;
           const totalFromAPI = allRecords.length;
 
-          // Apply date filtering if provided
+          // ============================================
+          // FINANCIAL SUMMARY (HISTORICAL - ALL RECORDS)
+          // ============================================
+          // Calculate totals BEFORE date filtering (represents ALL historical data)
+          const historicalTotalInvoiced = invoicesArray.reduce(
+            (sum, inv) => sum + this.getRecordAmount(inv),
+            0
+          );
+          let historicalTotalCreditMemos = creditMemosArray.reduce(
+            (sum, cm) => sum + this.getRecordAmount(cm),
+            0
+          );
+          const historicalTotalPayments = paymentsArray.reduce(
+            (sum, p) => sum + this.getRecordAmount(p),
+            0
+          );
+          let historicalTotalRefunds = refundsArray.reduce(
+            (sum, r) => sum + this.getRecordAmount(r),
+            0
+          );
+
+          // NET CALCULATIONS (historical)
+          let historicalNetInvoiced = historicalTotalInvoiced - historicalTotalCreditMemos - historicalTotalRefunds;
+          let historicalBalanceDue = historicalNetInvoiced - historicalTotalPayments;
+
+          // ============================================
+          // APPLY DATE FILTERING FOR PERIOD SUMMARY
+          // ============================================
+          let periodRecords = allRecords;
           if (input.date_from || input.date_to) {
-            allRecords = this.filterByDate(allRecords, input.date_from, input.date_to);
+            periodRecords = this.filterByDate(allRecords, input.date_from, input.date_to);
           }
 
           // Sort by date_created descending (newest first)
@@ -480,31 +523,39 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
             return dateB - dateA;
           });
 
-          // Calculate financial totals
-          const totalInvoiced = invoicesArray.reduce(
+          // ============================================
+          // PERIOD SUMMARY (DATE-FILTERED RECORDS)
+          // ============================================
+          // Calculate totals AFTER date filtering (represents only requested period)
+          const periodInvoices = periodRecords.filter(r => r.type === 'invoice' || r.record_type_name === 'Invoice');
+          const periodCreditMemos = periodRecords.filter(r => r.type === 'credit_memo' || r.record_type_name === 'Credit Memo');
+          const periodPayments = periodRecords.filter(r => r.type === 'payment' || r.record_type_name === 'Payment');
+          const periodRefunds = periodRecords.filter(r => r.type === 'refund' || r.record_type_name === 'Refund');
+
+          const periodTotalInvoiced = periodInvoices.reduce(
             (sum, inv) => sum + this.getRecordAmount(inv),
             0
           );
-          let totalCreditMemos = creditMemosArray.reduce(
+          let periodTotalCreditMemos = periodCreditMemos.reduce(
             (sum, cm) => sum + this.getRecordAmount(cm),
             0
           );
-          const totalPayments = paymentsArray.reduce(
+          const periodTotalPayments = periodPayments.reduce(
             (sum, p) => sum + this.getRecordAmount(p),
             0
           );
-          let totalRefunds = refundsArray.reduce(
+          let periodTotalRefunds = periodRefunds.reduce(
             (sum, r) => sum + this.getRecordAmount(r),
             0
           );
 
-          // NET CALCULATIONS (as requested by user)
-          let netInvoiced = totalInvoiced - totalCreditMemos - totalRefunds;
-          let balanceDue = netInvoiced - totalPayments;
+          // NET CALCULATIONS (period)
+          let periodNetInvoiced = periodTotalInvoiced - periodTotalCreditMemos - periodTotalRefunds;
+          let periodBalanceDue = periodNetInvoiced - periodTotalPayments;
 
           // YAML FALLBACK: Check for FILE-based vendor costs when RECORDS show $0
           let usedYamlFallback = false;
-          if (entityId && totalCreditMemos === 0 && totalRefunds === 0) {
+          if (entityId && historicalTotalCreditMemos === 0 && historicalTotalRefunds === 0) {
             try {
               // Query /files endpoint for this job
               const filesResponse = await this.client.get(context.apiKey, 'files', {
@@ -540,12 +591,20 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
                 }
               }
 
-              // Apply vendor costs as negative adjustments
+              // Apply vendor costs as negative adjustments to BOTH historical and period
               if (vendorCharges > 0 || vendorReturns > 0) {
-                totalCreditMemos += vendorCharges;
-                totalRefunds -= vendorReturns; // Returns are negative, so subtract
-                netInvoiced = totalInvoiced - totalCreditMemos - totalRefunds;
-                balanceDue = netInvoiced - totalPayments;
+                // Update historical totals
+                historicalTotalCreditMemos += vendorCharges;
+                historicalTotalRefunds -= vendorReturns; // Returns are negative, so subtract
+                historicalNetInvoiced = historicalTotalInvoiced - historicalTotalCreditMemos - historicalTotalRefunds;
+                historicalBalanceDue = historicalNetInvoiced - historicalTotalPayments;
+
+                // Update period totals
+                periodTotalCreditMemos += vendorCharges;
+                periodTotalRefunds -= vendorReturns;
+                periodNetInvoiced = periodTotalInvoiced - periodTotalCreditMemos - periodTotalRefunds;
+                periodBalanceDue = periodNetInvoiced - periodTotalPayments;
+
                 usedYamlFallback = true;
               }
             } catch (error) {
@@ -570,18 +629,40 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
 
           // Prepare consolidated response data
           const consolidatedData = {
-            // Financial summary
+            // HISTORICAL FINANCIAL SUMMARY (ALL RECORDS - NO DATE FILTER)
+            // Represents total account activity across all time
             financial_summary: {
-              total_invoiced: totalInvoiced.toFixed(2),
-              total_credit_memos: totalCreditMemos.toFixed(2),
-              total_refunds: totalRefunds.toFixed(2),
-              total_payments: totalPayments.toFixed(2),
-              net_invoiced: netInvoiced.toFixed(2),
-              balance_due: balanceDue.toFixed(2),
+              _note: 'Historical totals (all records, no date filtering). For period-specific totals, see period_summary.',
+              total_invoiced: historicalTotalInvoiced.toFixed(2),
+              total_credit_memos: historicalTotalCreditMemos.toFixed(2),
+              total_refunds: historicalTotalRefunds.toFixed(2),
+              total_payments: historicalTotalPayments.toFixed(2),
+              net_invoiced: historicalNetInvoiced.toFixed(2),
+              balance_due: historicalBalanceDue.toFixed(2),
               used_yaml_fallback: usedYamlFallback,
             },
 
-            // Record counts by type
+            // PERIOD FINANCIAL SUMMARY (DATE-FILTERED RECORDS)
+            // Represents activity within the requested date range (date_from to date_to)
+            period_summary: {
+              _note: 'Period totals (filtered by date_from/date_to). If no date range provided, matches financial_summary.',
+              date_from: input.date_from || null,
+              date_to: input.date_to || null,
+              total_invoiced: periodTotalInvoiced.toFixed(2),
+              total_credit_memos: periodTotalCreditMemos.toFixed(2),
+              total_refunds: periodTotalRefunds.toFixed(2),
+              total_payments: periodTotalPayments.toFixed(2),
+              net_invoiced: periodNetInvoiced.toFixed(2),
+              balance_due: periodBalanceDue.toFixed(2),
+              record_counts: {
+                invoices: periodInvoices.length,
+                credit_memos: periodCreditMemos.length,
+                payments: periodPayments.length,
+                refunds: periodRefunds.length,
+              },
+            },
+
+            // Record counts by type (from API, before date filtering)
             record_counts: sourceCounts,
 
             // Invoice-credit memo links
@@ -613,6 +694,7 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
             return {
               ...envelope,
               financial_summary: consolidatedData.financial_summary,
+              period_summary: consolidatedData.period_summary,
               record_counts: consolidatedData.record_counts,
               invoice_credit_links: consolidatedData.invoice_credit_links,
               query_metadata: {
