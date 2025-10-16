@@ -271,6 +271,7 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
         entity: CACHE_PREFIXES.ACTIVITIES,
         operation: CACHE_PREFIXES.LIST,
         identifier: cacheIdentifier,
+      instance: context.instance,
       },
       getTTL('ACTIVITIES_LIST'),
       async () => {

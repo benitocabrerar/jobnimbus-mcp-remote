@@ -99,6 +99,7 @@ export class GetProductTool extends BaseTool<GetProductInput, any> {
         entity: 'products',
         operation: CACHE_PREFIXES.GET,
         identifier: input.jnid,
+      instance: context.instance,
       },
       getTTL('PRODUCT_DETAIL'),
       async () => {

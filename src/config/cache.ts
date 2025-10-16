@@ -231,34 +231,37 @@ export const validateCacheConfig = (config: CacheConfig): void => {
 };
 
 /**
- * Build cache key with hierarchical structure
+ * Build cache key with hierarchical structure INCLUDING instance isolation
  *
  * @param entity - Entity type (attachments, jobs, contacts, etc.)
  * @param operation - Operation type (list, detail, search)
  * @param identifier - Unique identifier (ID, search params hash, etc.)
- * @returns Hierarchical cache key
+ * @param instance - Instance identifier (stamford or guilford) - REQUIRED for multi-tenant isolation
+ * @returns Hierarchical cache key with instance prefix
  *
  * @example
- * buildCacheKey('attachments', 'list', 'job:123')
- * // Returns: "jobnimbus:attachments:list:job:123"
+ * buildCacheKey('attachments', 'list', 'job:123', 'stamford')
+ * // Returns: "jobnimbus:stamford:attachments:list:job:123"
  *
- * buildCacheKey('attachments', 'detail', 'file:abc-def')
- * // Returns: "jobnimbus:attachments:detail:file:abc-def"
+ * buildCacheKey('attachments', 'detail', 'file:abc-def', 'guilford')
+ * // Returns: "jobnimbus:guilford:attachments:detail:file:abc-def"
  */
 export const buildCacheKey = (
   entity: keyof typeof CACHE_PREFIXES | string,
   operation: string,
-  identifier: string
+  identifier: string,
+  instance: 'stamford' | 'guilford'
 ): string => {
   const prefix = typeof entity === 'string'
     ? entity
     : CACHE_PREFIXES[entity] || entity;
 
-  return `${CACHE_PREFIXES.APP}:${prefix}:${operation}:${identifier}`;
+  // Instance MUST be included for proper isolation between Stamford and Guilford
+  return `${CACHE_PREFIXES.APP}:${instance}:${prefix}:${operation}:${identifier}`;
 };
 
 /**
- * Parse cache key into components
+ * Parse cache key into components (with instance support)
  * Useful for debugging and cache invalidation strategies
  *
  * @param key - Full cache key
@@ -266,44 +269,52 @@ export const buildCacheKey = (
  */
 export const parseCacheKey = (key: string): {
   app: string;
+  instance: string;
   entity: string;
   operation: string;
   identifier: string;
 } | null => {
   const parts = key.split(':');
 
-  if (parts.length < 4) {
+  // New format: jobnimbus:instance:entity:operation:identifier
+  if (parts.length < 5) {
     return null;
   }
 
   return {
     app: parts[0],
-    entity: parts[1],
-    operation: parts[2],
-    identifier: parts.slice(3).join(':'), // Rest of the key
+    instance: parts[1],
+    entity: parts[2],
+    operation: parts[3],
+    identifier: parts.slice(4).join(':'), // Rest of the key
   };
 };
 
 /**
- * Build pattern for cache invalidation
+ * Build pattern for cache invalidation (with instance isolation)
  * Uses Redis SCAN patterns for efficient bulk operations
  *
  * @param entity - Entity to invalidate (or '*' for all)
  * @param operation - Operation to invalidate (or '*' for all)
+ * @param instance - Instance to invalidate (stamford, guilford, or '*' for both)
  * @returns Redis pattern string
  *
  * @example
- * buildInvalidationPattern('attachments', 'list')
- * // Returns: "jobnimbus:attachments:list:*"
+ * buildInvalidationPattern('attachments', 'list', 'stamford')
+ * // Returns: "jobnimbus:stamford:attachments:list:*"
  *
- * buildInvalidationPattern('attachments', '*')
- * // Returns: "jobnimbus:attachments:*:*"
+ * buildInvalidationPattern('attachments', '*', 'guilford')
+ * // Returns: "jobnimbus:guilford:attachments:*:*"
+ *
+ * buildInvalidationPattern('*', '*', '*')
+ * // Returns: "jobnimbus:*:*:*:*" (clears all instances)
  */
 export const buildInvalidationPattern = (
   entity: string,
-  operation: string = '*'
+  operation: string = '*',
+  instance: string = '*'
 ): string => {
-  return `${CACHE_PREFIXES.APP}:${entity}:${operation}:*`;
+  return `${CACHE_PREFIXES.APP}:${instance}:${entity}:${operation}:*`;
 };
 
 /**

@@ -51,6 +51,7 @@ export class GetUsersTool extends BaseTool<GetUsersInput, any> {
         entity: CACHE_PREFIXES.ACCOUNT,
         operation: CACHE_PREFIXES.LIST,
         identifier: 'users',
+      instance: context.instance,
       },
       getTTL('ACCOUNT_USERS'),
       async () => {

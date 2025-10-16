@@ -125,6 +125,7 @@ export class GetAttachmentsCachedTool extends BaseTool<GetAttachmentsInput, Atta
           entity: CACHE_PREFIXES.ATTACHMENTS,
           operation: CACHE_PREFIXES.LIST,
           identifier: cacheIdentifier,
+          instance: context.instance,
         },
         ttl,
         () => this.fetchFromAPI(input, context)

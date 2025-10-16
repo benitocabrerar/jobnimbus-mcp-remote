@@ -154,6 +154,7 @@ export class GetMaterialOrdersTool extends BaseTool<GetMaterialOrdersInput, any>
         entity: 'materialorders',
         operation: CACHE_PREFIXES.LIST,
         identifier: cacheIdentifier,
+      instance: context.instance,
       },
       getTTL('MATERIAL_ORDERS_LIST'),
       async () => {

@@ -163,7 +163,7 @@ export function registerCacheRoutes(
   // Invalidate specific pattern (admin only)
   app.delete('/cache/invalidate', adminAuth, async (req: Request, res: Response): Promise<void> => {
     try {
-      const { entity, operation } = req.body;
+      const { entity, operation, instance } = req.body;
 
       if (!entity) {
         res.status(400).json({
@@ -173,13 +173,16 @@ export function registerCacheRoutes(
         return;
       }
 
-      const count = await cacheService.invalidatePattern(entity, operation);
+      // Instance is optional - defaults to '*' to invalidate across all instances
+      const instanceToUse = instance || '*';
+
+      const count = await cacheService.invalidatePattern(entity, operation, instanceToUse);
 
       res.json({
         status: 'ok',
         message: `Invalidated ${count} cache entries`,
         count,
-        pattern: { entity, operation },
+        pattern: { entity, operation, instance: instanceToUse },
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
@@ -279,20 +282,25 @@ export async function warmupCache(
  * Wraps a function to automatically cache its results
  *
  * @param fn - Function to wrap
- * @param cacheKey - Cache key generator function
+ * @param cacheKey - Cache key generator function (must include instance)
  * @param ttl - TTL in seconds
  * @returns Wrapped function with caching
  *
  * @example
  * const cachedGetAttachments = withCacheDecorator(
  *   getAttachmentsFromAPI,
- *   (args) => `attachments:${args.job_id}`,
+ *   (args) => ({
+ *     entity: 'attachments',
+ *     operation: 'list',
+ *     identifier: args.job_id,
+ *     instance: args.instance
+ *   }),
  *   900 // 15 minutes
  * );
  */
 export function withCacheDecorator<TArgs extends any[], TReturn>(
   fn: (...args: TArgs) => Promise<TReturn>,
-  cacheKeyGenerator: (args: TArgs) => { entity: string; operation: string; identifier: string },
+  cacheKeyGenerator: (args: TArgs) => { entity: string; operation: string; identifier: string; instance: 'stamford' | 'guilford' },
   ttl: number
 ): (...args: TArgs) => Promise<TReturn> {
   return async (...args: TArgs): Promise<TReturn> => {
@@ -302,7 +310,8 @@ export function withCacheDecorator<TArgs extends any[], TReturn>(
     const cached = await cacheService.get<TReturn>(
       cacheKey.entity,
       cacheKey.operation,
-      cacheKey.identifier
+      cacheKey.identifier,
+      cacheKey.instance
     );
 
     if (cached !== null) {
@@ -318,8 +327,9 @@ export function withCacheDecorator<TArgs extends any[], TReturn>(
       cacheKey.operation,
       cacheKey.identifier,
       result,
-      ttl
-    ).catch(err => console.error(`[Cache] Background cache write failed: ${err}`));
+      ttl,
+      cacheKey.instance
+    ).catch(err => console.error(`[Cache] Background cache write failed [${cacheKey.instance}]: ${err}`));
 
     return result;
   };

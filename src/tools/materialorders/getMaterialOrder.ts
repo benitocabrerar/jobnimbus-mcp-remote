@@ -124,6 +124,7 @@ export class GetMaterialOrderTool extends BaseTool<GetMaterialOrderInput, any> {
         entity: 'materialorders',
         operation: CACHE_PREFIXES.GET,
         identifier: input.jnid,
+      instance: context.instance,
       },
       getTTL('MATERIAL_ORDER_DETAIL'),
       async () => {

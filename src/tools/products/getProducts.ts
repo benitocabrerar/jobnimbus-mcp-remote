@@ -129,6 +129,7 @@ export class GetProductsTool extends BaseTool<GetProductsInput, any> {
         entity: 'products',
         operation: CACHE_PREFIXES.LIST,
         identifier: cacheIdentifier,
+      instance: context.instance,
       },
       getTTL('PRODUCTS_LIST'),
       async () => {

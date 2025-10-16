@@ -117,6 +117,7 @@ export class GetAccountSettingsTool extends BaseTool<GetAccountSettingsInput, an
         entity: CACHE_PREFIXES.ACCOUNT,
         operation: CACHE_PREFIXES.GET,
         identifier: cacheKey,
+      instance: context.instance,
       },
       getTTL('ACCOUNT_SETTINGS'),
       async () => {

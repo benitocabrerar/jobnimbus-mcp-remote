@@ -75,6 +75,7 @@ export class SearchContactsTool extends BaseTool<SearchContactsInput, any> {
         entity: CACHE_PREFIXES.CONTACTS,
         operation: CACHE_PREFIXES.SEARCH,
         identifier: cacheIdentifier,
+      instance: context.instance,
       },
       getTTL('CONTACTS_SEARCH'),
       async () => {

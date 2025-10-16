@@ -122,6 +122,7 @@ export class GetContactTool extends BaseTool<GetContactInput, any> {
         entity: CACHE_PREFIXES.CONTACTS,
         operation: CACHE_PREFIXES.GET,
         identifier: input.jnid,
+      instance: context.instance,
       },
       getTTL('CONTACT_DETAIL'),
       async () => {

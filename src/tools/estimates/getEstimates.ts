@@ -308,6 +308,7 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
         entity: CACHE_PREFIXES.ESTIMATES,
         operation: CACHE_PREFIXES.LIST,
         identifier: cacheIdentifier,
+      instance: context.instance,
       },
       getTTL('ESTIMATES_LIST'),
       async () => {

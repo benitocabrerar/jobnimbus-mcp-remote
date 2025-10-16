@@ -128,20 +128,21 @@ export class HandleStorageService {
       },
     };
 
-    // Store in Redis using cache service
+    // Store in Redis using cache service (with instance isolation)
     const success = await this.cacheService.set(
       'handle',
       'storage',
       handle,
       storedResult,
-      ttl
+      ttl,
+      instance as 'stamford' | 'guilford'
     );
 
     if (!success) {
       throw new Error(`Failed to store handle: ${handle}`);
     }
 
-    this.log('debug', `Stored handle: ${handle} (${(sizeBytes / 1024).toFixed(2)}KB, TTL: ${ttl}s)`);
+    this.log('debug', `Stored handle [${instance}]: ${handle} (${(sizeBytes / 1024).toFixed(2)}KB, TTL: ${ttl}s)`);
     return handle;
   }
 
@@ -149,33 +150,35 @@ export class HandleStorageService {
    * Retrieve data by handle
    *
    * @param handle - Handle to retrieve
+   * @param instance - Instance identifier (stamford/guilford)
    * @returns Stored result or null if not found/expired
    */
-  public async retrieve(handle: string): Promise<StoredResult | null> {
+  public async retrieve(handle: string, instance: 'stamford' | 'guilford'): Promise<StoredResult | null> {
     try {
       const result = await this.cacheService.get<StoredResult>(
         'handle',
         'storage',
-        handle
+        handle,
+        instance
       );
 
       if (!result) {
-        this.log('debug', `Handle not found: ${handle}`);
+        this.log('debug', `Handle not found [${instance}]: ${handle}`);
         return null;
       }
 
       // Check if expired (double-check even though Redis should handle TTL)
       const now = Date.now();
       if (result.metadata.expires_at < now) {
-        this.log('warn', `Handle expired: ${handle}`);
-        await this.delete(handle);
+        this.log('warn', `Handle expired [${instance}]: ${handle}`);
+        await this.delete(handle, instance);
         return null;
       }
 
-      this.log('debug', `Retrieved handle: ${handle}`);
+      this.log('debug', `Retrieved handle [${instance}]: ${handle}`);
       return result;
     } catch (error) {
-      this.log('error', `Failed to retrieve handle ${handle}: ${error}`);
+      this.log('error', `Failed to retrieve handle [${instance}] ${handle}: ${error}`);
       return null;
     }
   }
@@ -184,15 +187,16 @@ export class HandleStorageService {
    * Delete specific handle
    *
    * @param handle - Handle to delete
+   * @param instance - Instance identifier (stamford/guilford)
    * @returns Number of keys deleted
    */
-  public async delete(handle: string): Promise<number> {
+  public async delete(handle: string, instance: 'stamford' | 'guilford'): Promise<number> {
     try {
-      const deleted = await this.cacheService.delete('handle', 'storage', handle);
-      this.log('debug', `Deleted handle: ${handle}`);
+      const deleted = await this.cacheService.delete('handle', 'storage', handle, instance);
+      this.log('debug', `Deleted handle [${instance}]: ${handle}`);
       return deleted;
     } catch (error) {
-      this.log('error', `Failed to delete handle ${handle}: ${error}`);
+      this.log('error', `Failed to delete handle [${instance}] ${handle}: ${error}`);
       return 0;
     }
   }
@@ -201,10 +205,11 @@ export class HandleStorageService {
    * Check if handle exists
    *
    * @param handle - Handle to check
+   * @param instance - Instance identifier (stamford/guilford)
    * @returns True if handle exists and is not expired
    */
-  public async exists(handle: string): Promise<boolean> {
-    const result = await this.retrieve(handle);
+  public async exists(handle: string, instance: 'stamford' | 'guilford'): Promise<boolean> {
+    const result = await this.retrieve(handle, instance);
     return result !== null;
   }
 
@@ -212,10 +217,11 @@ export class HandleStorageService {
    * Get metadata for a handle without retrieving full data
    *
    * @param handle - Handle to get metadata for
+   * @param instance - Instance identifier (stamford/guilford)
    * @returns Metadata or null if not found
    */
-  public async getMetadata(handle: string): Promise<StoredResult['metadata'] | null> {
-    const result = await this.retrieve(handle);
+  public async getMetadata(handle: string, instance: 'stamford' | 'guilford'): Promise<StoredResult['metadata'] | null> {
+    const result = await this.retrieve(handle, instance);
     return result?.metadata || null;
   }
 
@@ -227,12 +233,12 @@ export class HandleStorageService {
    */
   public async cleanExpired(): Promise<number> {
     try {
-      // Use invalidatePattern to clean all handles
+      // Use invalidatePattern to clean all handles across all instances
       // Redis TTL will handle expiration, but this is a safety cleanup
-      const deleted = await this.cacheService.invalidatePattern('handle', 'storage');
+      const deleted = await this.cacheService.invalidatePattern('handle', 'storage', '*');
 
       if (deleted > 0) {
-        this.log('info', `Cleaned up ${deleted} expired handles`);
+        this.log('info', `Cleaned up ${deleted} expired handles (all instances)`);
       }
 
       return deleted;

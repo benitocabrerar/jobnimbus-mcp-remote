@@ -77,6 +77,7 @@ export class GetBudgetsTool extends BaseTool<GetBudgetsInput, any> {
         entity: CACHE_PREFIXES.BUDGETS,
         operation: CACHE_PREFIXES.LIST,
         identifier: cacheIdentifier,
+      instance: context.instance,
       },
       getTTL('BUDGETS_LIST'),
       async () => {

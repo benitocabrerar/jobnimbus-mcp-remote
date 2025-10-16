@@ -143,6 +143,7 @@ export class GetContactsTool extends BaseTool<GetContactsInput, any> {
         entity: CACHE_PREFIXES.CONTACTS,
         operation: CACHE_PREFIXES.LIST,
         identifier: cacheIdentifier,
+      instance: context.instance,
       },
       getTTL('CONTACTS_LIST'),
       async () => {

@@ -65,8 +65,8 @@ export class FetchByHandleTool extends BaseTool<FetchByHandleInput, any> {
       };
     }
 
-    // Retrieve from storage
-    const stored = await handleStorage.retrieve(input.handle);
+    // Retrieve from storage (with instance isolation)
+    const stored = await handleStorage.retrieve(input.handle, context.instance);
 
     if (!stored) {
       return {
@@ -74,6 +74,7 @@ export class FetchByHandleTool extends BaseTool<FetchByHandleInput, any> {
         error: 'Handle not found or expired',
         message: 'The requested handle does not exist or has expired (15 minute TTL)',
         handle: input.handle,
+        instance: context.instance,
         suggestion: 'Re-run the original query to get a new handle',
       };
     }

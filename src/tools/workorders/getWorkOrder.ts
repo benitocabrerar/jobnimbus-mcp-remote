@@ -188,6 +188,7 @@ export class GetWorkOrderTool extends BaseTool<GetWorkOrderInput, any> {
         entity: CACHE_PREFIXES.WORK_ORDERS,
         operation: CACHE_PREFIXES.DETAIL,
         identifier: jnid,
+      instance: context.instance,
       },
       getTTL('WORK_ORDER_DETAIL'),
       async () => {

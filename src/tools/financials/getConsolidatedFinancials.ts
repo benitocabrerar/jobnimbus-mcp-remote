@@ -330,6 +330,7 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
         entity: CACHE_PREFIXES.INVOICES,
         operation: CACHE_PREFIXES.LIST,
         identifier: cacheIdentifier,
+      instance: context.instance,
       },
       getTTL('INVOICES_LIST'),
       async () => {

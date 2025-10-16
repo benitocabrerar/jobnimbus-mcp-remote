@@ -107,6 +107,7 @@ export class GetTaskTool extends BaseTool<GetTaskInput, any> {
         entity: CACHE_PREFIXES.TASKS,
         operation: CACHE_PREFIXES.GET,
         identifier: input.jnid,
+      instance: context.instance,
       },
       getTTL('TASKS_DETAIL'),
       async () => {

@@ -47,18 +47,23 @@ export const extractApiKey = async (
       throw new ValidationError('Invalid API key format');
     }
 
-    // Extract instance (stamford or guilford)
+    // Extract instance (stamford or guilford) - REQUIRED
     const instance = req.headers[INSTANCE_HEADER] as string;
-    if (instance && !['stamford', 'guilford'].includes(instance)) {
+
+    if (!instance) {
+      throw new ValidationError('Instance required in X-JobNimbus-Instance header. Must be "stamford" or "guilford"');
+    }
+
+    if (!['stamford', 'guilford'].includes(instance)) {
       throw new ValidationError('Invalid instance. Must be "stamford" or "guilford"');
     }
 
-    // Generate client ID for rate limiting (hash of IP + user agent)
-    const clientId = generateClientId(req);
+    // Generate client ID for rate limiting (hash of IP + user agent + instance)
+    const clientId = generateClientId(req, instance);
 
     // Attach to request context (TEMPORARY - will be cleared)
     req.apiKey = apiKey;
-    req.instance = instance as 'stamford' | 'guilford' || 'stamford';
+    req.instance = instance as 'stamford' | 'guilford';
     req.clientId = clientId;
 
     // Log request (without API key)
@@ -85,11 +90,12 @@ export const extractApiKey = async (
 
 /**
  * Generate unique client ID for rate limiting
+ * Includes instance to isolate rate limits per instance
  */
-function generateClientId(req: Request): string {
+function generateClientId(req: Request, instance: string): string {
   const ip = req.ip || req.socket.remoteAddress || 'unknown';
   const userAgent = req.headers['user-agent'] || 'unknown';
 
-  // Simple hash (in production, use crypto.createHash)
-  return Buffer.from(`${ip}:${userAgent}`).toString('base64').substring(0, 16);
+  // Include instance in hash to isolate rate limits
+  return Buffer.from(`${instance}:${ip}:${userAgent}`).toString('base64').substring(0, 16);
 }

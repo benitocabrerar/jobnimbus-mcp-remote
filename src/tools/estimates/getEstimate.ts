@@ -170,6 +170,7 @@ export class GetEstimateTool extends BaseTool<GetEstimateInput, any> {
         entity: CACHE_PREFIXES.ESTIMATES,
         operation: CACHE_PREFIXES.GET,
         identifier: input.jnid,
+      instance: context.instance,
       },
       getTTL('ESTIMATE_DETAIL'),
       async () => {

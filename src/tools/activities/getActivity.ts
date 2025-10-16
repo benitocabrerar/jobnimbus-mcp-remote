@@ -127,6 +127,7 @@ export class GetActivityTool extends BaseTool<GetActivityInput, any> {
         entity: CACHE_PREFIXES.ACTIVITIES,
         operation: CACHE_PREFIXES.GET,
         identifier: input.jnid,
+      instance: context.instance,
       },
       getTTL('ACTIVITY_DETAIL'),
       async () => {

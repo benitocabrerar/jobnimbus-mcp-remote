@@ -228,6 +228,7 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
         entity: CACHE_PREFIXES.ATTACHMENTS,
         operation: CACHE_PREFIXES.LIST,
         identifier: cacheIdentifier,
+      instance: context.instance,
       },
       getTTL('ATTACHMENTS_LIST'),
       async () => {

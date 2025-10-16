@@ -35,6 +35,7 @@ export class GetUomsTool extends BaseTool<GetUomsInput, any> {
         entity: CACHE_PREFIXES.ACCOUNT,
         operation: CACHE_PREFIXES.LIST,
         identifier: 'uoms',
+      instance: context.instance,
       },
       getTTL('ACCOUNT_UOMS'),
       async () => {

@@ -195,7 +195,7 @@ export class GetTasksTool extends BaseTool<GetTasksInput, any> {
     // OPTIMIZED: Default 10, max 50 (reduced from 50/100)
     const requestedSize = Math.min(input.size || 10, 50);
 
-    // Build cache key based on filters
+    // Build cache key based on filters (with instance isolation)
     const cacheKey = {
       entity: CACHE_PREFIXES.TASKS,
       operation: CACHE_PREFIXES.LIST,
@@ -214,6 +214,7 @@ export class GetTasksTool extends BaseTool<GetTasksInput, any> {
           date_start_to: input.date_start_to,
         },
       }),
+      instance: context.instance,
     };
 
     return await withCache(

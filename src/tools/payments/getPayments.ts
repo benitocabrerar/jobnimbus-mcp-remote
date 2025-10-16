@@ -162,6 +162,7 @@ export class GetPaymentsTool extends BaseTool<GetPaymentsInput, any> {
         entity: CACHE_PREFIXES.PAYMENTS,
         operation: CACHE_PREFIXES.LIST,
         identifier: cacheKey,
+      instance: context.instance,
       },
       getTTL('PAYMENTS_LIST'),
       async () => {

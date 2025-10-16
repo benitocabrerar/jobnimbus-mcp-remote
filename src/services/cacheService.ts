@@ -279,12 +279,14 @@ export class CacheService {
    * @param entity - Entity type (attachments, jobs, etc.)
    * @param operation - Operation type (list, detail, etc.)
    * @param identifier - Unique identifier
+   * @param instance - Instance identifier (stamford or guilford) - REQUIRED for isolation
    * @returns Cached value or null if not found/error
    */
   public async get<T = any>(
     entity: string,
     operation: string,
-    identifier: string
+    identifier: string,
+    instance: 'stamford' | 'guilford'
   ): Promise<T | null> {
     const startTime = Date.now();
     this.metrics.totalRequests++;
@@ -296,8 +298,8 @@ export class CacheService {
     }
 
     try {
-      const key = buildCacheKey(entity, operation, identifier);
-      this.log('debug', `Cache GET: ${key}`);
+      const key = buildCacheKey(entity, operation, identifier, instance);
+      this.log('debug', `Cache GET [${instance}]: ${key}`);
 
       const value = await this.client!.get(key);
 
@@ -313,10 +315,10 @@ export class CacheService {
       this.recordSuccess();
       this.recordLatency(Date.now() - startTime);
 
-      this.log('debug', `Cache HIT: ${key} (${Date.now() - startTime}ms)`);
+      this.log('debug', `Cache HIT [${instance}]: ${key} (${Date.now() - startTime}ms)`);
       return data;
     } catch (error) {
-      this.log('error', `Cache GET error: ${error}`);
+      this.log('error', `Cache GET error [${instance}]: ${error}`);
       this.metrics.errors++;
       this.recordFailure();
       return null;
@@ -331,6 +333,7 @@ export class CacheService {
    * @param identifier - Unique identifier
    * @param value - Value to cache
    * @param ttlSeconds - Time to live in seconds (optional, uses default)
+   * @param instance - Instance identifier (stamford or guilford) - REQUIRED for isolation
    * @returns Success boolean
    */
   public async set<T = any>(
@@ -338,7 +341,8 @@ export class CacheService {
     operation: string,
     identifier: string,
     value: T,
-    ttlSeconds?: number
+    ttlSeconds: number | undefined,
+    instance: 'stamford' | 'guilford'
   ): Promise<boolean> {
     const startTime = Date.now();
 
@@ -348,7 +352,7 @@ export class CacheService {
     }
 
     try {
-      const key = buildCacheKey(entity, operation, identifier);
+      const key = buildCacheKey(entity, operation, identifier, instance);
       const ttl = ttlSeconds || getTTL('DEFAULT');
 
       // Serialize and compress
@@ -357,7 +361,7 @@ export class CacheService {
       // Check size limit (Render.com 25MB constraint)
       const sizeKB = Buffer.byteLength(serialized, 'utf8') / 1024;
       if (sizeKB > this.config.maxItemSizeKB) {
-        this.log('warn', `Cache item too large: ${sizeKB.toFixed(2)}KB > ${this.config.maxItemSizeKB}KB`);
+        this.log('warn', `Cache item too large [${instance}]: ${sizeKB.toFixed(2)}KB > ${this.config.maxItemSizeKB}KB`);
         return false;
       }
 
@@ -365,11 +369,11 @@ export class CacheService {
 
       this.metrics.sets++;
       this.recordSuccess();
-      this.log('debug', `Cache SET: ${key} (TTL: ${ttl}s, Size: ${sizeKB.toFixed(2)}KB, Latency: ${Date.now() - startTime}ms)`);
+      this.log('debug', `Cache SET [${instance}]: ${key} (TTL: ${ttl}s, Size: ${sizeKB.toFixed(2)}KB, Latency: ${Date.now() - startTime}ms)`);
 
       return true;
     } catch (error) {
-      this.log('error', `Cache SET error: ${error}`);
+      this.log('error', `Cache SET error [${instance}]: ${error}`);
       this.metrics.errors++;
       this.recordFailure();
       return false;
@@ -382,28 +386,30 @@ export class CacheService {
    * @param entity - Entity type
    * @param operation - Operation type
    * @param identifier - Unique identifier
+   * @param instance - Instance identifier (stamford or guilford) - REQUIRED for isolation
    * @returns Number of keys deleted
    */
   public async delete(
     entity: string,
     operation: string,
-    identifier: string
+    identifier: string,
+    instance: 'stamford' | 'guilford'
   ): Promise<number> {
     if (!this.isAvailable()) {
       return 0;
     }
 
     try {
-      const key = buildCacheKey(entity, operation, identifier);
+      const key = buildCacheKey(entity, operation, identifier, instance);
       const deleted = await this.client!.del(key);
 
       this.metrics.deletes++;
       this.recordSuccess();
-      this.log('debug', `Cache DELETE: ${key} (deleted: ${deleted})`);
+      this.log('debug', `Cache DELETE [${instance}]: ${key} (deleted: ${deleted})`);
 
       return deleted;
     } catch (error) {
-      this.log('error', `Cache DELETE error: ${error}`);
+      this.log('error', `Cache DELETE error [${instance}]: ${error}`);
       this.metrics.errors++;
       this.recordFailure();
       return 0;
@@ -411,24 +417,26 @@ export class CacheService {
   }
 
   /**
-   * Invalidate cache by pattern
+   * Invalidate cache by pattern (with instance isolation)
    * Uses SCAN for memory-efficient iteration (important for 25MB limit)
    *
    * @param entity - Entity type (or '*' for all)
    * @param operation - Operation type (or '*' for all)
+   * @param instance - Instance identifier (stamford, guilford, or '*' for both)
    * @returns Number of keys deleted
    */
   public async invalidatePattern(
     entity: string,
-    operation: string = '*'
+    operation: string = '*',
+    instance: string = '*'
   ): Promise<number> {
     if (!this.isAvailable()) {
       return 0;
     }
 
     try {
-      const pattern = buildInvalidationPattern(entity, operation);
-      this.log('info', `Invalidating cache pattern: ${pattern}`);
+      const pattern = buildInvalidationPattern(entity, operation, instance);
+      this.log('info', `Invalidating cache pattern [${instance}]: ${pattern}`);
 
       let cursor = '0';
       let totalDeleted = 0;
@@ -449,14 +457,14 @@ export class CacheService {
         if (keys.length > 0) {
           const deleted = await this.client!.del(...keys);
           totalDeleted += deleted;
-          this.log('debug', `Deleted ${deleted} keys in batch`);
+          this.log('debug', `Deleted ${deleted} keys in batch for [${instance}]`);
         }
       } while (cursor !== '0');
 
-      this.log('info', `Invalidated ${totalDeleted} keys matching pattern: ${pattern}`);
+      this.log('info', `Invalidated ${totalDeleted} keys matching pattern [${instance}]: ${pattern}`);
       return totalDeleted;
     } catch (error) {
-      this.log('error', `Cache invalidation error: ${error}`);
+      this.log('error', `Cache invalidation error [${instance}]: ${error}`);
       this.recordFailure();
       return 0;
     }
@@ -743,22 +751,22 @@ export const cacheService = CacheService.getInstance();
 export { getCacheConfig } from '../config/cache.js';
 
 /**
- * Helper function to wrap API calls with caching
+ * Helper function to wrap API calls with caching (with instance isolation)
  *
- * @param cacheKey - Cache key components
+ * @param cacheKey - Cache key components including instance
  * @param ttl - TTL in seconds
  * @param fetchFn - Function to fetch data from API
  * @returns Cached data or fresh data from API
  *
  * @example
  * const attachments = await withCache(
- *   { entity: 'attachments', operation: 'list', identifier: 'job:123' },
+ *   { entity: 'attachments', operation: 'list', identifier: 'job:123', instance: 'stamford' },
  *   getTTL('ATTACHMENTS_LIST'),
  *   () => fetchAttachmentsFromAPI(jobId)
  * );
  */
 export async function withCache<T>(
-  cacheKey: { entity: string; operation: string; identifier: string },
+  cacheKey: { entity: string; operation: string; identifier: string; instance: 'stamford' | 'guilford' },
   ttl: number,
   fetchFn: () => Promise<T>
 ): Promise<T> {
@@ -768,7 +776,8 @@ export async function withCache<T>(
   const cached = await cache.get<T>(
     cacheKey.entity,
     cacheKey.operation,
-    cacheKey.identifier
+    cacheKey.identifier,
+    cacheKey.instance
   );
 
   if (cached !== null) {
@@ -779,8 +788,8 @@ export async function withCache<T>(
   const data = await fetchFn();
 
   // Store in cache (fire and forget - don't block on cache write)
-  cache.set(cacheKey.entity, cacheKey.operation, cacheKey.identifier, data, ttl)
-    .catch(err => console.error(`Background cache write failed: ${err}`));
+  cache.set(cacheKey.entity, cacheKey.operation, cacheKey.identifier, data, ttl, cacheKey.instance)
+    .catch(err => console.error(`Background cache write failed [${cacheKey.instance}]: ${err}`));
 
   return data;
 }

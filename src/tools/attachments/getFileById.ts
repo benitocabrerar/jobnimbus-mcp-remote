@@ -104,6 +104,7 @@ export class GetFileByIdTool extends BaseTool<GetFileByIdInput, any> {
         entity: CACHE_PREFIXES.ATTACHMENTS,
         operation: CACHE_PREFIXES.DETAIL,
         identifier: input.jnid,
+      instance: context.instance,
       },
       getTTL('ATTACHMENTS_DETAIL'),
       async () => {

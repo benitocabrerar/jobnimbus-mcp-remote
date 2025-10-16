@@ -337,6 +337,7 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
         entity: CACHE_PREFIXES.JOBS,
         operation: CACHE_PREFIXES.LIST,
         identifier: cacheIdentifier,
+      instance: context.instance,
       },
       getTTL('JOBS_LIST'),
       async () => {
