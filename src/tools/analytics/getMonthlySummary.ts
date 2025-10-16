@@ -229,15 +229,11 @@ export class GetMonthlySummaryTool extends BaseTool<GetMonthlySummaryInput, Mont
 
           const excludedPayments = totalPaymentsFetched - validPayments.length;
 
-          // Fetch credit memos for the month
-          const creditMemosResponse = await this.client.get(context.apiKey, 'credit_memos', {
-            size: 1000,
-          });
-
-          let creditMemos: CreditMemoRecord[] = creditMemosResponse.data?.results || creditMemosResponse.data || [];
-
-          // Filter credit memos by month
-          creditMemos = this.filterByDate(creditMemos, dateRange.from, dateRange.to);
+          // Credit memos: JobNimbus API doesn't have /credit_memos endpoint
+          // Credit memos are stored as FILE attachments (vendor invoices) with special naming patterns
+          // For monthly summary, we set to empty array (credit memos will be 0)
+          // NOTE: get_consolidated_financials uses YAML fallback to extract from filenames
+          let creditMemos: CreditMemoRecord[] = [];
 
           // ============================================
           // CALCULATE TOTALS
