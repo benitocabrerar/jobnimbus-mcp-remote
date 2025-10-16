@@ -16,21 +16,21 @@ export class CreateContactTool extends BaseTool<CreateContactInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'create_contact',
-      description: 'Create new contact in JobNimbus',
+      description: 'Create contact',
       inputSchema: {
         type: 'object',
         properties: {
           name: {
             type: 'string',
-            description: 'Contact name',
+            description: 'Name',
           },
           email: {
             type: 'string',
-            description: 'Contact email',
+            description: 'Email',
           },
           phone: {
             type: 'string',
-            description: 'Contact phone',
+            description: 'Phone',
           },
         },
         required: ['name'],

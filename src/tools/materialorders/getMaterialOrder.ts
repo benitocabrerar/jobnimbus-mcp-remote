@@ -95,7 +95,7 @@ export class GetMaterialOrderTool extends BaseTool<GetMaterialOrderInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_material_order',
-      description: 'Retrieve a specific material order by JNID from JobNimbus. Returns complete material order information including items, pricing, status, owners, related entities, and financial totals. Use this to get detailed information about a specific material order.',
+      description: 'MaterialOrders: retrieve by JNID, items/pricing, status, owners/related',
       inputSchema: {
         type: 'object',
         properties: {

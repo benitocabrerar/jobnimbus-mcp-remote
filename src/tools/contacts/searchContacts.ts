@@ -36,7 +36,7 @@ export class SearchContactsTool extends BaseTool<SearchContactsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'search_contacts',
-      description: 'Search contacts by criteria with pagination and date filtering',
+      description: 'Search contacts by criteria',
       inputSchema: {
         type: 'object',
         properties: {
@@ -46,19 +46,19 @@ export class SearchContactsTool extends BaseTool<SearchContactsInput, any> {
           },
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0)',
+            description: 'Starting index (default: 0)',
           },
           size: {
             type: 'number',
-            description: 'Number of records (default: 50, max: 100)',
+            description: 'Records (default: 50, max: 100)',
           },
           date_from: {
             type: 'string',
-            description: 'Start date filter (YYYY-MM-DD format)',
+            description: 'Start date (YYYY-MM-DD)',
           },
           date_to: {
             type: 'string',
-            description: 'End date filter (YYYY-MM-DD format)',
+            description: 'End date (YYYY-MM-DD)',
           },
         },
       },

@@ -15,7 +15,7 @@ export class GetTerritoryAnalyticsTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_territory_analytics',
-      description: 'Comprehensive territory and geographic analysis with routes optimization, heat maps, and distribution analysis',
+      description: 'Territory & geographic analysis: routes optimization, heat maps, distribution',
       inputSchema: {
         type: 'object',
         properties: {

@@ -127,7 +127,7 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_attachments',
-      description: 'MULTI-SOURCE document retrieval with handle-based response optimization. IMPORTANT: By default returns compact summary (5 files, 15 fields each) with result_handle for full data retrieval. Use verbosity parameter to control detail level. Large responses (>25 KB) automatically stored in Redis with 15-min TTL - use fetch_by_handle to retrieve. Queries /files, /documents, and /orders endpoints in parallel to match JobNimbus UI behavior. Accepts job NUMBER (e.g., "1820") or internal JNID - both work automatically. Supports entity filtering (job_id, contact_id), file type filtering, and automatic deduplication.',
+      description: 'Attachments: multi-source retrieval, handle-based responses, filtering, deduplication',
       inputSchema: {
         type: 'object',
         properties: {

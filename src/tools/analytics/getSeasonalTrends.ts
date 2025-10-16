@@ -27,7 +27,7 @@ export class GetSeasonalTrendsTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_seasonal_trends',
-      description: 'Seasonal demand patterns and planning recommendations with forecasting',
+      description: 'Seasonal demand pattern analysis & forecast',
       inputSchema: {
         type: 'object',
         properties: {

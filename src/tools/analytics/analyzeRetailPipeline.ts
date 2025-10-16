@@ -39,12 +39,12 @@ export class AnalyzeRetailPipelineTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'analyze_retail_pipeline',
-      description: 'AI-powered Retail pipeline optimization with predictive analytics and conversion forecasting',
+      description: 'Retail pipeline analysis: sales conversion, forecasting',
       inputSchema: {
         type: 'object',
         properties: {
           time_window_days: { type: 'number', description: 'Days to analyze (default: 90)' },
-          analysis_depth: { type: 'string', description: 'Analysis depth level' },
+          analysis_depth: { type: 'string', description: 'Analysis depth' },
         },
       },
     };

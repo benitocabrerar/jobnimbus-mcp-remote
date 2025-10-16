@@ -26,7 +26,7 @@ export class GetSalesRepPerformanceTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_sales_rep_performance',
-      description: 'Detailed performance analytics per sales representative with accurate financial metrics',
+      description: 'Sales rep performance & financial metrics',
       inputSchema: {
         type: 'object',
         properties: {

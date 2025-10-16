@@ -21,8 +21,7 @@ export class GetEstimateMaterialsTool extends BaseTool<
   get definition(): MCPToolDefinition {
     return {
       name: 'get_estimate_materials',
-      description:
-        'Retrieve and analyze materials from a specific estimate. Returns detailed material breakdown with costs, quantities, and margins. Optionally includes labor items and cost analysis.',
+      description: 'Materials: retrieve estimate materials, costs/quantities/margins, labor items',
       inputSchema: {
         type: 'object',
         properties: {

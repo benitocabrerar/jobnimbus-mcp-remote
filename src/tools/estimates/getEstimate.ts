@@ -141,13 +141,13 @@ export class GetEstimateTool extends BaseTool<GetEstimateInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_estimate',
-      description: 'Retrieve a specific estimate by JNID from JobNimbus. Returns complete estimate information including items, pricing, financial totals, status, owners, related entities, dates, and all metadata. Use this to get detailed information about a specific estimate.',
+      description: 'Get estimate by JNID',
       inputSchema: {
         type: 'object',
         properties: {
           jnid: {
             type: 'string',
-            description: 'Estimate JNID (unique identifier) - Required',
+            description: 'Estimate JNID',
           },
         },
         required: ['jnid'],

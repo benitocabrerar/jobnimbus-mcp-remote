@@ -94,7 +94,7 @@ export class GetTasksTool extends BaseTool<GetTasksInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_tasks',
-      description: 'Retrieve tasks from JobNimbus with comprehensive filtering and pagination. Supports filtering by completion status, activity status, record type, priority, owner, related entities, and date ranges. Returns compact summaries by default for efficient token usage.',
+      description: 'Tasks: retrieve, filtering, pagination, compact/full modes',
       inputSchema: {
         type: 'object',
         properties: {

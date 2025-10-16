@@ -20,7 +20,7 @@ export class EstimateMaterialsFromJobTool extends BaseTool {
   get definition() {
     return {
       name: 'estimate_materials_from_job',
-      description: 'Intelligently estimate materials from JobNimbus job or estimate data. Extracts measurements from custom fields, line items, and text descriptions. Returns materials with confidence scores and manual review indicators.',
+      description: 'Materials: AI estimation from job data, measurement extraction, confidence scores',
       inputSchema: {
         type: 'object' as const,
         properties: {

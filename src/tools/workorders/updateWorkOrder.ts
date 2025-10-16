@@ -35,7 +35,7 @@ export class UpdateWorkOrderTool extends BaseTool<UpdateWorkOrderInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'update_work_order',
-      description: 'Update an existing work order in JobNimbus by JNID. Only provided fields will be updated, others remain unchanged. Can update name, description, status, owners, related entities, sales_rep, total, and more. Returns the updated work order.',
+      description: 'WorkOrders: update by JNID, status/owners/related, partial updates',
       inputSchema: {
         type: 'object',
         properties: {

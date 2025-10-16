@@ -67,9 +67,7 @@ export class GetMaterialsTrackingTool extends BaseTool<
   get definition(): MCPToolDefinition {
     return {
       name: 'get_materials_tracking',
-      description:
-        'Comprehensive materials tracking with cost analysis, usage reporting, and inventory insights. ' +
-        'Three analysis types: costs (cost optimization), usage (consumption trends), inventory (stock optimization).',
+      description: 'Materials: cost/usage/inventory tracking, trends, forecasting, optimization',
       inputSchema: {
         type: 'object',
         properties: {

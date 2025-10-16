@@ -29,33 +29,33 @@ export class SearchJobNotesTool extends BaseTool<SearchJobNotesInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'search_job_notes',
-      description: 'Search for text in job notes, descriptions, and comments. Supports @mention search to find user assignments (e.g., @JuanVillavicencio). Searches across all jobs in the system.',
+      description: 'Search job notes, descriptions, and @mentions',
       inputSchema: {
         type: 'object',
         properties: {
           query: {
             type: 'string',
-            description: 'Search query (text to find in notes/description). Can include @username to find mentions.',
+            description: 'Search text or @username',
           },
           include_description: {
             type: 'boolean',
-            description: 'Search in job description field (default: true)',
+            description: 'Search descriptions',
           },
           include_notes: {
             type: 'boolean',
-            description: 'Search in job notes/comments field (default: true)',
+            description: 'Search notes field',
           },
           search_mentions: {
             type: 'boolean',
-            description: 'Enable @mention pattern matching (default: true if query starts with @)',
+            description: 'Enable @mention matching',
           },
           size: {
             type: 'number',
-            description: 'Maximum number of matching jobs to return (default: 50, max: 200)',
+            description: 'Max results (max: 200)',
           },
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0)',
+            description: 'Pagination offset',
           },
         },
         required: ['query'],

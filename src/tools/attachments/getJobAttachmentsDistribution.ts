@@ -80,7 +80,7 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
   get definition(): MCPToolDefinition {
     return {
       name: 'get_job_attachments_distribution',
-      description: 'MULTI-SOURCE comprehensive file distribution analysis matching JobNimbus UI. Queries /files, /documents, and /orders endpoints in parallel for complete document list. Accepts job NUMBER (e.g., "1820") - the tool automatically resolves internal IDs. Collects files from job and related entities (estimate, invoice, contact), uses JobNimbus record_type_name field for classification across 20+ categories including: Photos, Documents, Email Attachments, Work Orders, Estimates, Invoices, Permit Related, Financing, Receipts, EagleView, Credit Memos, Insurance Scopes, Material Receipts, Measurements, Payments, Agreements, Material Orders, Subcontractor Docs, Change Orders, and Others. Automatically deduplicates across sources. Detects discrepancies vs reported attachment_count, and provides detailed statistics with examples.',
+      description: 'Attachments: distribution analysis, 20+ categories, multi-source, statistics',
       inputSchema: {
         type: 'object',
         properties: {

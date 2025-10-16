@@ -111,7 +111,7 @@ export class GetMaterialOrdersTool extends BaseTool<GetMaterialOrdersInput, any>
   get definition(): MCPToolDefinition {
     return {
       name: 'get_material_orders',
-      description: 'Retrieve all material orders from JobNimbus. Returns material order list with status, items count, financial totals, owners, and metadata. Supports pagination and compact/full detail modes for token optimization. Use compact mode (default) for listings, full mode for detailed analysis.',
+      description: 'MaterialOrders: listing, status/totals, pagination, compact/full modes',
       inputSchema: {
         type: 'object',
         properties: {

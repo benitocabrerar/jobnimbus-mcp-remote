@@ -70,7 +70,7 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_task_management_analytics',
-      description: 'Comprehensive task analytics with priority tracking, assignment analysis, completion metrics, overdue detection, and productivity insights',
+      description: 'Task analytics: priority, assignments, completion, overdue',
       inputSchema: {
         type: 'object',
         properties: {

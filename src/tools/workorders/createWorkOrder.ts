@@ -34,7 +34,7 @@ export class CreateWorkOrderTool extends BaseTool<CreateWorkOrderInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'create_work_order',
-      description: 'Create a new work order in JobNimbus. Requires location_id. Optionally set name, description, number, status, owners, related entities (jobs/contacts), sales_rep, and total. Returns the created work order with JNID.',
+      description: 'WorkOrders: create, location_id required, status/owners/related',
       inputSchema: {
         type: 'object',
         properties: {

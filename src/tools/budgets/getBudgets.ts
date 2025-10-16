@@ -39,7 +39,7 @@ export class GetBudgetsTool extends BaseTool<GetBudgetsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_budgets',
-      description: 'Retrieve budgets from JobNimbus (LEGACY endpoint). Budgets are financial planning documents. Supports pagination, filtering, and sorting. Returns budget details including amounts, line items, and related records. Note: This is a legacy API endpoint.',
+      description: 'Budgets: retrieve legacy endpoint, pagination, filtering, sorting',
       inputSchema: {
         type: 'object',
         properties: {

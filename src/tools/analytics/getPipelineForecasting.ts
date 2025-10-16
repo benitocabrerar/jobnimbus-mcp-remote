@@ -20,24 +20,24 @@ export class GetPipelineForecastingTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_pipeline_forecasting',
-      description: 'Predict quarterly revenue and conversion rates with ML-based forecasting',
+      description: 'Pipeline forecasting: quarterly revenue, conversion predictions, confidence intervals',
       inputSchema: {
         type: 'object',
         properties: {
           forecast_months: {
             type: 'number',
             default: 3,
-            description: 'Months to forecast (default: 3 for quarterly)',
+            description: 'Months to forecast (default: 3)',
           },
           include_probability: {
             type: 'boolean',
             default: true,
-            description: 'Include probability distributions',
+            description: 'Include probability dist.',
           },
           confidence_level: {
             type: 'number',
             default: 0.8,
-            description: 'Confidence level for predictions (0.0-1.0)',
+            description: 'Confidence level (0.0-1.0)',
           },
         },
       },

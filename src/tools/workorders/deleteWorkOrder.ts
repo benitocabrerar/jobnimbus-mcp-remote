@@ -20,7 +20,7 @@ export class DeleteWorkOrderTool extends BaseTool<DeleteWorkOrderInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'delete_work_order',
-      description: 'Soft delete a work order in JobNimbus by JNID. Sets is_active to false. The work order remains in the system but is marked as inactive. This is a reversible operation.',
+      description: 'WorkOrders: soft delete, deactivate, reactivatable',
       inputSchema: {
         type: 'object',
         properties: {

@@ -25,7 +25,7 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_profitability_dashboard',
-      description: 'Real-time profitability and KPI dashboard with comprehensive business health metrics. DEFAULT: Uses actual invoiced amounts with NET calculations (invoiced - credit_memos - refunds). Set use_invoiced_amounts=false for legacy estimate-based reporting for comparison. Provides forecasting, alerts, and actionable recommendations.',
+      description: 'Profitability: KPI dashboard, NET invoiced revenue, forecasts',
       inputSchema: {
         type: 'object',
         properties: {
@@ -33,22 +33,22 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
             type: 'string',
             enum: ['executive', 'operational', 'detailed'],
             default: 'executive',
-            description: 'Dashboard detail level',
+            description: 'Detail level',
           },
           use_invoiced_amounts: {
             type: 'boolean',
             default: true,
-            description: 'Use actual invoiced amounts with NET calculations (invoiced - credits - refunds). When true, reports real revenue. When false, uses estimates (legacy behavior).',
+            description: 'Use NET invoiced (true) or estimates (false). Default: true.',
           },
           include_forecasts: {
             type: 'boolean',
             default: true,
-            description: 'Include revenue forecasts',
+            description: 'Include forecasts',
           },
           refresh_interval: {
             type: 'number',
             default: 3600,
-            description: 'Data refresh interval in seconds',
+            description: 'Refresh interval (seconds)',
           },
         },
       },

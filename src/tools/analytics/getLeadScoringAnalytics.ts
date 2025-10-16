@@ -46,14 +46,14 @@ export class GetLeadScoringAnalyticsTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_lead_scoring_analytics',
-      description: 'AI-powered lead scoring with qualification analysis, conversion probability calculation, engagement tracking, and intelligent prioritization recommendations',
+      description: 'Lead scoring, qualification & priority',
       inputSchema: {
         type: 'object',
         properties: {
           min_score: {
             type: 'number',
             default: 0,
-            description: 'Minimum lead score to include (0-100)',
+            description: 'Min lead score (0-100)',
           },
           include_predictions: {
             type: 'boolean',
@@ -63,12 +63,12 @@ export class GetLeadScoringAnalyticsTool extends BaseTool<any, any> {
           qualification_filter: {
             type: 'string',
             enum: ['Hot', 'Warm', 'Cold', 'Unqualified'],
-            description: 'Filter by qualification status',
+            description: 'Filter by qualification',
           },
           days_back: {
             type: 'number',
             default: 90,
-            description: 'Days of history to analyze (default: 90)',
+            description: 'Days to analyze (default: 90)',
           },
         },
       },

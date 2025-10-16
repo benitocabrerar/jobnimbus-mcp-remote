@@ -76,7 +76,7 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_user_productivity_analytics',
-      description: 'Comprehensive team and individual productivity analysis with activity metrics, performance scoring, collaboration patterns, and workload optimization recommendations',
+      description: 'Team & individual productivity: activity, performance, collaboration, workload',
       inputSchema: {
         type: 'object',
         properties: {

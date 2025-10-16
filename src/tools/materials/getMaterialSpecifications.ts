@@ -9,7 +9,7 @@ export class GetMaterialSpecificationsTool extends BaseTool {
   get definition() {
     return {
       name: 'get_material_specifications',
-      description: 'Get detailed material specifications by SKU or material name including coverage, dimensions, pricing, and supplier data',
+      description: 'Materials: specifications by SKU/name, coverage, dimensions, pricing',
       inputSchema: {
         type: 'object' as const,
         properties: {

@@ -40,14 +40,14 @@ export class GetMarginAnalysisTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_margin_analysis',
-      description: 'Profit margin analysis by job type and sales rep',
+      description: 'Profit margin: by job type and sales rep, pricing insights',
       inputSchema: {
         type: 'object',
         properties: {
           min_job_count: {
             type: 'number',
             default: 3,
-            description: 'Minimum jobs required for analysis',
+            description: 'Min jobs for analysis',
           },
           focus_area: {
             type: 'string',

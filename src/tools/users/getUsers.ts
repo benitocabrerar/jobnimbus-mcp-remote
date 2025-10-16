@@ -26,7 +26,7 @@ export class GetUsersTool extends BaseTool<GetUsersInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_users',
-      description: 'Get system users and team members from JobNimbus (extracted from jobs and activities)',
+      description: 'Users: team members, extracted from jobs/activities, roles/statistics',
       inputSchema: {
         type: 'object',
         properties: {

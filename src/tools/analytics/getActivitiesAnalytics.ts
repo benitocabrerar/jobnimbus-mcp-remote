@@ -48,24 +48,24 @@ export class GetActivitiesAnalyticsTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_activities_analytics',
-      description: 'Comprehensive activity tracking with productivity metrics, user performance analysis, and follow-up optimization',
+      description: 'Activity tracking: completion rates, user productivity, follow-up analysis',
       inputSchema: {
         type: 'object',
         properties: {
           time_period_days: {
             type: 'number',
             default: 30,
-            description: 'Time period for analysis in days (default: 30)',
+            description: 'Time period (days, default: 30)',
           },
           include_user_breakdown: {
             type: 'boolean',
             default: true,
-            description: 'Include per-user productivity analysis',
+            description: 'Include user breakdown',
           },
           include_follow_up_analysis: {
             type: 'boolean',
             default: true,
-            description: 'Include follow-up optimization analysis',
+            description: 'Include follow-up analysis',
           },
         },
       },

@@ -9,7 +9,7 @@ export class CompareMaterialAlternativesTool extends BaseTool {
   get definition() {
     return {
       name: 'compare_material_alternatives',
-      description: 'Compare material alternatives with similarity scoring, cost comparison, quality ratings, pros/cons analysis',
+      description: 'Materials: compare alternatives, similarity scoring, cost/quality analysis',
       inputSchema: {
         type: 'object' as const,
         properties: {

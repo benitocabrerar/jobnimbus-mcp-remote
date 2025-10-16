@@ -54,7 +54,7 @@ export class GetInvoicesTool extends BaseTool<GetInvoicesInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_invoices',
-      description: 'Retrieve invoices from JobNimbus with optional financial consolidation. Default: invoices only. Set include_consolidated=true for comprehensive financial data including credit memos, payments, refunds with NET calculations (net_invoiced = invoiced - credits - refunds, balance_due = net - payments). Supports Phase 3 handle-based responses with verbosity control. Consolidation mode provides invoice-credit memo reference tracking.',
+      description: 'Invoices: retrieve, consolidation mode, NET calculations, handle-based responses',
       inputSchema: {
         type: 'object',
         properties: {

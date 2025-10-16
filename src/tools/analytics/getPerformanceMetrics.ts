@@ -10,7 +10,7 @@ export class GetPerformanceMetricsTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_performance_metrics',
-      description: 'Comprehensive performance metrics dashboard',
+      description: 'Performance metrics: dashboard, conversion rates, pipeline health',
       inputSchema: {
         type: 'object',
         properties: {},

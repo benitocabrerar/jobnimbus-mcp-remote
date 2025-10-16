@@ -25,25 +25,25 @@ export class GetJobTasksTool extends BaseTool<GetJobTasksInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_job_tasks',
-      description: 'Get tasks, notes, and comments for a specific job. Includes activity history, notes field, and parsed @mentions. Use this to see who is assigned or mentioned in a job.',
+      description: 'Get job tasks, notes, activities, and @mentions',
       inputSchema: {
         type: 'object',
         properties: {
           job_id: {
             type: 'string',
-            description: 'Job ID (JNID) or job number',
+            description: 'Job ID or number',
           },
           include_activities: {
             type: 'boolean',
-            description: 'Include activities related to this job (default: true)',
+            description: 'Include activities',
           },
           include_notes: {
             type: 'boolean',
-            description: 'Include notes field from job (default: true)',
+            description: 'Include notes',
           },
           parse_mentions: {
             type: 'boolean',
-            description: 'Parse @username mentions from notes/description (default: true)',
+            description: 'Parse @mentions',
           },
         },
         required: ['job_id'],

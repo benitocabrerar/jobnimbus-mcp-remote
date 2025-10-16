@@ -83,7 +83,7 @@ export class GetFileByIdTool extends BaseTool<GetFileByIdInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_file_by_id',
-      description: 'Retrieve a specific file attachment metadata from JobNimbus by its JNID. Queries the /files list endpoint and filters for the specific file. Returns complete file metadata including filename, content type, size, related entities, creator info, and timestamps. Note: GET /files/<jnid> returns a download redirect, not metadata.',
+      description: 'Attachments: retrieve by JNID, complete metadata, related entities',
       inputSchema: {
         type: 'object',
         properties: {

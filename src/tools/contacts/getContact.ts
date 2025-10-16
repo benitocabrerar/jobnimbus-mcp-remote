@@ -101,13 +101,13 @@ export class GetContactTool extends BaseTool<GetContactInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_contact',
-      description: 'Retrieve a specific contact by JNID from JobNimbus. Returns complete contact information including name, contact details, address, company, sales rep, classification, and metadata. Use this to get detailed information about a specific contact.',
+      description: 'Get contact by JNID',
       inputSchema: {
         type: 'object',
         properties: {
           jnid: {
             type: 'string',
-            description: 'Contact JNID (unique identifier) - Required',
+            description: 'Contact JNID',
           },
         },
         required: ['jnid'],

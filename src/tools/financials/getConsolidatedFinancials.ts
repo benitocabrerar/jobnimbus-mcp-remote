@@ -145,7 +145,7 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
   get definition(): MCPToolDefinition {
     return {
       name: 'get_consolidated_financials',
-      description: 'MULTI-SOURCE financial aggregation with NET amount calculations. Queries invoices, credit_memos, payments, and refunds in parallel. Calculates net_invoiced (invoiced - credits - refunds) and balance_due (net - payments). Tracks invoice-credit_memo reference links. IMPORTANT: By default returns compact summary with result_handle for full data retrieval. Large responses (>25 KB) automatically stored in Redis with 15-min TTL - use fetch_by_handle to retrieve. Supports entity filtering (job_id, contact_id), date filtering, and automatic deduplication.',
+      description: 'Financials: multi-source aggregation, NET calculations, invoice-credit links, handle-based responses',
       inputSchema: {
         type: 'object',
         properties: {

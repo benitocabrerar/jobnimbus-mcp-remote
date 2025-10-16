@@ -70,7 +70,7 @@ export class GetProductTool extends BaseTool<GetProductInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_product',
-      description: 'Retrieve a specific product by JNID from JobNimbus. Returns complete product information including name, description, pricing (material/labor cost and price per UOM), item type, tax settings, suppliers, and metadata. Use this to get detailed information about a specific product in the catalog.',
+      description: 'Products: retrieve by JNID, pricing/UOM, item type, tax settings, suppliers',
       inputSchema: {
         type: 'object',
         properties: {

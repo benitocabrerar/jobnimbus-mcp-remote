@@ -110,7 +110,7 @@ export class GetCompetitiveAnalysisAnalyticsTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_competitive_analysis_analytics',
-      description: 'Comprehensive competitive intelligence with win/loss analysis, competitor profiling, market positioning, competitive advantages, threat assessment, and battle card insights',
+      description: 'Competitive intelligence: win/loss, profiles, positioning, advantages, threats, battle cards',
       inputSchema: {
         type: 'object',
         properties: {

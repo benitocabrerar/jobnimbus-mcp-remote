@@ -31,17 +31,7 @@ export class FetchByHandleTool extends BaseTool<FetchByHandleInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'fetch_by_handle',
-      description: `Retrieve full data from a previously stored response handle.
-
-When tools return large responses (>25 KB), they provide a handle instead of the full data.
-Use this tool to retrieve the complete data.
-
-Handles expire after 15 minutes. If a handle is expired or invalid, you'll receive an error.
-
-Examples:
-- fetch_by_handle({ handle: "jn:jobs:1729012345:abc12345" })
-- fetch_by_handle({ handle: "jn:jobs:...", fields: "jnid,number,status" })
-- fetch_by_handle({ handle: "jn:jobs:...", verbosity: "detailed" })`,
+      description: 'System: retrieve stored responses, handle expiration, field selection',
       inputSchema: {
         type: 'object',
         properties: {

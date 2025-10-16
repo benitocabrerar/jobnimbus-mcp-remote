@@ -57,44 +57,44 @@ export class SearchJobsEnhancedTool extends BaseTool<SearchJobsEnhancedInput, an
   get definition(): MCPToolDefinition {
     return {
       name: 'search_jobs_enhanced',
-      description: 'Advanced job search with intelligent business type categorization (insurance vs retail)',
+      description: 'Search jobs by business type (insurance/retail)',
       inputSchema: {
         type: 'object',
         properties: {
           // Basic search
           query: {
             type: 'string',
-            description: 'Search query (optional)',
+            description: 'Search query',
           },
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0)',
+            description: 'Starting index (default: 0)',
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 50, max: 100)',
+            description: 'Records to retrieve (default: 50, max: 100)',
           },
 
           // Date filters
           date_from: {
             type: 'string',
-            description: 'Start date filter for date_created (YYYY-MM-DD format)',
+            description: 'Start date for date_created (YYYY-MM-DD)',
           },
           date_to: {
             type: 'string',
-            description: 'End date filter for date_created (YYYY-MM-DD format)',
+            description: 'End date for date_created (YYYY-MM-DD)',
           },
           scheduled_from: {
             type: 'string',
-            description: 'Filter jobs scheduled on or after this date (YYYY-MM-DD format)',
+            description: 'Jobs scheduled on/after date (YYYY-MM-DD)',
           },
           scheduled_to: {
             type: 'string',
-            description: 'Filter jobs scheduled on or before this date (YYYY-MM-DD format)',
+            description: 'Jobs scheduled on/before date (YYYY-MM-DD)',
           },
           has_schedule: {
             type: 'boolean',
-            description: 'Filter only jobs with scheduled dates',
+            description: 'Filter jobs with scheduled dates',
           },
 
           // Sorting
@@ -113,45 +113,45 @@ export class SearchJobsEnhancedTool extends BaseTool<SearchJobsEnhancedInput, an
           business_type: {
             type: 'string',
             enum: ['insurance', 'retail', 'hybrid', 'unknown', 'all'],
-            description: 'Filter by business type (insurance claims vs retail sales)',
+            description: 'Filter by business type',
           },
           confidence_threshold: {
             type: 'number',
-            description: 'Minimum confidence score for categorization (0-100, default: 60)',
+            description: 'Min confidence score (0-100, default: 60)',
             minimum: 0,
             maximum: 100,
           },
           include_categorization: {
             type: 'boolean',
-            description: 'Include detailed categorization scores in response',
+            description: 'Include categorization scores',
           },
 
           // Insurance-specific filters
           insurance_has_claim: {
             type: 'boolean',
-            description: 'Filter for jobs with claim numbers',
+            description: 'Filter jobs with claim numbers',
           },
           insurance_has_adjuster: {
             type: 'boolean',
-            description: 'Filter for jobs with adjuster information',
+            description: 'Filter jobs with adjuster info',
           },
           insurance_carrier: {
             type: 'string',
-            description: 'Filter by insurance carrier name',
+            description: 'Filter by carrier name',
           },
           insurance_status: {
             type: 'string',
-            description: 'Filter by insurance claim status',
+            description: 'Filter by claim status',
           },
 
           // Retail-specific filters
           retail_has_financing: {
             type: 'boolean',
-            description: 'Filter for jobs with financing',
+            description: 'Filter jobs with financing',
           },
           retail_has_contract: {
             type: 'boolean',
-            description: 'Filter for jobs with signed contracts',
+            description: 'Filter jobs with contracts',
           },
           retail_min_commission: {
             type: 'number',

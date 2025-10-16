@@ -15,7 +15,7 @@ export class CreateActivityTool extends BaseTool<CreateActivityInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'create_activity',
-      description: 'Create new activity in JobNimbus',
+      description: 'Create activity',
       inputSchema: {
         type: 'object',
         properties: {

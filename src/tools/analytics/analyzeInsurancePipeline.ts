@@ -19,7 +19,7 @@ export class AnalyzeInsurancePipelineTool extends BaseTool<AnalyzeInsurancePipel
   get definition(): MCPToolDefinition {
     return {
       name: 'analyze_insurance_pipeline',
-      description: 'AI-powered Insurance pipeline optimization with claim approval prediction, adjuster performance, negotiation analytics',
+      description: 'Insurance pipeline analysis: claims, approvals, risk',
       inputSchema: {
         type: 'object',
         properties: {
@@ -29,15 +29,15 @@ export class AnalyzeInsurancePipelineTool extends BaseTool<AnalyzeInsurancePipel
           },
           analysis_depth: {
             type: 'string',
-            description: 'Analysis depth: quick, standard, deep, ultra',
+            description: 'Depth: quick, standard, deep, ultra',
           },
           include_predictions: {
             type: 'boolean',
-            description: 'Include ML-based predictions',
+            description: 'Include predictions',
           },
           include_recommendations: {
             type: 'boolean',
-            description: 'Include AI recommendations',
+            description: 'Include recommendations',
           },
         },
       },

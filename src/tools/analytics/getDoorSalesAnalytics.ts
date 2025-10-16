@@ -87,45 +87,45 @@ export class GetDoorSalesAnalyticsTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_door_sales_analytics',
-      description: 'Door-to-door sales optimization with AI-generated scripts and seasonal timing recommendations',
+      description: 'Door sales: customized scripts by area, seasonal timing optimization',
       inputSchema: {
         type: 'object',
         properties: {
           analysis_type: {
             type: 'string',
             enum: ['scripts', 'timing'],
-            description: 'Type of analysis: scripts (area-customized sales scripts), timing (seasonal optimization)',
+            description: 'scripts (custom scripts) or timing',
           },
           // Scripts parameters
           area: {
             type: 'string',
-            description: '[Scripts] Specific area/city to analyze (optional, analyzes all areas if not specified)',
+            description: 'Area/city (optional, default: all)',
           },
           service_type: {
             type: 'string',
-            description: 'Service type to focus on (e.g., "roofing", "solar", "hvac")',
+            description: 'Service type (roofing, solar, hvac)',
           },
           include_objection_handlers: {
             type: 'boolean',
             default: true,
-            description: '[Scripts] Include common objection handlers',
+            description: 'Include objection handlers',
           },
           script_style: {
             type: 'string',
             enum: ['conversational', 'professional', 'friendly', 'consultative'],
             default: 'consultative',
-            description: '[Scripts] Communication style for scripts',
+            description: 'Script communication style',
           },
           // Timing parameters
           include_weather_analysis: {
             type: 'boolean',
             default: true,
-            description: '[Timing] Include weather impact analysis',
+            description: 'Include weather analysis',
           },
           current_month_only: {
             type: 'boolean',
             default: false,
-            description: '[Timing] Focus only on current month recommendations',
+            description: 'Current month only (default: false)',
           },
         },
         required: ['analysis_type'],

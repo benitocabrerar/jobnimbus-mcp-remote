@@ -13,7 +13,7 @@ export class CalculateRoofingMaterialsTool extends BaseTool {
   get definition() {
     return {
       name: 'calculate_roofing_materials',
-      description: 'Calculate roofing materials using industry-standard formulas with pitch multipliers, waste factors, and comprehensive accessory calculations. Returns detailed material list with SKU, quantity, UOM, unit cost, unit price, and totals.',
+      description: 'Materials: roofing calculations, pitch multipliers, waste factors, SKU/costs',
       inputSchema: {
         type: 'object' as const,
         properties: {

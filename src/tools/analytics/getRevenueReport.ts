@@ -41,7 +41,7 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_revenue_report',
-      description: 'Comprehensive revenue reporting and analysis. DEFAULT: Uses actual invoiced amounts with NET calculations (invoiced - credit_memos - refunds). Set use_invoiced_amounts=false for legacy estimate-based reporting. Provides detailed revenue breakdown by period, job type, and sales rep with insights and recommendations.',
+      description: 'Revenue reporting: NET invoiced, estimates, period analysis, rep breakdown',
       inputSchema: {
         type: 'object',
         properties: {
@@ -54,12 +54,12 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
           use_invoiced_amounts: {
             type: 'boolean',
             default: true,
-            description: 'Use actual invoiced amounts with NET calculations (invoiced - credits - refunds). When true, reports real revenue. When false, uses estimates (legacy behavior).',
+            description: 'Use NET invoiced amounts (true) or estimates (false). Default: true.',
           },
           include_pending: {
             type: 'boolean',
             default: false,
-            description: 'Include pending estimates/invoices in projections. Works with both invoiced and estimate-based modes.',
+            description: 'Include pending estimates/invoices in projections',
           },
         },
       },

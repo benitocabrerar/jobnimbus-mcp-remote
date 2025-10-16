@@ -117,20 +117,20 @@ export class GetJobAnalyticsTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_job_analytics',
-      description: 'Comprehensive job analytics with summary dashboards and geographic estimate analysis',
+      description: 'Job analytics: summary dashboards, geographic estimate analysis',
       inputSchema: {
         type: 'object',
         properties: {
           analysis_type: {
             type: 'string',
             enum: ['summary', 'estimates_geo'],
-            description: 'Type of analysis: summary (job pipeline dashboard), estimates_geo (geographic estimate mapping)',
+            description: 'Analysis type: summary or estimates_geo',
           },
           // Summary parameters
           time_period_days: {
             type: 'number',
             default: 90,
-            description: '[Summary] Time period for analysis in days (default: 90)',
+            description: '[Summary] Time period days (default: 90)',
           },
           include_trends: {
             type: 'boolean',
@@ -146,26 +146,26 @@ export class GetJobAnalyticsTool extends BaseTool<any, any> {
           include_address_validation: {
             type: 'boolean',
             default: true,
-            description: '[Estimates Geo] Include address completeness validation',
+            description: '[Estimates Geo] Include address validation',
           },
           grouping_level: {
             type: 'string',
             enum: ['city', 'zip', 'state'],
             default: 'city',
-            description: '[Estimates Geo] Geographic grouping level (default: city)',
+            description: '[Estimates Geo] Grouping level (default: city)',
           },
           status_filter: {
             type: 'string',
-            description: '[Estimates Geo] Filter by estimate status (e.g., "pending", "approved")',
+            description: '[Estimates Geo] Filter by estimate status',
           },
           min_value: {
             type: 'number',
-            description: '[Estimates Geo] Minimum estimate value to include',
+            description: '[Estimates Geo] Minimum estimate value',
           },
           include_proximity_analysis: {
             type: 'boolean',
             default: true,
-            description: '[Estimates Geo] Include geographic proximity analysis for route optimization',
+            description: '[Estimates Geo] Include proximity analysis',
           },
         },
         required: ['analysis_type'],

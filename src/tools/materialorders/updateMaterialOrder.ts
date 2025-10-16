@@ -47,7 +47,7 @@ export class UpdateMaterialOrderTool extends BaseTool<UpdateMaterialOrderInput, 
   get definition(): MCPToolDefinition {
     return {
       name: 'update_material_order',
-      description: 'Update an existing material order in JobNimbus by JNID. Can update items, status, notes, owners, related entities, financial totals, and any other material order properties. Only include fields you want to update. Returns the updated material order.',
+      description: 'MaterialOrders: update by JNID, items/pricing, status/notes, owners/related',
       inputSchema: {
         type: 'object',
         properties: {

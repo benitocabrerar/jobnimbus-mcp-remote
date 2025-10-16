@@ -24,13 +24,13 @@ export class DeleteEstimateTool extends BaseTool<DeleteEstimateInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'delete_estimate',
-      description: 'Soft delete an estimate in JobNimbus by setting is_active to false. The estimate is not permanently deleted and can be reactivated using update_estimate with is_active: true. Returns confirmation of deletion.',
+      description: 'Delete estimate',
       inputSchema: {
         type: 'object',
         properties: {
           jnid: {
             type: 'string',
-            description: 'Estimate JNID to delete - Required',
+            description: 'Estimate JNID',
           },
         },
         required: ['jnid'],

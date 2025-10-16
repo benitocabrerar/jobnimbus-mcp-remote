@@ -95,7 +95,7 @@ export class GetWorkOrdersTool extends BaseTool<GetWorkOrdersInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_work_orders',
-      description: 'Retrieve all work orders from JobNimbus. Returns work order list with status, owners, related entities, and metadata. Supports pagination and compact/full detail modes for token optimization. Use compact mode (default) for listings, full mode for detailed analysis. Default size is 1000, maximum 10000.',
+      description: 'WorkOrders: retrieve, pagination, compact/full modes, status/owners',
       inputSchema: {
         type: 'object',
         properties: {

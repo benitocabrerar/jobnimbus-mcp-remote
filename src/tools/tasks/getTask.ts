@@ -86,7 +86,7 @@ export class GetTaskTool extends BaseTool<GetTaskInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_task',
-      description: 'Retrieve a specific task by JNID from JobNimbus. Returns complete task information including title, description, dates, owners, related entities, time tracking, priority, and completion status. Use this to get detailed information about a specific task.',
+      description: 'Tasks: retrieve by JNID, complete details, time tracking, relationships',
       inputSchema: {
         type: 'object',
         properties: {

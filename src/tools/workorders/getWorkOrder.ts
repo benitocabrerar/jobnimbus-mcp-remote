@@ -88,7 +88,7 @@ export class GetWorkOrderTool extends BaseTool<GetWorkOrderInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_work_order',
-      description: 'Retrieve a specific work order by JNID from JobNimbus. Returns complete work order details including status, owners, related entities, financial information, and metadata. Use this for detailed analysis of individual work orders.',
+      description: 'WorkOrders: retrieve by JNID, complete details, status/owners/financials',
       inputSchema: {
         type: 'object',
         properties: {

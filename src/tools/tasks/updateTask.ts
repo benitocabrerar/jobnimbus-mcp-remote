@@ -47,7 +47,7 @@ export class UpdateTaskTool extends BaseTool<UpdateTaskInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'update_task',
-      description: 'Update or delete (soft delete by setting is_active: false) a task in JobNimbus. Supports updating title, description, dates, priority, owners, completion status, time tracking, and more. To delete a task, set mark_as_deleted: true OR is_active: false.',
+      description: 'Tasks: update, soft delete, dates, priority, owners, time tracking',
       inputSchema: {
         type: 'object',
         properties: {

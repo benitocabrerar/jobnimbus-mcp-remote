@@ -18,7 +18,7 @@ export class AnalyzeServicesRepairPipelineTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'analyze_services_repair_pipeline',
-      description: 'Services & Repair pipeline optimization with service time prediction, technician efficiency, pricing optimization',
+      description: 'Services & repair pipeline: metrics, technician performance, predictions',
       inputSchema: {
         type: 'object',
         properties: {
@@ -31,22 +31,22 @@ export class AnalyzeServicesRepairPipelineTool extends BaseTool<any, any> {
             type: 'string',
             enum: ['quick', 'standard', 'deep', 'ultra'],
             default: 'ultra',
-            description: 'Analysis depth level',
+            description: 'Analysis depth',
           },
           include_predictions: {
             type: 'boolean',
             default: true,
-            description: 'Include ML-based predictions',
+            description: 'Include predictions',
           },
           include_recommendations: {
             type: 'boolean',
             default: true,
-            description: 'Include AI recommendations',
+            description: 'Include recommendations',
           },
           technician_optimization: {
             type: 'boolean',
             default: true,
-            description: 'Optimize technician assignments',
+            description: 'Optimize technician',
           },
         },
       },

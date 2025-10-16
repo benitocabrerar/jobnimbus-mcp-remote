@@ -39,25 +39,25 @@ export class GetCalendarActivities extends BaseTool<CalendarActivitiesInput, Cal
   get definition(): MCPToolDefinition {
     return {
       name: 'get_calendar_activities',
-      description: 'Get calendar activities and scheduling (formatted from activities data)',
+      description: 'Get calendar activities',
       inputSchema: {
         type: 'object',
         properties: {
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0)',
+            description: 'Start index (default: 0)',
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 50, max: 100)',
+            description: 'Records (default: 50, max: 100)',
           },
           date_from: {
             type: 'string',
-            description: 'Start date filter (YYYY-MM-DD format)',
+            description: 'Start date (YYYY-MM-DD)',
           },
           date_to: {
             type: 'string',
-            description: 'End date filter (YYYY-MM-DD format)',
+            description: 'End date (YYYY-MM-DD)',
           },
         },
       },

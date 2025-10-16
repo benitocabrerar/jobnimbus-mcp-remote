@@ -9,7 +9,7 @@ export class OptimizeMaterialOrdersTool extends BaseTool {
   get definition() {
     return {
       name: 'optimize_material_orders',
-      description: 'Optimize material orders with bulk discounts, packaging rules, and supplier recommendations',
+      description: 'Materials: optimize orders, bulk discounts, packaging, supplier recommendations',
       inputSchema: {
         type: 'object' as const,
         properties: {

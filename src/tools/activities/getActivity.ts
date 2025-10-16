@@ -98,13 +98,13 @@ export class GetActivityTool extends BaseTool<GetActivityInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_activity',
-      description: 'Retrieve a specific activity by JNID from JobNimbus. Returns complete activity information including type, note, primary entity, related entities, ownership, status, scheduling dates, and metadata. Use this to get detailed information about a specific activity, task, or note.',
+      description: 'Get activity by JNID',
       inputSchema: {
         type: 'object',
         properties: {
           jnid: {
             type: 'string',
-            description: 'Activity JNID (unique identifier) - Required',
+            description: 'Activity JNID',
           },
         },
         required: ['jnid'],

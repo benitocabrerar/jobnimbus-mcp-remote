@@ -86,65 +86,65 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_estimates',
-      description: 'Retrieve estimates from JobNimbus with handle-based response optimization. IMPORTANT: By default returns compact summary (5 estimates, 15 fields each) with result_handle for full data retrieval. Use verbosity parameter to control detail level. Large responses (>25 KB) automatically stored in Redis with 15-min TTL - use fetch_by_handle to retrieve. Supports pagination, date filtering, status filtering, sent/approved date filtering, and sorting.',
+      description: 'Get estimates with filters and sorting',
       inputSchema: {
         type: 'object',
         properties: {
           // NEW: Handle-based response control
           verbosity: {
             type: 'string',
-            description: 'Response detail level: "summary" (5 fields, max 5 estimates), "compact" (15 fields, max 20 estimates - DEFAULT), "detailed" (50 fields, max 50 estimates), "raw" (all fields). Compact mode prevents chat saturation.',
+            description: 'Detail level: summary/compact/detailed/raw (default: compact)',
             enum: ['summary', 'compact', 'detailed', 'raw'],
           },
           fields: {
             type: 'string',
-            description: 'Comma-separated field names to return. Example: "jnid,number,status_name,date_sent,date_signed". Overrides verbosity-based field selection.',
+            description: 'Fields to return (comma-separated)',
           },
           page_size: {
             type: 'number',
-            description: 'Number of records per page (default: 20, max: 100). Replaces "size" parameter. Use with cursor for pagination.',
+            description: 'Records per page (default: 20, max: 100)',
           },
 
           // Existing parameters
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0). NOTE: Prefer page_size + cursor for large datasets.',
+            description: 'Pagination offset (default: 0)',
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 15, max: 50). DEPRECATED: Use page_size instead.',
+            description: 'Records to retrieve (default: 15, max: 50)',
           },
           date_from: {
             type: 'string',
-            description: 'Start date filter for date_created (YYYY-MM-DD format)',
+            description: 'Start date (YYYY-MM-DD)',
           },
           date_to: {
             type: 'string',
-            description: 'End date filter for date_created (YYYY-MM-DD format)',
+            description: 'End date (YYYY-MM-DD)',
           },
           sent_from: {
             type: 'string',
-            description: 'Filter estimates sent on or after this date (date_sent >= fecha, YYYY-MM-DD format)',
+            description: 'Sent on/after date (YYYY-MM-DD)',
           },
           sent_to: {
             type: 'string',
-            description: 'Filter estimates sent on or before this date (date_sent <= fecha, YYYY-MM-DD format)',
+            description: 'Sent on/before date (YYYY-MM-DD)',
           },
           approved_from: {
             type: 'string',
-            description: 'Filter estimates signed on or after this date (date_signed >= fecha, YYYY-MM-DD format)',
+            description: 'Signed on/after date (YYYY-MM-DD)',
           },
           approved_to: {
             type: 'string',
-            description: 'Filter estimates signed on or before this date (date_signed <= fecha, YYYY-MM-DD format)',
+            description: 'Signed on/before date (YYYY-MM-DD)',
           },
           has_approval: {
             type: 'boolean',
-            description: 'Filter only estimates with approval/signed status (date_signed > 0)',
+            description: 'Filter by approval status',
           },
           status: {
             type: 'string',
-            description: 'Filter by estimate status (e.g., "pending", "approved", "rejected")',
+            description: 'Status filter',
           },
           sort_by: {
             type: 'string',
@@ -153,12 +153,12 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
           },
           order: {
             type: 'string',
-            description: 'Sort order (asc or desc)',
+            description: 'Sort order',
             enum: ['asc', 'desc'],
           },
           include_full_details: {
             type: 'boolean',
-            description: 'LEGACY: Return full estimate details. Default: false. DEPRECATED: Use verbosity="detailed" or verbosity="raw" instead.',
+            description: 'Return full details (DEPRECATED: use verbosity)',
           },
         },
       },

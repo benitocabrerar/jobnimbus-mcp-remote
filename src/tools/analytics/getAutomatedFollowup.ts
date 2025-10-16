@@ -22,7 +22,7 @@ export class GetAutomatedFollowupTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_automated_followup',
-      description: 'Smart follow-up scheduling and automation',
+      description: 'Follow-up scheduling: priority-based automation, recommendations',
       inputSchema: {
         type: 'object',
         properties: {
@@ -30,18 +30,18 @@ export class GetAutomatedFollowupTool extends BaseTool<any, any> {
             type: 'string',
             enum: ['high', 'medium', 'low'],
             default: 'high',
-            description: 'Filter by priority level',
+            description: 'Filter by priority',
           },
           communication_preference: {
             type: 'string',
             enum: ['email', 'phone', 'text', 'auto'],
             default: 'auto',
-            description: 'Preferred communication method',
+            description: 'Communication method',
           },
           max_followups: {
             type: 'number',
             default: 5,
-            description: 'Maximum number of followups to return',
+            description: 'Max followups (default: 5)',
           },
         },
       },

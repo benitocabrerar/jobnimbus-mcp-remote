@@ -56,45 +56,45 @@ export class GetContactsTool extends BaseTool<GetContactsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_contacts',
-      description: 'Retrieve contacts from JobNimbus with handle-based response optimization. IMPORTANT: By default returns compact summary (5 contacts, 15 fields each) with result_handle for full data retrieval. Use verbosity parameter to control detail level. Large responses (>25 KB) automatically stored in Redis with 15-min TTL - use fetch_by_handle to retrieve. Supports pagination and date filtering.',
+      description: 'Retrieve contacts with pagination and date filtering',
       inputSchema: {
         type: 'object',
         properties: {
           // NEW: Handle-based response control
           verbosity: {
             type: 'string',
-            description: 'Response detail level: "summary" (5 fields, max 5 contacts), "compact" (15 fields, max 20 contacts - DEFAULT), "detailed" (50 fields, max 50 contacts), "raw" (all fields). Compact mode prevents chat saturation.',
+            description: 'Detail level: summary/compact/detailed/raw',
             enum: ['summary', 'compact', 'detailed', 'raw'],
           },
           fields: {
             type: 'string',
-            description: 'Comma-separated field names to return. Example: "jnid,display_name,email,phone,address_line1". Overrides verbosity-based field selection.',
+            description: 'Comma-separated field names to return',
           },
           page_size: {
             type: 'number',
-            description: 'Number of records per page (default: 20, max: 100). Replaces "size" parameter. Use with cursor for pagination.',
+            description: 'Records per page (default: 20, max: 100)',
           },
 
           // Existing parameters
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0). NOTE: Prefer page_size + cursor for large datasets.',
+            description: 'Starting index (default: 0)',
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 15, max: 50). DEPRECATED: Use page_size instead.',
+            description: 'Records to retrieve (default: 15, max: 50)',
           },
           date_from: {
             type: 'string',
-            description: 'Start date filter for date_created (YYYY-MM-DD format)',
+            description: 'Start date (YYYY-MM-DD)',
           },
           date_to: {
             type: 'string',
-            description: 'End date filter for date_created (YYYY-MM-DD format)',
+            description: 'End date (YYYY-MM-DD)',
           },
           include_full_details: {
             type: 'boolean',
-            description: 'LEGACY: Return full contact details. Default: false. DEPRECATED: Use verbosity="detailed" or verbosity="raw" instead.',
+            description: 'Return full details (legacy, use verbosity)',
           },
         },
       },

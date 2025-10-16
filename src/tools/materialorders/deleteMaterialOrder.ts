@@ -20,7 +20,7 @@ export class DeleteMaterialOrderTool extends BaseTool<DeleteMaterialOrderInput, 
   get definition(): MCPToolDefinition {
     return {
       name: 'delete_material_order',
-      description: 'Soft delete a material order in JobNimbus by setting is_active to false. The material order is not permanently deleted and can be reactivated using update_material_order with is_active: true. Returns confirmation of deletion.',
+      description: 'MaterialOrders: soft delete, deactivate order, reactivatable',
       inputSchema: {
         type: 'object',
         properties: {

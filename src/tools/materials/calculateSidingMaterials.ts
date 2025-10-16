@@ -8,7 +8,7 @@ export class CalculateSidingMaterialsTool extends BaseTool {
   get definition() {
     return {
       name: 'calculate_siding_materials',
-      description: 'Calculate siding materials with wall area, deductions, and accessories',
+      description: 'Materials: siding calculations, wall area, window/door deductions',
       inputSchema: {
         type: 'object' as const,
         properties: {

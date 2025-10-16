@@ -46,7 +46,7 @@ export class CreateMaterialOrderTool extends BaseTool<CreateMaterialOrderInput, 
   get definition(): MCPToolDefinition {
     return {
       name: 'create_material_order',
-      description: 'Create a new material order in JobNimbus. Requires items array with product details (jnid, name, uom, quantity, cost, price) and location_id. Optionally set owners, related entities (jobs/contacts), sales_rep, notes, and status. Returns the created material order with JNID.',
+      description: 'MaterialOrders: create order, items/pricing, owners/related, status/notes',
       inputSchema: {
         type: 'object',
         properties: {

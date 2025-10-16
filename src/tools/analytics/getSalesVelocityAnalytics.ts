@@ -102,7 +102,7 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_sales_velocity_analytics',
-      description: 'Comprehensive sales velocity analytics with win rate analysis, sales cycle duration tracking, pipeline acceleration metrics, rep performance, and velocity optimization recommendations',
+      description: 'Sales velocity: win rate, cycle time, acceleration & optimization',
       inputSchema: {
         type: 'object',
         properties: {
@@ -114,7 +114,7 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
           include_rep_analysis: {
             type: 'boolean',
             default: true,
-            description: 'Include sales rep velocity analysis',
+            description: 'Include rep velocity analysis',
           },
           include_deal_segmentation: {
             type: 'boolean',
@@ -124,7 +124,7 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
           min_deal_size: {
             type: 'number',
             default: 0,
-            description: 'Minimum deal size to include',
+            description: 'Min deal size to include',
           },
         },
       },

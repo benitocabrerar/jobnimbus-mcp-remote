@@ -61,41 +61,41 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'search_jobs',
-      description: 'Search jobs by criteria with pagination, date filtering, scheduling filters, and sorting',
+      description: 'Search jobs with filters and sorting',
       inputSchema: {
         type: 'object',
         properties: {
           query: {
             type: 'string',
-            description: 'Search query (optional)',
+            description: 'Search query',
           },
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0)',
+            description: 'Starting index (default: 0)',
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 50, max: 100)',
+            description: 'Records to retrieve (default: 50, max: 100)',
           },
           date_from: {
             type: 'string',
-            description: 'Start date filter for date_created (YYYY-MM-DD format)',
+            description: 'Start date for date_created (YYYY-MM-DD)',
           },
           date_to: {
             type: 'string',
-            description: 'End date filter for date_created (YYYY-MM-DD format)',
+            description: 'End date for date_created (YYYY-MM-DD)',
           },
           scheduled_from: {
             type: 'string',
-            description: 'Filter jobs scheduled on or after this date (date_start >= fecha, YYYY-MM-DD format)',
+            description: 'Jobs scheduled on/after date (YYYY-MM-DD)',
           },
           scheduled_to: {
             type: 'string',
-            description: 'Filter jobs scheduled on or before this date (date_start <= fecha, YYYY-MM-DD format)',
+            description: 'Jobs scheduled on/before date (YYYY-MM-DD)',
           },
           has_schedule: {
             type: 'boolean',
-            description: 'Filter only jobs with scheduled dates (date_start > 0)',
+            description: 'Filter jobs with scheduled dates',
           },
           sort_by: {
             type: 'string',
@@ -109,7 +109,7 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
           },
           include_full_details: {
             type: 'boolean',
-            description: 'Return full job details. Default: false (compact mode with only essential fields). Set to true for complete job objects.',
+            description: 'Return full details',
           },
         },
       },

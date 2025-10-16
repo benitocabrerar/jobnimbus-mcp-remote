@@ -171,53 +171,50 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_jobs',
-      description: 'Retrieve jobs from JobNimbus with handle-based response optimization. IMPORTANT: By default returns compact summary (5 jobs, 15 fields each) with result_handle for full data retrieval. Use verbosity parameter to control detail level. Large responses (>25 KB) automatically stored in Redis with 15-min TTL - use fetch_by_handle to retrieve. Supports pagination, date filtering, scheduling filters, and sorting.',
+      description: 'Get JobNimbus jobs with filtering, pagination, and sorting',
       inputSchema: {
         type: 'object',
         properties: {
-          // NEW: Handle-based response control
           verbosity: {
             type: 'string',
-            description: 'Response detail level: "summary" (5 fields, max 5 jobs), "compact" (15 fields, max 20 jobs - DEFAULT), "detailed" (50 fields, max 50 jobs), "raw" (all fields). Compact mode prevents chat saturation.',
+            description: 'Detail level: summary/compact/detailed/raw',
             enum: ['summary', 'compact', 'detailed', 'raw'],
           },
           fields: {
             type: 'string',
-            description: 'Comma-separated field names to return. Example: "jnid,number,status_name,sales_rep_name,date_created,last_estimate". Overrides verbosity-based field selection.',
+            description: 'Comma-separated field names to return',
           },
           page_size: {
             type: 'number',
-            description: 'Number of records per page (default: 20, max: 100). Replaces "size" parameter. Use with cursor for pagination.',
+            description: 'Records per page (default: 20, max: 100)',
           },
-
-          // Existing parameters
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0). NOTE: Prefer page_size + cursor for large datasets.',
+            description: 'Starting index (default: 0)',
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 15, max: 50). DEPRECATED: Use page_size instead.',
+            description: 'Records to retrieve (default: 15, max: 50)',
           },
           date_from: {
             type: 'string',
-            description: 'Start date filter for date_created (YYYY-MM-DD format)',
+            description: 'Start date for date_created (YYYY-MM-DD)',
           },
           date_to: {
             type: 'string',
-            description: 'End date filter for date_created (YYYY-MM-DD format)',
+            description: 'End date for date_created (YYYY-MM-DD)',
           },
           scheduled_from: {
             type: 'string',
-            description: 'Filter jobs scheduled on or after this date (date_start >= fecha, YYYY-MM-DD format)',
+            description: 'Jobs scheduled on/after date (YYYY-MM-DD)',
           },
           scheduled_to: {
             type: 'string',
-            description: 'Filter jobs scheduled on or before this date (date_start <= fecha, YYYY-MM-DD format)',
+            description: 'Jobs scheduled on/before date (YYYY-MM-DD)',
           },
           has_schedule: {
             type: 'boolean',
-            description: 'Filter only jobs with scheduled dates (date_start > 0)',
+            description: 'Filter jobs with scheduled dates',
           },
           sort_by: {
             type: 'string',
@@ -231,7 +228,7 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
           },
           include_full_details: {
             type: 'boolean',
-            description: 'LEGACY: Return full job details. Default: false. DEPRECATED: Use verbosity="detailed" or verbosity="raw" instead.',
+            description: 'Return full details (legacy)',
           },
         },
       },

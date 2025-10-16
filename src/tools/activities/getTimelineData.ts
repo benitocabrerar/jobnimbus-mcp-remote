@@ -46,30 +46,30 @@ export class GetTimelineData extends BaseTool<TimelineDataInput, TimelineDataOut
   get definition(): MCPToolDefinition {
     return {
       name: 'get_timeline_data',
-      description: 'Get timeline data for project scheduling (built from activities)',
+      description: 'Get timeline data',
       inputSchema: {
         type: 'object',
         properties: {
           from: {
             type: 'number',
-            description: 'Starting index for pagination (default: 0)',
+            description: 'Start index (default: 0)',
           },
           size: {
             type: 'number',
-            description: 'Number of records to retrieve (default: 100, max: 100)',
+            description: 'Records (default: 100, max: 100)',
           },
           date_from: {
             type: 'string',
-            description: 'Start date filter (YYYY-MM-DD format)',
+            description: 'Start date (YYYY-MM-DD)',
           },
           date_to: {
             type: 'string',
-            description: 'End date filter (YYYY-MM-DD format)',
+            description: 'End date (YYYY-MM-DD)',
           },
           group_by: {
             type: 'string',
             enum: ['day', 'week', 'month'],
-            description: 'Group timeline by period (default: day)',
+            description: 'Group by (default: day)',
           },
         },
       },

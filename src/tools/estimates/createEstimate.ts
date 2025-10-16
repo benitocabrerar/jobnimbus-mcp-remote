@@ -60,53 +60,53 @@ export class CreateEstimateTool extends BaseTool<CreateEstimateInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'create_estimate',
-      description: 'Create a new estimate in JobNimbus. REQUIRED: type="estimate", is_active (boolean), status (integer), related array with entities (jobs/contacts), and items array with estimate line items. Each item must include: jnid, name, uom, item_type, quantity, price. Optionally set dates, notes, terms, owners, sales_rep, location, and financial totals. Returns the created estimate with JNID.',
+      description: 'Create estimate',
       inputSchema: {
         type: 'object',
         properties: {
           type: {
             type: 'string',
-            description: 'Must be "estimate" - Required',
+            description: 'Type (must be "estimate")',
             enum: ['estimate'],
           },
           is_active: {
             type: 'boolean',
-            description: 'Whether the estimate is active - Required',
+            description: 'Is active',
           },
           status: {
             type: 'number',
-            description: 'Status code (1 = Draft, etc.) - Required',
+            description: 'Status code',
           },
           related: {
             type: 'array',
-            description: 'Array of related entities (jobs, contacts) - Required. Must have at least one entry.',
+            description: 'Related entities array',
             items: {
               type: 'object',
               properties: {
-                id: { type: 'string', description: 'Entity JNID - Required' },
-                type: { type: 'string', description: 'Entity type (job, contact) - Required' },
+                id: { type: 'string', description: 'Entity JNID' },
+                type: { type: 'string', description: 'Entity type' },
               },
               required: ['id', 'type'],
             },
           },
           items: {
             type: 'array',
-            description: 'Array of estimate items - Required. Must have at least one item.',
+            description: 'Estimate items array',
             items: {
               type: 'object',
               properties: {
-                jnid: { type: 'string', description: 'Product/Service JNID - Required' },
-                name: { type: 'string', description: 'Item name - Required' },
-                description: { type: 'string', description: 'Item description' },
-                uom: { type: 'string', description: 'Unit of measure (Items, SF, LF, etc.) - Required' },
-                item_type: { type: 'string', description: 'Item type (material, labor, etc.) - Required' },
-                quantity: { type: 'number', description: 'Quantity - Required' },
-                price: { type: 'number', description: 'Unit price - Required' },
-                cost: { type: 'number', description: 'Unit cost (optional)' },
-                category: { type: 'string', description: 'Item category' },
-                sku: { type: 'string', description: 'Item SKU' },
-                color: { type: 'string', description: 'Item color' },
-                photos: { type: 'array', description: 'Array of photo URLs or IDs' },
+                jnid: { type: 'string', description: 'Product JNID' },
+                name: { type: 'string', description: 'Name' },
+                description: { type: 'string', description: 'Description' },
+                uom: { type: 'string', description: 'Unit of measure' },
+                item_type: { type: 'string', description: 'Item type' },
+                quantity: { type: 'number', description: 'Quantity' },
+                price: { type: 'number', description: 'Unit price' },
+                cost: { type: 'number', description: 'Unit cost' },
+                category: { type: 'string', description: 'Category' },
+                sku: { type: 'string', description: 'SKU' },
+                color: { type: 'string', description: 'Color' },
+                photos: { type: 'array', description: 'Photos' },
                 tax_rate: { type: 'number', description: 'Tax rate' },
                 tax_name: { type: 'string', description: 'Tax name' },
               },
@@ -115,90 +115,90 @@ export class CreateEstimateTool extends BaseTool<CreateEstimateInput, any> {
           },
           date_estimate: {
             type: 'number',
-            description: 'Unix timestamp of estimate date',
+            description: 'Estimate date (Unix)',
           },
           date_created: {
             type: 'number',
-            description: 'Unix timestamp of creation date (defaults to current time)',
+            description: 'Created date (Unix)',
           },
           date_updated: {
             type: 'number',
-            description: 'Unix timestamp of last update (defaults to current time)',
+            description: 'Updated date (Unix)',
           },
           external_id: {
             type: 'string',
-            description: 'External system ID for integration',
+            description: 'External ID',
           },
           number: {
             type: 'string',
-            description: 'Estimate number (auto-generated if not provided)',
+            description: 'Estimate number',
           },
           internal_note: {
             type: 'string',
-            description: 'Internal note (not visible to customer)',
+            description: 'Internal note',
           },
           note: {
             type: 'string',
-            description: 'Customer-visible note',
+            description: 'Note',
           },
           terms: {
             type: 'string',
-            description: 'Terms and conditions',
+            description: 'Terms',
           },
           location_id: {
             type: 'number',
-            description: 'Location ID (typically 1 for primary location)',
+            description: 'Location ID',
           },
           owners: {
             type: 'array',
-            description: 'Array of owner objects with id property',
+            description: 'Owners array',
             items: {
               type: 'object',
               properties: {
-                id: { type: 'string', description: 'User JNID' },
+                id: { type: 'string', description: 'JNID' },
               },
               required: ['id'],
             },
           },
           sales_rep: {
             type: 'string',
-            description: 'Sales representative user JNID',
+            description: 'Sales rep JNID',
           },
           sections: {
             type: 'array',
-            description: 'Array of sections (for organization)',
+            description: 'Sections',
           },
           template_id: {
             type: 'string',
-            description: 'Template ID to use for estimate',
+            description: 'Template ID',
           },
           is_archived: {
             type: 'boolean',
-            description: 'Whether the estimate is archived (default: false)',
+            description: 'Is archived',
           },
           esigned: {
             type: 'boolean',
-            description: 'Whether the estimate is electronically signed (default: false)',
+            description: 'E-signed',
           },
           subtotal: {
             type: 'number',
-            description: 'Subtotal amount (calculated if not provided)',
+            description: 'Subtotal',
           },
           tax: {
             type: 'number',
-            description: 'Tax amount',
+            description: 'Tax',
           },
           total: {
             type: 'number',
-            description: 'Total amount (calculated if not provided)',
+            description: 'Total',
           },
           cost: {
             type: 'number',
-            description: 'Total cost (calculated if not provided)',
+            description: 'Cost',
           },
           margin: {
             type: 'number',
-            description: 'Profit margin (calculated if not provided)',
+            description: 'Margin',
           },
         },
         required: ['type', 'is_active', 'status', 'related', 'items'],

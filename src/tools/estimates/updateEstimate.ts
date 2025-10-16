@@ -65,37 +65,37 @@ export class UpdateEstimateTool extends BaseTool<UpdateEstimateInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'update_estimate',
-      description: 'Update an existing estimate in JobNimbus by JNID. Can update items, status, dates, notes, terms, owners, related entities, financial totals, and any other estimate properties. Only include fields you want to update. Returns the updated estimate.',
+      description: 'Update estimate',
       inputSchema: {
         type: 'object',
         properties: {
           jnid: {
             type: 'string',
-            description: 'Estimate JNID to update - Required',
+            description: 'Estimate JNID',
           },
           type: {
             type: 'string',
-            description: 'Type must be "estimate" if provided',
+            description: 'Type (must be "estimate")',
             enum: ['estimate'],
           },
           items: {
             type: 'array',
-            description: 'Array of estimate items (replaces existing items)',
+            description: 'Estimate items array',
             items: {
               type: 'object',
               properties: {
-                jnid: { type: 'string', description: 'Product/Service JNID' },
-                name: { type: 'string', description: 'Item name' },
-                description: { type: 'string', description: 'Item description' },
+                jnid: { type: 'string', description: 'Product JNID' },
+                name: { type: 'string', description: 'Name' },
+                description: { type: 'string', description: 'Description' },
                 uom: { type: 'string', description: 'Unit of measure' },
-                item_type: { type: 'string', description: 'Item type (material, labor, etc.)' },
+                item_type: { type: 'string', description: 'Item type' },
                 quantity: { type: 'number', description: 'Quantity' },
                 price: { type: 'number', description: 'Unit price' },
                 cost: { type: 'number', description: 'Unit cost' },
-                category: { type: 'string', description: 'Item category' },
-                sku: { type: 'string', description: 'Item SKU' },
-                color: { type: 'string', description: 'Item color' },
-                photos: { type: 'array', description: 'Array of photo URLs or IDs' },
+                category: { type: 'string', description: 'Category' },
+                sku: { type: 'string', description: 'SKU' },
+                color: { type: 'string', description: 'Color' },
+                photos: { type: 'array', description: 'Photos' },
                 tax_rate: { type: 'number', description: 'Tax rate' },
                 tax_name: { type: 'string', description: 'Tax name' },
               },
@@ -103,19 +103,19 @@ export class UpdateEstimateTool extends BaseTool<UpdateEstimateInput, any> {
           },
           date_estimate: {
             type: 'number',
-            description: 'Unix timestamp of estimate date',
+            description: 'Estimate date (Unix)',
           },
           date_created: {
             type: 'number',
-            description: 'Unix timestamp of creation date',
+            description: 'Created date (Unix)',
           },
           date_updated: {
             type: 'number',
-            description: 'Unix timestamp of last update',
+            description: 'Updated date (Unix)',
           },
           external_id: {
             type: 'string',
-            description: 'External system ID for integration',
+            description: 'External ID',
           },
           number: {
             type: 'string',
@@ -123,15 +123,15 @@ export class UpdateEstimateTool extends BaseTool<UpdateEstimateInput, any> {
           },
           internal_note: {
             type: 'string',
-            description: 'Internal note (not visible to customer)',
+            description: 'Internal note',
           },
           note: {
             type: 'string',
-            description: 'Customer-visible note',
+            description: 'Note',
           },
           terms: {
             type: 'string',
-            description: 'Terms and conditions',
+            description: 'Terms',
           },
           location_id: {
             type: 'number',
@@ -139,34 +139,34 @@ export class UpdateEstimateTool extends BaseTool<UpdateEstimateInput, any> {
           },
           owners: {
             type: 'array',
-            description: 'Array of owner objects with id property',
+            description: 'Owners array',
             items: {
               type: 'object',
               properties: {
-                id: { type: 'string', description: 'User JNID' },
+                id: { type: 'string', description: 'JNID' },
               },
             },
           },
           related: {
             type: 'array',
-            description: 'Array of related entities (jobs, contacts, etc.)',
+            description: 'Related entities',
             items: {
               type: 'object',
               properties: {
-                id: { type: 'string', description: 'Entity JNID' },
-                name: { type: 'string', description: 'Entity name' },
-                number: { type: 'string', description: 'Entity number' },
-                type: { type: 'string', description: 'Entity type' },
+                id: { type: 'string', description: 'JNID' },
+                name: { type: 'string', description: 'Name' },
+                number: { type: 'string', description: 'Number' },
+                type: { type: 'string', description: 'Type' },
               },
             },
           },
           sales_rep: {
             type: 'string',
-            description: 'Sales representative user JNID',
+            description: 'Sales rep JNID',
           },
           sections: {
             type: 'array',
-            description: 'Array of sections',
+            description: 'Sections',
           },
           template_id: {
             type: 'string',
@@ -178,39 +178,39 @@ export class UpdateEstimateTool extends BaseTool<UpdateEstimateInput, any> {
           },
           status_name: {
             type: 'string',
-            description: 'Status name (Draft, Approved, Sent, etc.)',
+            description: 'Status name',
           },
           is_active: {
             type: 'boolean',
-            description: 'Whether the estimate is active',
+            description: 'Is active',
           },
           is_archived: {
             type: 'boolean',
-            description: 'Whether the estimate is archived',
+            description: 'Is archived',
           },
           esigned: {
             type: 'boolean',
-            description: 'Whether the estimate is electronically signed',
+            description: 'E-signed',
           },
           subtotal: {
             type: 'number',
-            description: 'Subtotal amount',
+            description: 'Subtotal',
           },
           tax: {
             type: 'number',
-            description: 'Tax amount',
+            description: 'Tax',
           },
           total: {
             type: 'number',
-            description: 'Total amount',
+            description: 'Total',
           },
           cost: {
             type: 'number',
-            description: 'Total cost',
+            description: 'Cost',
           },
           margin: {
             type: 'number',
-            description: 'Profit margin',
+            description: 'Margin',
           },
         },
         required: ['jnid'],

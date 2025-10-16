@@ -86,7 +86,7 @@ export class GetProductsTool extends BaseTool<GetProductsInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_products',
-      description: 'Retrieve all products from JobNimbus catalog. Returns product list with name, pricing (material/labor cost and price), item type, tax settings, and metadata. Supports pagination and compact/full detail modes for token optimization. Use compact mode (default) for listings, full mode for detailed analysis.',
+      description: 'Products: catalog listing, pricing/UOM, pagination, compact/full modes',
       inputSchema: {
         type: 'object',
         properties: {

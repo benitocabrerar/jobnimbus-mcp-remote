@@ -41,24 +41,24 @@ export class AnalyzeRevenueLeakageTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'analyze_revenue_leakage',
-      description: 'Identify potential revenue leakage points',
+      description: 'Revenue leakage: lost opportunities, delays, inefficiencies',
       inputSchema: {
         type: 'object',
         properties: {
           lookback_days: {
             type: 'number',
             default: 90,
-            description: 'Days to analyze for leakage',
+            description: 'Days to analyze',
           },
           include_active: {
             type: 'boolean',
             default: true,
-            description: 'Include active opportunities at risk',
+            description: 'Include active opportunities',
           },
           min_value_threshold: {
             type: 'number',
             default: 0,
-            description: 'Minimum deal value to include',
+            description: 'Min deal value',
           },
         },
       },

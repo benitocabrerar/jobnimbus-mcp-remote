@@ -118,17 +118,17 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
   get definition(): MCPToolDefinition {
     return {
       name: 'get_job',
-      description: 'Get specific job by ID (JNID) or job number. Returns complete job information including all fields from JobNimbus API: identifiers, metadata, classification, sales rep, address, scheduling dates, financial totals, attachments, and relationships. Supports backward search to find old jobs. Automatically verifies and corrects attachment_count if suspicious values detected (>100).',
+      description: 'Get job by ID or number with complete details',
       inputSchema: {
         type: 'object',
         properties: {
           job_id: {
             type: 'string',
-            description: 'Job ID (JNID) or job number - Required',
+            description: 'Job ID or number',
           },
           verify_attachments: {
             type: 'boolean',
-            description: 'Force verification of attachment count by querying actual attachments (default: auto for count > 100)',
+            description: 'Verify attachment count (auto if >100)',
           },
         },
         required: ['job_id'],

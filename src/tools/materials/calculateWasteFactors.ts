@@ -9,7 +9,7 @@ export class CalculateWasteFactorsTool extends BaseTool {
   get definition() {
     return {
       name: 'calculate_waste_factors',
-      description: 'Calculate recommended waste factors based on material type, job complexity, crew experience, and weather conditions',
+      description: 'Materials: waste factor recommendations, complexity, crew experience, weather',
       inputSchema: {
         type: 'object' as const,
         properties: {
