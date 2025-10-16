@@ -129,6 +129,7 @@ import { GetRevenueReportTool } from './analytics/getRevenueReport.js';
 import { GetMarginAnalysisTool } from './analytics/getMarginAnalysis.js';
 import { AnalyzeRevenueLeakageTool } from './analytics/analyzeRevenueLeakage.js';
 import { GetProfitabilityDashboardTool } from './analytics/getProfitabilityDashboard.js';
+import { GetMonthlySummaryTool } from './analytics/getMonthlySummary.js';
 
 // Performance & Forecasting
 import { GetSeasonalTrendsTool } from './analytics/getSeasonalTrends.js';
@@ -295,6 +296,7 @@ export class ToolRegistry {
     this.registerTool(new GetMarginAnalysisTool());
     this.registerTool(new AnalyzeRevenueLeakageTool());
     this.registerTool(new GetProfitabilityDashboardTool());
+    this.registerTool(new GetMonthlySummaryTool());
 
     // Performance & Forecasting
     this.registerTool(new GetSeasonalTrendsTool());
