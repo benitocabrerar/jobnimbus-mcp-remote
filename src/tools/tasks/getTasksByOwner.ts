@@ -276,10 +276,26 @@ export class GetTasksByOwnerTool extends BaseTool<GetTasksByOwnerInput, any> {
     const now = Date.now() / 1000;
 
     // FIX #4: Auto-calculate missing due dates (3 business days)
-    // BUG FIX 18102025-02: Check for both null/undefined AND zero epoch dates (1970-01-01)
-    if ((!task.date_end || task.date_end === 0) && task.date_start) {
+    // ULTRA FIX 18102025-03: Comprehensive date validation
+    // Minimum valid date: 2020-01-01 00:00:00 UTC (timestamp: 1577836800)
+    // This catches ALL corrupted dates including:
+    // - Zero epoch (1970-01-01)
+    // - Small non-zero timestamps (e.g., 1728000 = 1970-01-21)
+    // - Any date before 2020
+    const MIN_VALID_TIMESTAMP = 1577836800;
+
+    const hasValidDateEnd = task.date_end &&
+                           typeof task.date_end === 'number' &&
+                           task.date_end >= MIN_VALID_TIMESTAMP;
+
+    const hasValidDateStart = task.date_start &&
+                             typeof task.date_start === 'number' &&
+                             task.date_start >= MIN_VALID_TIMESTAMP;
+
+    if (!hasValidDateEnd && hasValidDateStart) {
       task.date_end = this.addBusinessDays(task.date_start, 3);
       task._auto_due_date = true;
+      task._date_fix_reason = task.date_end ? 'corrupted_old_timestamp' : 'missing_date';
     }
 
     // FIX #5: Default time values (1 hour estimated)
