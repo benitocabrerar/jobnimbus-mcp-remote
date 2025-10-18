@@ -194,7 +194,7 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
           }
         }
 
-        const priority = task.priority || 'Normal';
+        const priority = this.getPriorityLabel(task.priority);
         if (priorityFilter && priority.toLowerCase() !== priorityFilter.toLowerCase()) {
           continue;
         }
@@ -495,6 +495,20 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         status: 'Failed',
       };
     }
+  }
+
+  /**
+   * Convert numeric priority to string label
+   * JobNimbus API returns priority as number 0-5
+   */
+  private getPriorityLabel(priorityValue: number | undefined): string {
+    if (priorityValue === undefined || priorityValue === null) return 'Normal';
+
+    // JobNimbus priority scale: 0 = Low, 1-2 = Normal, 3-4 = High, 5 = Critical
+    if (priorityValue === 0) return 'Low';
+    if (priorityValue >= 5) return 'Critical';
+    if (priorityValue >= 3) return 'High';
+    return 'Normal';
   }
 
   /**
