@@ -276,12 +276,13 @@ export class GetTasksByOwnerTool extends BaseTool<GetTasksByOwnerInput, any> {
     const now = Date.now() / 1000;
 
     // FIX #4: Auto-calculate missing due dates (3 business days)
-    // ULTRA FIX 18102025-03: Comprehensive date validation
+    // ULTRA FIX 18102025-04: Comprehensive date validation with date_created fallback
     // Minimum valid date: 2020-01-01 00:00:00 UTC (timestamp: 1577836800)
     // This catches ALL corrupted dates including:
     // - Zero epoch (1970-01-01)
     // - Small non-zero timestamps (e.g., 1728000 = 1970-01-21)
     // - Any date before 2020
+    // LOGIC FIX: Fallback to date_created when BOTH date_start AND date_end are corrupted
     const MIN_VALID_TIMESTAMP = 1577836800;
 
     const hasValidDateEnd = task.date_end &&
@@ -292,10 +293,22 @@ export class GetTasksByOwnerTool extends BaseTool<GetTasksByOwnerInput, any> {
                              typeof task.date_start === 'number' &&
                              task.date_start >= MIN_VALID_TIMESTAMP;
 
-    if (!hasValidDateEnd && hasValidDateStart) {
-      task.date_end = this.addBusinessDays(task.date_start, 3);
+    const hasValidDateCreated = task.date_created &&
+                               typeof task.date_created === 'number' &&
+                               task.date_created >= MIN_VALID_TIMESTAMP;
+
+    // Fix corrupted date_end
+    if (!hasValidDateEnd) {
+      // Prefer valid date_start, fallback to date_created, last resort: now
+      const baseDate = hasValidDateStart ? task.date_start :
+                      hasValidDateCreated ? task.date_created :
+                      now;
+
+      task.date_end = this.addBusinessDays(baseDate, 3);
       task._auto_due_date = true;
-      task._date_fix_reason = task.date_end ? 'corrupted_old_timestamp' : 'missing_date';
+      task._date_fix_reason = hasValidDateStart ? 'corrupted_date_end_only' :
+                              hasValidDateCreated ? 'both_dates_corrupted_used_created' :
+                              'all_dates_invalid_used_now';
     }
 
     // FIX #5: Default time values (1 hour estimated)
