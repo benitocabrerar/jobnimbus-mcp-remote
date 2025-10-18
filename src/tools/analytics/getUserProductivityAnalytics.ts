@@ -222,7 +222,12 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
         metrics.activityTypes.set(activityType, (metrics.activityTypes.get(activityType) || 0) + 1);
 
         // Task completion
-        const isCompleted = task.is_completed || false;
+        // BUG FIX 18102025-02: Check is_completed field AND status name strings
+        const statusName = (task.status_name || task.status || '').toLowerCase();
+        const isCompleted = task.is_completed === true ||
+                           statusName.includes('complete') ||
+                           statusName.includes('done') ||
+                           statusName.includes('closed');
         if (isCompleted) {
           metrics.tasksCompleted++;
 
@@ -597,7 +602,8 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
     const now = Date.now() / 1000;
 
     // FIX #4: Auto-calculate missing due dates (3 business days)
-    if (!task.date_end && task.date_start) {
+    // BUG FIX 18102025-02: Check for both null/undefined AND zero epoch dates (1970-01-01)
+    if ((!task.date_end || task.date_end === 0) && task.date_start) {
       task.date_end = this.addBusinessDays(task.date_start, 3);
       task._auto_due_date = true;
     }
@@ -650,6 +656,14 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
           _auto_linked: true,
         });
       }
+    }
+
+    // BUG FIX 18102025-02: Normalize completion status from both is_completed field and status strings
+    if (task.is_completed !== true) {
+      const statusName = (task.status_name || task.status || '').toLowerCase();
+      task.is_completed = statusName.includes('complete') ||
+                         statusName.includes('done') ||
+                         statusName.includes('closed');
     }
 
     return task;

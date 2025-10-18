@@ -205,8 +205,10 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         metrics.total_tasks++;
 
         // Completion status
+        // BUG FIX 18102025-02: Check is_completed field AND status name strings
         const statusName = (task.status_name || task.status || '').toLowerCase();
-        const isCompleted = statusName.includes('complete') ||
+        const isCompleted = task.is_completed === true ||
+                           statusName.includes('complete') ||
                            statusName.includes('done') ||
                            statusName.includes('closed');
 
@@ -513,9 +515,26 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
 
   /**
    * Get assignee name from task and user lookup
+   * BUG FIX 18102025-02: Added fallback to created_by_name and owners array
    */
   private getAssigneeName(task: any, userLookup: Map<string, any>): string {
-    const assigneeId = task.assigned_to || task.assignee_id;
+    // Try assigned_to or assignee_id first
+    let assigneeId = task.assigned_to || task.assignee_id;
+
+    // BUG FIX: Fallback to owners array if no direct assignment
+    if (!assigneeId && task.owners && Array.isArray(task.owners) && task.owners.length > 0) {
+      assigneeId = task.owners[0].id;
+    }
+
+    // BUG FIX: Fallback to created_by as final resort before marking as Unassigned
+    if (!assigneeId && task.created_by) {
+      assigneeId = task.created_by;
+      // Return created_by_name directly if available
+      if (task.created_by_name) {
+        return task.created_by_name;
+      }
+    }
+
     if (!assigneeId) return 'Unassigned';
 
     const user = userLookup.get(assigneeId);
@@ -523,7 +542,7 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
       return user.display_name || user.name || user.email || assigneeId;
     }
 
-    return task.assignee_name || assigneeId;
+    return task.assignee_name || task.created_by_name || assigneeId;
   }
 
   /**
@@ -579,7 +598,8 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
     const now = Date.now() / 1000;
 
     // FIX #4: Auto-calculate missing due dates (3 business days)
-    if (!task.date_end && task.date_start) {
+    // BUG FIX 18102025-02: Check for both null/undefined AND zero epoch dates (1970-01-01)
+    if ((!task.date_end || task.date_end === 0) && task.date_start) {
       task.date_end = this.addBusinessDays(task.date_start, 3);
       task._auto_due_date = true;
     }
@@ -632,6 +652,14 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
           _auto_linked: true,
         });
       }
+    }
+
+    // BUG FIX 18102025-02: Normalize completion status from both is_completed field and status strings
+    if (task.is_completed !== true) {
+      const statusName = (task.status_name || task.status || '').toLowerCase();
+      task.is_completed = statusName.includes('complete') ||
+                         statusName.includes('done') ||
+                         statusName.includes('closed');
     }
 
     return task;
