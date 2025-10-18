@@ -123,15 +123,10 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
       // Get raw tasks from correct endpoint
       const rawTasks = tasksResponse.data?.results || tasksResponse.data || [];
 
-      // Try to fetch users - endpoint may not be available in all JobNimbus accounts
-      let users: any[] = [];
-      try {
-        const usersResponse = await this.client.get(context.apiKey, 'users', { size: 100 });
-        users = usersResponse.data?.results || usersResponse.data?.users || [];
-      } catch (error) {
-        // Users endpoint not available - proceed without user attribution
-        console.warn('Users endpoint not available - task management analysis will be limited');
-      }
+      // BUG FIX 18102025-06: Remove /users endpoint call - endpoint doesn't exist in JobNimbus API
+      // Task objects already contain assignee_name and created_by_name fields
+      // The getAssigneeName method (line 547) uses these embedded names as fallback
+      // This eliminates 404 errors in production logs
 
       // Normalize all tasks with production defaults (Fixes Issues #3, #4, #5, #6)
       // Apply client-side filtering for is_active (API doesn't support this param)
@@ -142,13 +137,8 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
       const now = Date.now();
       const cutoffDate = now - (daysBack * 24 * 60 * 60 * 1000);
 
-      // Build user lookup
+      // Empty user lookup - names come from task.assignee_name and task.created_by_name instead
       const userLookup = new Map<string, any>();
-      for (const user of users) {
-        if (user.jnid || user.id) {
-          userLookup.set(user.jnid || user.id, user);
-        }
-      }
 
       // Overall task metrics
       const metrics: TaskMetrics = {

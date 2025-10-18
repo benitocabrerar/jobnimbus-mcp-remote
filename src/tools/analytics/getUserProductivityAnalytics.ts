@@ -146,20 +146,14 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
       const contacts = contactsResponse.data?.results || [];
       const estimates = estimatesResponse.data?.results || [];
 
-      // Try to fetch users - endpoint may not be available in all JobNimbus accounts
-      let users: any[] = [];
-      try {
-        const usersResponse = await this.client.get(context.apiKey, 'users', { size: 100 });
-        users = usersResponse.data?.results || usersResponse.data?.users || [];
-      } catch (error) {
-        // Users endpoint not available - proceed without user attribution
-        console.warn('Users endpoint not available - user productivity analysis will be limited');
-      }
+      // BUG FIX 18102025-06: Remove /users endpoint call - endpoint doesn't exist in JobNimbus API
+      // Instead, dynamically build user list from actual data (tasks, jobs, contacts, estimates)
+      // Each object contains created_by, created_by_name, owner_name etc.
 
       const now = Date.now();
       const cutoffDate = now - (daysBack * 24 * 60 * 60 * 1000);
 
-      // Build user metrics map
+      // Build user metrics map dynamically from data
       const userMetricsMap = new Map<string, {
         user: any;
         activities: any[];
@@ -175,36 +169,42 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
         dailyActivity: Map<string, number>;
       }>();
 
-      // Initialize user metrics
-      for (const user of users) {
-        const userId = user.jnid || user.id || user.email;
-        if (!userId) continue;
+      // Helper to ensure user entry exists
+      const ensureUserEntry = (userId: string, userName?: string, userEmail?: string) => {
+        if (!userId || userId === 'undefined') return false;
 
         // Apply user filter
         if (userFilter) {
-          const userName = user.display_name || user.name || '';
-          const userEmail = user.email || '';
-          if (!userName.toLowerCase().includes(userFilter.toLowerCase()) &&
-              !userEmail.toLowerCase().includes(userFilter.toLowerCase())) {
-            continue;
+          const name = userName || '';
+          const email = userEmail || '';
+          if (!name.toLowerCase().includes(userFilter.toLowerCase()) &&
+              !email.toLowerCase().includes(userFilter.toLowerCase())) {
+            return false;
           }
         }
 
-        userMetricsMap.set(userId, {
-          user: user,
-          activities: [],
-          jobsCreated: 0,
-          contactsCreated: 0,
-          estimatesCreated: 0,
-          tasksCompleted: 0,
-          responseTimes: [],
-          contactsEngaged: new Set(),
-          jobsCollaborated: new Set(),
-          activityTypes: new Map(),
-          hourlyActivity: new Map(),
-          dailyActivity: new Map(),
-        });
-      }
+        if (!userMetricsMap.has(userId)) {
+          userMetricsMap.set(userId, {
+            user: {
+              id: userId,
+              name: userName || userId,
+              email: userEmail,
+            },
+            activities: [],
+            jobsCreated: 0,
+            contactsCreated: 0,
+            estimatesCreated: 0,
+            tasksCompleted: 0,
+            responseTimes: [],
+            contactsEngaged: new Set(),
+            jobsCollaborated: new Set(),
+            activityTypes: new Map(),
+            hourlyActivity: new Map(),
+            dailyActivity: new Map(),
+          });
+        }
+        return true;
+      };
 
       // Process tasks (now from tasks endpoint, not activities)
       for (const task of tasks) {
@@ -212,7 +212,8 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
         if (createdDate < cutoffDate) continue;
 
         const userId = task.created_by || task.owners?.[0]?.id || '';
-        if (!userId || !userMetricsMap.has(userId)) continue;
+        const userName = task.created_by_name || task.owners?.[0]?.name || '';
+        if (!ensureUserEntry(userId, userName)) continue;
 
         const metrics = userMetricsMap.get(userId)!;
         metrics.activities.push(task);  // Track tasks as activities
@@ -264,7 +265,8 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
         if (createdDate < cutoffDate) continue;
 
         const userId = activity.created_by || activity.user_id || '';
-        if (!userId || !userMetricsMap.has(userId)) continue;
+        const userName = activity.created_by_name || activity.user_name || '';
+        if (!ensureUserEntry(userId, userName)) continue;
 
         const metrics = userMetricsMap.get(userId)!;
 
@@ -283,7 +285,8 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
       // Process jobs
       for (const job of jobs) {
         const createdBy = job.created_by || job.owner || '';
-        if (!createdBy || !userMetricsMap.has(createdBy)) continue;
+        const createdByName = job.created_by_name || job.owner_name || '';
+        if (!ensureUserEntry(createdBy, createdByName)) continue;
 
         const createdDate = (job.date_created || 0) * 1000;  // Convert seconds to milliseconds
         if (createdDate >= cutoffDate) {
@@ -294,7 +297,8 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
       // Process contacts
       for (const contact of contacts) {
         const createdBy = contact.created_by || '';
-        if (!createdBy || !userMetricsMap.has(createdBy)) continue;
+        const createdByName = contact.created_by_name || '';
+        if (!ensureUserEntry(createdBy, createdByName)) continue;
 
         const createdDate = (contact.date_created || 0) * 1000;  // Convert seconds to milliseconds
         if (createdDate >= cutoffDate) {
@@ -305,7 +309,8 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
       // Process estimates
       for (const estimate of estimates) {
         const createdBy = estimate.created_by || estimate.sales_rep || '';
-        if (!createdBy || !userMetricsMap.has(createdBy)) continue;
+        const createdByName = estimate.created_by_name || estimate.sales_rep_name || '';
+        if (!ensureUserEntry(createdBy, createdByName)) continue;
 
         const createdDate = (estimate.date_created || 0) * 1000;  // Convert seconds to milliseconds
         if (createdDate >= cutoffDate) {
