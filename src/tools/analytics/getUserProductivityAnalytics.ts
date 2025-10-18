@@ -120,10 +120,10 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
 
       // CRITICAL FIX: Fetch from tasks endpoint, not activities
       // This was causing zero results in analytics (Bug Report Issue #1)
+      // NOTE: is_active filtering must be done client-side - JobNimbus API doesn't support this param
       const [tasksResponse, activitiesResponse, jobsResponse, contactsResponse, estimatesResponse] = await Promise.all([
         this.client.get(context.apiKey, 'tasks', {
           size: 500,  // Increased to capture more tasks
-          is_active: true,
         }),
         this.client.get(context.apiKey, 'activities', {
           size: 50,
@@ -135,8 +135,11 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
       ]);
 
       // Get raw tasks from correct endpoint and normalize (Fixes #3, #4, #5, #6)
+      // Apply client-side filtering for is_active (API doesn't support this param)
       const rawTasks = tasksResponse.data?.results || tasksResponse.data || [];
-      const tasks = rawTasks.map((task: any) => this.normalizeTask(task));
+      const tasks = rawTasks
+        .filter((task: any) => task.is_active !== false)  // Only active tasks
+        .map((task: any) => this.normalizeTask(task));
 
       const activities = activitiesResponse.data?.activity || [];
       const jobs = jobsResponse.data?.results || [];

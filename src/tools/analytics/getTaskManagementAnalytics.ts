@@ -113,10 +113,10 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
 
       // CRITICAL FIX: Fetch from tasks endpoint, not activities
       // This was causing zero results in analytics (Bug Report Issue #1)
+      // NOTE: is_active filtering must be done client-side - JobNimbus API doesn't support this param
       const [tasksResponse] = await Promise.all([
         this.client.get(context.apiKey, 'tasks', {
           size: 500,  // Increased to capture more tasks
-          is_active: true,
         }),
       ]);
 
@@ -134,7 +134,10 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
       }
 
       // Normalize all tasks with production defaults (Fixes Issues #3, #4, #5, #6)
-      const tasks = rawTasks.map((task: any) => this.normalizeTask(task));
+      // Apply client-side filtering for is_active (API doesn't support this param)
+      const tasks = rawTasks
+        .filter((task: any) => task.is_active !== false)  // Only active tasks
+        .map((task: any) => this.normalizeTask(task));
 
       const now = Date.now();
       const cutoffDate = now - (daysBack * 24 * 60 * 60 * 1000);
