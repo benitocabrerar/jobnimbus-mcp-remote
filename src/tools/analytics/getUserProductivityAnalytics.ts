@@ -208,7 +208,7 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
 
       // Process tasks (now from tasks endpoint, not activities)
       for (const task of tasks) {
-        const createdDate = task.date_created || task.created_at || 0;
+        const createdDate = (task.date_created || task.created_at || 0) * 1000;  // Convert seconds to milliseconds
         if (createdDate < cutoffDate) continue;
 
         const userId = task.created_by || task.owners?.[0]?.id || '';
@@ -255,7 +255,7 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
 
       // Also process non-task activities for collaboration metrics
       for (const activity of activities) {
-        const createdDate = activity.date_created || activity.created_at || 0;
+        const createdDate = (activity.date_created || activity.created_at || 0) * 1000;  // Convert seconds to milliseconds
         if (createdDate < cutoffDate) continue;
 
         const userId = activity.created_by || activity.user_id || '';
@@ -280,7 +280,7 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
         const createdBy = job.created_by || job.owner || '';
         if (!createdBy || !userMetricsMap.has(createdBy)) continue;
 
-        const createdDate = job.date_created || 0;
+        const createdDate = (job.date_created || 0) * 1000;  // Convert seconds to milliseconds
         if (createdDate >= cutoffDate) {
           userMetricsMap.get(createdBy)!.jobsCreated++;
         }
@@ -291,7 +291,7 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
         const createdBy = contact.created_by || '';
         if (!createdBy || !userMetricsMap.has(createdBy)) continue;
 
-        const createdDate = contact.date_created || 0;
+        const createdDate = (contact.date_created || 0) * 1000;  // Convert seconds to milliseconds
         if (createdDate >= cutoffDate) {
           userMetricsMap.get(createdBy)!.contactsCreated++;
         }
@@ -302,7 +302,7 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
         const createdBy = estimate.created_by || estimate.sales_rep || '';
         if (!createdBy || !userMetricsMap.has(createdBy)) continue;
 
-        const createdDate = estimate.date_created || 0;
+        const createdDate = (estimate.date_created || 0) * 1000;  // Convert seconds to milliseconds
         if (createdDate >= cutoffDate) {
           userMetricsMap.get(createdBy)!.estimatesCreated++;
         }

@@ -199,7 +199,7 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
           continue;
         }
 
-        const createdDate = task.date_created || task.created_at || 0;
+        const createdDate = (task.date_created || task.created_at || 0) * 1000;  // Convert seconds to milliseconds
         if (createdDate < cutoffDate) continue;
 
         metrics.total_tasks++;
