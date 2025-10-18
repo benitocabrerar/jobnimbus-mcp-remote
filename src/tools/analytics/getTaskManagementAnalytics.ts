@@ -409,33 +409,32 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
             return created >= weekStart && created < weekEnd;
           });
 
-          // BUG FIX 18102025-07 (Issue #3 FINAL): Filter by completion DATE, not creation date
-          // Tasks are often completed weeks after creation
-          // We need to count tasks completed in THIS week, regardless of when they were created
+          // BUG FIX 18102025-07c (Issue #3 ULTRA FIX): Use is_completed field directly
+          // CRITICAL: JobNimbus tasks don't have status_name, status, or date_completed fields!
+          // Available fields: is_completed (boolean), date_updated (proxy for completion time)
+          // Count tasks updated this week that are marked as completed
           const weekCompleted = tasks.filter((t: any) => {
-            const status = (t.status_name || t.status || '').toLowerCase();
-            const isCompleted = status.includes('complete') || status.includes('done');
-            if (!isCompleted) return false;
+            // Use is_completed field directly (status_name doesn't exist!)
+            if (!t.is_completed) return false;
 
-            const completed = (t.date_completed || t.date_updated || 0) * 1000;  // Convert to milliseconds
-            return completed >= weekStart && completed < weekEnd;
+            // Use date_updated as proxy for completion time (date_completed doesn't exist!)
+            const updated = (t.date_updated || 0) * 1000;  // Convert to milliseconds
+            return updated >= weekStart && updated < weekEnd;
           });
 
           const weekCompletionTimes: number[] = [];
           for (const task of weekCompleted) {
-            // BUG FIX 18102025-07 (Issue #2 + #3): Use seconds for both, not milliseconds
+            // BUG FIX 18102025-07c: Use date_updated as completion time (date_completed doesn't exist)
             const created = task.date_created || task.created_at || 0;
-            const completed = task.date_completed || task.date_updated || 0;
-            if (created > 0 && completed > 0) {
-              weekCompletionTimes.push((completed - created) / 3600);  // hours (both in seconds)
+            const updated = task.date_updated || 0;
+            if (created > 0 && updated > 0 && updated > created) {
+              weekCompletionTimes.push((updated - created) / 3600);  // hours (both in seconds)
             }
           }
 
           // Calculate completion rate: How many of the tasks created this week are now completed?
-          const weekTasksNowCompleted = weekTasks.filter((t: any) => {
-            const status = (t.status_name || t.status || '').toLowerCase();
-            return status.includes('complete') || status.includes('done');
-          });
+          // BUG FIX 18102025-07c: Use is_completed field directly (status_name doesn't exist!)
+          const weekTasksNowCompleted = weekTasks.filter((t: any) => t.is_completed === true);
 
           const completionRate = weekTasks.length > 0
             ? (weekTasksNowCompleted.length / weekTasks.length) * 100
