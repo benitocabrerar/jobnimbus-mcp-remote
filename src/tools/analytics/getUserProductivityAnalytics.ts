@@ -5,6 +5,7 @@
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { RecordTypeNormalizer } from '../../utils/normalizers/recordTypeNormalizer.js';
 
 interface UserProductivityMetrics {
   user_id: string;
@@ -117,13 +118,25 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
       const includeWorkload = input.include_workload_analysis !== false;
       const daysBack = input.days_back || 30;
 
-      // Fetch data
-      const [activitiesResponse, jobsResponse, contactsResponse, estimatesResponse] = await Promise.all([
-        this.client.get(context.apiKey, 'activities', { size: 100 }),
+      // CRITICAL FIX: Fetch from tasks endpoint, not activities
+      // This was causing zero results in analytics (Bug Report Issue #1)
+      const [tasksResponse, activitiesResponse, jobsResponse, contactsResponse, estimatesResponse] = await Promise.all([
+        this.client.get(context.apiKey, 'tasks', {
+          size: 500,  // Increased to capture more tasks
+          is_active: true,
+        }),
+        this.client.get(context.apiKey, 'activities', {
+          size: 50,
+          // Get non-task activities only
+        }),
         this.client.get(context.apiKey, 'jobs', { size: 100 }),
         this.client.get(context.apiKey, 'contacts', { size: 100 }),
         this.client.get(context.apiKey, 'estimates', { size: 100 }),
       ]);
+
+      // Get raw tasks from correct endpoint and normalize (Fixes #3, #4, #5, #6)
+      const rawTasks = tasksResponse.data?.results || tasksResponse.data || [];
+      const tasks = rawTasks.map((task: any) => this.normalizeTask(task));
 
       const activities = activitiesResponse.data?.activity || [];
       const jobs = jobsResponse.data?.results || [];
@@ -190,7 +203,54 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
         });
       }
 
-      // Process activities
+      // Process tasks (now from tasks endpoint, not activities)
+      for (const task of tasks) {
+        const createdDate = task.date_created || task.created_at || 0;
+        if (createdDate < cutoffDate) continue;
+
+        const userId = task.created_by || task.owners?.[0]?.id || '';
+        if (!userId || !userMetricsMap.has(userId)) continue;
+
+        const metrics = userMetricsMap.get(userId)!;
+        metrics.activities.push(task);  // Track tasks as activities
+
+        // Activity type distribution (use normalized record type)
+        const activityType = task.record_type_normalized || task.record_type_name || 'General Task';
+        metrics.activityTypes.set(activityType, (metrics.activityTypes.get(activityType) || 0) + 1);
+
+        // Task completion
+        const isCompleted = task.is_completed || false;
+        if (isCompleted) {
+          metrics.tasksCompleted++;
+
+          // Response time
+          const completedDate = task.date_completed || task.date_updated || 0;
+          if (completedDate > 0 && createdDate > 0) {
+            metrics.responseTimes.push((completedDate - createdDate) / (1000 * 60 * 60));
+          }
+        }
+
+        // Hourly pattern
+        const hour = new Date(createdDate * 1000).getHours();
+        metrics.hourlyActivity.set(hour, (metrics.hourlyActivity.get(hour) || 0) + 1);
+
+        // Daily pattern
+        const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(createdDate * 1000).getDay()];
+        metrics.dailyActivity.set(dayName, (metrics.dailyActivity.get(dayName) || 0) + 1);
+
+        // Collaboration tracking
+        const related = task.related || [];
+        for (const rel of related) {
+          if (rel.type === 'contact' && rel.id) {
+            metrics.contactsEngaged.add(rel.id);
+          }
+          if (rel.type === 'job' && rel.id) {
+            metrics.jobsCollaborated.add(rel.id);
+          }
+        }
+      }
+
+      // Also process non-task activities for collaboration metrics
       for (const activity of activities) {
         const createdDate = activity.date_created || activity.created_at || 0;
         if (createdDate < cutoffDate) continue;
@@ -199,35 +259,8 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
         if (!userId || !userMetricsMap.has(userId)) continue;
 
         const metrics = userMetricsMap.get(userId)!;
-        metrics.activities.push(activity);
 
-        // Activity type distribution
-        const activityType = activity.activity_type || activity.type || 'General';
-        metrics.activityTypes.set(activityType, (metrics.activityTypes.get(activityType) || 0) + 1);
-
-        // Task completion
-        if (activityType.toLowerCase().includes('task')) {
-          const status = (activity.status_name || activity.status || '').toLowerCase();
-          if (status.includes('complete') || status.includes('done')) {
-            metrics.tasksCompleted++;
-
-            // Response time
-            const completedDate = activity.date_completed || activity.date_updated || 0;
-            if (completedDate > 0 && createdDate > 0) {
-              metrics.responseTimes.push((completedDate - createdDate) / (1000 * 60 * 60));
-            }
-          }
-        }
-
-        // Hourly pattern
-        const hour = new Date(createdDate).getHours();
-        metrics.hourlyActivity.set(hour, (metrics.hourlyActivity.get(hour) || 0) + 1);
-
-        // Daily pattern
-        const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(createdDate).getDay()];
-        metrics.dailyActivity.set(dayName, (metrics.dailyActivity.get(dayName) || 0) + 1);
-
-        // Collaboration tracking
+        // Collaboration tracking from activities
         const related = activity.related || [];
         for (const rel of related) {
           if (rel.type === 'contact' && rel.id) {
@@ -551,5 +584,91 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
     const score = Math.min(collaborationRatio * 100, 100);
 
     return Math.round(score);
+  }
+
+  /**
+   * Normalize task data with production defaults
+   * Fixes Issues #3, #4, #5, #6 from bug report
+   */
+  private normalizeTask(task: any): any {
+    const now = Date.now() / 1000;
+
+    // FIX #4: Auto-calculate missing due dates (3 business days)
+    if (!task.date_end && task.date_start) {
+      task.date_end = this.addBusinessDays(task.date_start, 3);
+      task._auto_due_date = true;
+    }
+
+    // FIX #5: Default time values (1 hour estimated)
+    if (!task.estimated_time || task.estimated_time === 0) {
+      task.estimated_time = 3600;  // 1 hour in seconds
+      task._default_estimate = true;
+    }
+
+    if (!task.actual_time) {
+      task.actual_time = 0;
+    }
+
+    // FIX #3: Normalize record type classification
+    const recordTypeNorm = RecordTypeNormalizer.normalize(task.record_type_name);
+    task.record_type_normalized = recordTypeNorm.normalized;
+    task.record_type_original = recordTypeNorm.original;
+    task._record_type_valid = recordTypeNorm.is_valid;
+
+    // Boost priority based on normalized type
+    task.task_priority = Math.max(task.priority || 0, recordTypeNorm.priority);
+
+    // FIX #6: Validate and fix relationships
+    if (!task.related || !Array.isArray(task.related)) {
+      task.related = [];
+    }
+
+    if (!task.owners || !Array.isArray(task.owners)) {
+      task.owners = [];
+      // Fallback: use created_by if no owners
+      if (task.created_by) {
+        task.owners.push({
+          id: task.created_by,
+          name: task.created_by_name || task.created_by,
+        });
+        task._owner_fallback = true;
+      }
+    }
+
+    // Auto-link to job if task description contains job reference
+    if (task.related.length === 0 && task.description) {
+      const jobMatch = task.description.match(/#(\d+)|job[:\s]+(\d+)/i);
+      if (jobMatch) {
+        const jobNumber = jobMatch[1] || jobMatch[2];
+        task.related.push({
+          id: `job_${jobNumber}`,
+          type: 'job',
+          number: jobNumber,
+          _auto_linked: true,
+        });
+      }
+    }
+
+    return task;
+  }
+
+  /**
+   * Add business days to a timestamp (skips weekends)
+   * Used for automatic due date calculation
+   */
+  private addBusinessDays(startTimestamp: number, days: number): number {
+    const date = new Date(startTimestamp * 1000);
+    let addedDays = 0;
+
+    while (addedDays < days) {
+      date.setDate(date.getDate() + 1);
+      const dayOfWeek = date.getDay();
+      // Skip weekends (0 = Sunday, 6 = Saturday)
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        addedDays++;
+      }
+    }
+
+    return Math.floor(date.getTime() / 1000);
   }
 }

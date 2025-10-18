@@ -5,6 +5,7 @@
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { RecordTypeNormalizer } from '../../utils/normalizers/recordTypeNormalizer.js';
 
 interface TaskMetrics {
   total_tasks: number;
@@ -110,13 +111,17 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
       const includeProductivity = input.include_productivity_trends !== false;
       const daysBack = input.days_back || 30;
 
-      // Fetch tasks and related data
-      const [activitiesResponse] = await Promise.all([
-        this.client.get(context.apiKey, 'activities', { size: 100 }),
+      // CRITICAL FIX: Fetch from tasks endpoint, not activities
+      // This was causing zero results in analytics (Bug Report Issue #1)
+      const [tasksResponse] = await Promise.all([
+        this.client.get(context.apiKey, 'tasks', {
+          size: 500,  // Increased to capture more tasks
+          is_active: true,
+        }),
       ]);
 
-      // Note: Tasks might come from activities endpoint in JobNimbus
-      const activities = activitiesResponse.data?.activity || [];
+      // Get raw tasks from correct endpoint
+      const rawTasks = tasksResponse.data?.results || tasksResponse.data || [];
 
       // Try to fetch users - endpoint may not be available in all JobNimbus accounts
       let users: any[] = [];
@@ -128,11 +133,8 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         console.warn('Users endpoint not available - task management analysis will be limited');
       }
 
-      // Filter task-type activities
-      const tasks = activities.filter((act: any) => {
-        const type = (act.activity_type || act.type || '').toLowerCase();
-        return type.includes('task') || type.includes('todo') || type.includes('action');
-      });
+      // Normalize all tasks with production defaults (Fixes Issues #3, #4, #5, #6)
+      const tasks = rawTasks.map((task: any) => this.normalizeTask(task));
 
       const now = Date.now();
       const cutoffDate = now - (daysBack * 24 * 60 * 60 * 1000);
@@ -550,5 +552,91 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
     score += qualityScore;
 
     return Math.min(Math.round(score), 100);
+  }
+
+  /**
+   * Normalize task data with production defaults
+   * Fixes Issues #3, #4, #5, #6 from bug report
+   */
+  private normalizeTask(task: any): any {
+    const now = Date.now() / 1000;
+
+    // FIX #4: Auto-calculate missing due dates (3 business days)
+    if (!task.date_end && task.date_start) {
+      task.date_end = this.addBusinessDays(task.date_start, 3);
+      task._auto_due_date = true;
+    }
+
+    // FIX #5: Default time values (1 hour estimated)
+    if (!task.estimated_time || task.estimated_time === 0) {
+      task.estimated_time = 3600;  // 1 hour in seconds
+      task._default_estimate = true;
+    }
+
+    if (!task.actual_time) {
+      task.actual_time = 0;
+    }
+
+    // FIX #3: Normalize record type classification
+    const recordTypeNorm = RecordTypeNormalizer.normalize(task.record_type_name);
+    task.record_type_normalized = recordTypeNorm.normalized;
+    task.record_type_original = recordTypeNorm.original;
+    task._record_type_valid = recordTypeNorm.is_valid;
+
+    // Boost priority based on normalized type
+    task.task_priority = Math.max(task.priority || 0, recordTypeNorm.priority);
+
+    // FIX #6: Validate and fix relationships
+    if (!task.related || !Array.isArray(task.related)) {
+      task.related = [];
+    }
+
+    if (!task.owners || !Array.isArray(task.owners)) {
+      task.owners = [];
+      // Fallback: use created_by if no owners
+      if (task.created_by) {
+        task.owners.push({
+          id: task.created_by,
+          name: task.created_by_name || task.created_by,
+        });
+        task._owner_fallback = true;
+      }
+    }
+
+    // Auto-link to job if task description contains job reference
+    if (task.related.length === 0 && task.description) {
+      const jobMatch = task.description.match(/#(\d+)|job[:\s]+(\d+)/i);
+      if (jobMatch) {
+        const jobNumber = jobMatch[1] || jobMatch[2];
+        task.related.push({
+          id: `job_${jobNumber}`,
+          type: 'job',
+          number: jobNumber,
+          _auto_linked: true,
+        });
+      }
+    }
+
+    return task;
+  }
+
+  /**
+   * Add business days to a timestamp (skips weekends)
+   * Used for automatic due date calculation
+   */
+  private addBusinessDays(startTimestamp: number, days: number): number {
+    const date = new Date(startTimestamp * 1000);
+    let addedDays = 0;
+
+    while (addedDays < days) {
+      date.setDate(date.getDate() + 1);
+      const dayOfWeek = date.getDay();
+      // Skip weekends (0 = Sunday, 6 = Saturday)
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        addedDays++;
+      }
+    }
+
+    return Math.floor(date.getTime() / 1000);
   }
 }

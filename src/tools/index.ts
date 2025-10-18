@@ -169,6 +169,7 @@ import { GetCompetitiveAnalysisAnalyticsTool } from './analytics/getCompetitiveA
 import { GetUsersTool } from './users/getUsers.js';
 import { GetTasksTool } from './tasks/getTasks.js';
 import { GetTaskTool } from './tasks/getTask.js';
+import { GetTasksByOwnerTool } from './tasks/getTasksByOwner.js';  // FIX Issue #2
 import { UpdateTaskTool } from './tasks/updateTask.js';
 import { FetchByHandleTool } from './system/fetchByHandle.js';
 
@@ -329,9 +330,10 @@ export class ToolRegistry {
     this.registerTool(new GetSalesVelocityAnalyticsTool());
     this.registerTool(new GetCompetitiveAnalysisAnalyticsTool());
 
-    // === SYSTEM TOOLS (5 tools) ===
+    // === SYSTEM TOOLS (6 tools) === [2025-01-18: Added get_tasks_by_owner - Bug Fix Issue #2]
     this.registerTool(new GetTasksTool());
     this.registerTool(new GetTaskTool());
+    this.registerTool(new GetTasksByOwnerTool());  // FIX Issue #2: Missing get_tasks_by_owner
     this.registerTool(new UpdateTaskTool());
     this.registerTool(new GetUsersTool());
     this.registerTool(new FetchByHandleTool());
