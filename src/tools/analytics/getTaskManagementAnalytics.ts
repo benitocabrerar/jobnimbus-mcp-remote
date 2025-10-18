@@ -226,8 +226,10 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         }
 
         // Due date tracking
-        const dueDate = task.date_end || task.due_date || 0;
-        if (dueDate > 0) {
+        // BUG FIX 18102025-05: Convert dueDate to milliseconds for comparison with now
+        const dueDateSeconds = task.date_end || task.due_date || 0;
+        const dueDate = dueDateSeconds * 1000; // Convert to milliseconds
+        if (dueDateSeconds > 0) {
           metrics.tasks_with_due_dates++;
 
           // Check if overdue
