@@ -409,9 +409,16 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
             return created >= weekStart && created < weekEnd;
           });
 
-          const weekCompleted = weekTasks.filter((t: any) => {
+          // BUG FIX 18102025-07 (Issue #3 FINAL): Filter by completion DATE, not creation date
+          // Tasks are often completed weeks after creation
+          // We need to count tasks completed in THIS week, regardless of when they were created
+          const weekCompleted = tasks.filter((t: any) => {
             const status = (t.status_name || t.status || '').toLowerCase();
-            return status.includes('complete') || status.includes('done');
+            const isCompleted = status.includes('complete') || status.includes('done');
+            if (!isCompleted) return false;
+
+            const completed = (t.date_completed || t.date_updated || 0) * 1000;  // Convert to milliseconds
+            return completed >= weekStart && completed < weekEnd;
           });
 
           const weekCompletionTimes: number[] = [];
@@ -424,8 +431,14 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
             }
           }
 
+          // Calculate completion rate: How many of the tasks created this week are now completed?
+          const weekTasksNowCompleted = weekTasks.filter((t: any) => {
+            const status = (t.status_name || t.status || '').toLowerCase();
+            return status.includes('complete') || status.includes('done');
+          });
+
           const completionRate = weekTasks.length > 0
-            ? (weekCompleted.length / weekTasks.length) * 100
+            ? (weekTasksNowCompleted.length / weekTasks.length) * 100
             : 0;
 
           const avgTime = weekCompletionTimes.length > 0
