@@ -206,9 +206,13 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
           metrics.completed_tasks++;
 
           // Calculate completion time
-          const completedDate = task.date_completed || task.date_updated || 0;
-          if (completedDate > 0 && createdDate > 0) {
-            const completionTime = (completedDate - createdDate) / (1000 * 60 * 60); // hours
+          // BUG FIX 18102025-07 (Issue #2): Use consistent timestamp units
+          // Previously: createdDate was in milliseconds, completedDate in seconds = negative result
+          // Now: Both in seconds for proper subtraction
+          const createdDateSeconds = task.date_created || task.created_at || 0;
+          const completedDateSeconds = task.date_completed || task.date_updated || 0;
+          if (completedDateSeconds > 0 && createdDateSeconds > 0) {
+            const completionTime = (completedDateSeconds - createdDateSeconds) / 3600; // hours
             completionTimes.push(completionTime);
           }
         } else {
@@ -257,8 +261,14 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         priorityData.ages.push(ageHours / 24); // days
 
         // Assignee breakdown
-        const assigneeId = task.assigned_to || task.assignee_id || 'unassigned';
-        const assigneeName = assigneeId === 'unassigned' ? 'Unassigned' : this.getAssigneeName(task, userLookup);
+        // BUG FIX 18102025-07 (Issue #1): Exhaust all fallback options before marking as 'unassigned'
+        // Previously, tasks were marked as 'unassigned' too early, before checking owners[] and created_by
+        const assigneeId = task.assigned_to || task.assignee_id ||
+                           (task.owners?.[0]?.id) ||
+                           task.created_by ||
+                           'unassigned';
+        // Always call getAssigneeName() to use its comprehensive fallback logic
+        const assigneeName = this.getAssigneeName(task, userLookup);
 
         if (!assigneeMap.has(assigneeId)) {
           assigneeMap.set(assigneeId, {
@@ -274,8 +284,12 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         assigneeData.total++;
         if (isCompleted) {
           assigneeData.completed++;
-          if (completionTimes.length > 0) {
-            assigneeData.completionTimes.push(completionTimes[completionTimes.length - 1]);
+          // BUG FIX 18102025-07 (Issue #2): Calculate completion time properly for assignee
+          const createdDateSeconds = task.date_created || task.created_at || 0;
+          const completedDateSeconds = task.date_completed || task.date_updated || 0;
+          if (completedDateSeconds > 0 && createdDateSeconds > 0) {
+            const taskCompletionTime = (completedDateSeconds - createdDateSeconds) / 3600; // hours
+            assigneeData.completionTimes.push(taskCompletionTime);
           }
         } else {
           assigneeData.pending++;
@@ -293,8 +307,12 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         typeData.count++;
         if (isCompleted) {
           typeData.completed++;
-          if (completionTimes.length > 0) {
-            typeData.completionTimes.push(completionTimes[completionTimes.length - 1]);
+          // BUG FIX 18102025-07 (Issue #2): Calculate completion time properly for task type
+          const createdDateSeconds = task.date_created || task.created_at || 0;
+          const completedDateSeconds = task.date_completed || task.date_updated || 0;
+          if (completedDateSeconds > 0 && createdDateSeconds > 0) {
+            const taskCompletionTime = (completedDateSeconds - createdDateSeconds) / 3600; // hours
+            typeData.completionTimes.push(taskCompletionTime);
           }
         }
       }
@@ -384,8 +402,10 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
           const weekStart = now - ((week + 1) * 7 * 24 * 60 * 60 * 1000);
           const weekEnd = now - (week * 7 * 24 * 60 * 60 * 1000);
 
+          // BUG FIX 18102025-07 (Issue #3): Convert timestamps to milliseconds for proper comparison
+          // Previously: comparing seconds (created) with milliseconds (weekStart/weekEnd) = no matches
           const weekTasks = tasks.filter((t: any) => {
-            const created = t.date_created || t.created_at || 0;
+            const created = (t.date_created || t.created_at || 0) * 1000;  // Convert to milliseconds
             return created >= weekStart && created < weekEnd;
           });
 
@@ -396,10 +416,11 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
 
           const weekCompletionTimes: number[] = [];
           for (const task of weekCompleted) {
+            // BUG FIX 18102025-07 (Issue #2 + #3): Use seconds for both, not milliseconds
             const created = task.date_created || task.created_at || 0;
             const completed = task.date_completed || task.date_updated || 0;
             if (created > 0 && completed > 0) {
-              weekCompletionTimes.push((completed - created) / (1000 * 60 * 60));
+              weekCompletionTimes.push((completed - created) / 3600);  // hours (both in seconds)
             }
           }
 
