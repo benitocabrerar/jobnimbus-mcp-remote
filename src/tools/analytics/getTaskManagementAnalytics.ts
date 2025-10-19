@@ -139,6 +139,18 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
       // and all "Automation (Job)" variants to system_automation_job
       const userAliasMap = this.buildUserAliasMap(tasks);
 
+      // BUG FIX 18102025-08f: DEBUG LOGGING - Diagnose why deduplication fails
+      console.log('=== BUG FIX 18102025-08f DEBUG ===');
+      console.log(`userAliasMap size: ${userAliasMap.size}`);
+      console.log('userAliasMap contents (first 20 entries):');
+      let debugCount = 0;
+      for (const [id, data] of userAliasMap.entries()) {
+        if (debugCount++ < 20) {
+          console.log(`  ${id} → canonical: ${data.canonicalId}, name: "${data.canonicalName}", allIds: [${data.allIds.join(', ')}]`);
+        }
+      }
+      console.log('===================================');
+
       const now = Date.now();
       const cutoffDate = now - (daysBack * 24 * 60 * 60 * 1000);
 
@@ -278,6 +290,11 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         // Example: Diana Castro's 3 IDs all resolve to the same canonical ID
         const assigneeId = this.getCanonicalUserId(rawAssigneeId, userAliasMap);
 
+        // BUG FIX 18102025-08f: DEBUG - Show first 10 canonical resolutions
+        if (debugCount < 10) {
+          console.log(`Task ${debugCount + 1}: rawId="${rawAssigneeId}" → canonical="${assigneeId}"${rawAssigneeId === assigneeId ? ' (UNCHANGED)' : ' (RESOLVED)'}`);
+        }
+
         // Always call getAssigneeName() to use its comprehensive fallback logic
         const assigneeName = this.getAssigneeName(task, userLookup);
 
@@ -352,6 +369,15 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         });
       }
       priorityBreakdown.sort((a, b) => b.task_count - a.task_count);
+
+      // BUG FIX 18102025-08f: DEBUG - Show final assigneeMap keys (should be canonical)
+      console.log('=== BUG FIX 18102025-08f: Final assigneeMap keys ===');
+      console.log(`assigneeMap size: ${assigneeMap.size}`);
+      console.log('Keys (should be canonical IDs):');
+      for (const [assigneeId, data] of assigneeMap.entries()) {
+        console.log(`  "${assigneeId}" → name: "${data.name}", total: ${data.total}, completed: ${data.completed}`);
+      }
+      console.log('====================================================');
 
       // Assignment analytics
       const assignmentAnalytics: AssignmentAnalytics[] = [];
