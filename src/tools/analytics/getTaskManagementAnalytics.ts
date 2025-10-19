@@ -134,6 +134,11 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         .filter((task: any) => task.is_active !== false)  // Only active tasks
         .map((task: any) => this.normalizeTask(task));
 
+      // BUG FIX 18102025-08 (Issues #5 & #6): Build user alias map for deduplication
+      // This consolidates duplicate user IDs (e.g., "Diana Castro" with 3 IDs → 1 ID)
+      // and all "Automation (Job)" variants to system_automation_job
+      const userAliasMap = this.buildUserAliasMap(tasks);
+
       const now = Date.now();
       const cutoffDate = now - (daysBack * 24 * 60 * 60 * 1000);
 
@@ -263,10 +268,16 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         // Assignee breakdown
         // BUG FIX 18102025-07 (Issue #1): Exhaust all fallback options before marking as 'unassigned'
         // Previously, tasks were marked as 'unassigned' too early, before checking owners[] and created_by
-        const assigneeId = task.assigned_to || task.assignee_id ||
-                           (task.owners?.[0]?.id) ||
-                           task.created_by ||
-                           'unassigned';
+        const rawAssigneeId = task.assigned_to || task.assignee_id ||
+                              (task.owners?.[0]?.id) ||
+                              task.created_by ||
+                              'unassigned';
+
+        // BUG FIX 18102025-08 (Issues #5 & #6): Resolve to canonical ID for deduplication
+        // This consolidates duplicate user IDs into a single entry
+        // Example: Diana Castro's 3 IDs all resolve to the same canonical ID
+        const assigneeId = this.getCanonicalUserId(rawAssigneeId, userAliasMap);
+
         // Always call getAssigneeName() to use its comprehensive fallback logic
         const assigneeName = this.getAssigneeName(task, userLookup);
 
@@ -735,5 +746,87 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
     }
 
     return Math.floor(date.getTime() / 1000);
+  }
+
+  /**
+   * Build user alias map for deduplication
+   * BUG FIX 18102025-08 (Issue #5): Fixes user identity duplicates
+   * Example: "Diana Castro" appears with 3 different IDs → consolidate to one
+   *
+   * Returns Map: ID → { canonicalId, canonicalName, allIds }
+   */
+  private buildUserAliasMap(tasks: any[]): Map<string, { canonicalId: string; canonicalName: string; allIds: string[] }> {
+    const aliasMap = new Map();
+    const nameToIds = new Map<string, string[]>();
+
+    // Step 1: Collect all unique (assigneeName → [assigneeIds]) pairs
+    for (const task of tasks) {
+      const rawId = task.assigned_to || task.assignee_id || (task.owners?.[0]?.id) || task.created_by;
+      const assigneeName = this.getAssigneeName(task, new Map());
+
+      // Skip unassigned tasks
+      if (!rawId || rawId === 'unassigned' || !assigneeName || assigneeName === 'Unassigned') {
+        continue;
+      }
+
+      // Group IDs by name
+      if (!nameToIds.has(assigneeName)) {
+        nameToIds.set(assigneeName, []);
+      }
+      const ids = nameToIds.get(assigneeName)!;
+      if (!ids.includes(rawId)) {
+        ids.push(rawId);
+      }
+    }
+
+    // Step 2: Build alias map - first ID becomes canonical
+    for (const [name, ids] of nameToIds.entries()) {
+      const canonicalId = ids[0]; // Use first ID as canonical
+      for (const id of ids) {
+        aliasMap.set(id, {
+          canonicalId,
+          canonicalName: name,
+          allIds: ids,
+        });
+      }
+    }
+
+    // Step 3: Special case - Automation consolidation (BUG FIX 18102025-08 Issue #6)
+    // All automation IDs should map to 'system_automation_job'
+    const automationIds: string[] = [];
+    for (const [id, data] of aliasMap.entries()) {
+      if (data.canonicalName.toLowerCase().includes('automation')) {
+        automationIds.push(id);
+      }
+    }
+
+    if (automationIds.length > 0) {
+      const canonicalAutomationId = 'system_automation_job';
+      for (const id of automationIds) {
+        aliasMap.set(id, {
+          canonicalId: canonicalAutomationId,
+          canonicalName: 'Automation (Job)',
+          allIds: automationIds,
+        });
+      }
+    }
+
+    return aliasMap;
+  }
+
+  /**
+   * Get canonical user ID for deduplication
+   * BUG FIX 18102025-08 (Issue #5 & #6): Resolves multiple IDs to single canonical ID
+   *
+   * Example:
+   *   Input: "me1nhiahh2xkslc7r8uya48" (Diana Castro ID #1)
+   *   Output: "me1nhiahh2xkslc7r8uya48" (first/canonical ID)
+   *
+   *   Input: "ltonegvp9q0d4le7qwdonk0" (Diana Castro ID #3)
+   *   Output: "me1nhiahh2xkslc7r8uya48" (same canonical ID)
+   */
+  private getCanonicalUserId(assigneeId: string, aliasMap: Map<string, any>): string {
+    const aliasData = aliasMap.get(assigneeId);
+    return aliasData ? aliasData.canonicalId : assigneeId;
   }
 }
