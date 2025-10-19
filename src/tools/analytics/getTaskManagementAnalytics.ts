@@ -758,6 +758,7 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
   private buildUserAliasMap(tasks: any[]): Map<string, { canonicalId: string; canonicalName: string; allIds: string[] }> {
     const aliasMap = new Map();
     const nameToIds = new Map<string, string[]>();
+    const normalizedKeyToDisplayName = new Map<string, string>();
 
     // Step 1: Collect all unique (assigneeName → [assigneeIds]) pairs
     for (const task of tasks) {
@@ -775,26 +776,36 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         continue;
       }
 
-      // Normalize name for consistent grouping (trim, handle case variations)
-      assigneeName = assigneeName.trim();
+      // BUG FIX 18102025-08c: ULTRA aggressive name normalization
+      // Handles variations like "Diana Castro", "Diana Castro ", " Diana Castro", "diana castro"
+      // normalizedKey is used for grouping (lowercase, trimmed, collapsed spaces)
+      // assigneeName is preserved for display
+      const normalizedKey = this.normalizePersonName(assigneeName);
 
-      // Group IDs by name
-      if (!nameToIds.has(assigneeName)) {
-        nameToIds.set(assigneeName, []);
+      // Store first encountered display name for this normalized key
+      if (!normalizedKeyToDisplayName.has(normalizedKey)) {
+        normalizedKeyToDisplayName.set(normalizedKey, assigneeName.trim());
       }
-      const ids = nameToIds.get(assigneeName)!;
+
+      // Group IDs by normalized key
+      if (!nameToIds.has(normalizedKey)) {
+        nameToIds.set(normalizedKey, []);
+      }
+      const ids = nameToIds.get(normalizedKey)!;
       if (!ids.includes(rawId)) {
         ids.push(rawId);
       }
     }
 
     // Step 2: Build alias map - first ID becomes canonical
-    for (const [name, ids] of nameToIds.entries()) {
+    // Use normalized key for iteration but display name for output
+    for (const [normalizedKey, ids] of nameToIds.entries()) {
       const canonicalId = ids[0]; // Use first ID as canonical
+      const displayName = normalizedKeyToDisplayName.get(normalizedKey) || normalizedKey;
       for (const id of ids) {
         aliasMap.set(id, {
           canonicalId,
-          canonicalName: name,
+          canonicalName: displayName,
           allIds: ids,
         });
       }
@@ -837,5 +848,24 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
   private getCanonicalUserId(assigneeId: string, aliasMap: Map<string, any>): string {
     const aliasData = aliasMap.get(assigneeId);
     return aliasData ? aliasData.canonicalId : assigneeId;
+  }
+
+  /**
+   * Normalize person name for consistent grouping
+   * BUG FIX 18102025-08c: Handles case and whitespace variations
+   *
+   * Examples:
+   *   "Diana Castro" → "diana castro"
+   *   " Diana  Castro " → "diana castro"
+   *   "DIANA CASTRO" → "diana castro"
+   *
+   * This method creates a normalized key for grouping while preserving
+   * the original display name for presentation.
+   */
+  private normalizePersonName(name: string): string {
+    return name
+      .trim()                          // Remove leading/trailing whitespace
+      .toLowerCase()                   // Convert to lowercase
+      .replace(/\s+/g, ' ');          // Collapse multiple spaces to single space
   }
 }
