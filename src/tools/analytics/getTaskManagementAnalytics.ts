@@ -757,58 +757,94 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
    */
   private buildUserAliasMap(tasks: any[]): Map<string, { canonicalId: string; canonicalName: string; allIds: string[] }> {
     const aliasMap = new Map();
-    const nameToIds = new Map<string, string[]>();
-    const normalizedKeyToDisplayName = new Map<string, string>();
 
-    // Step 1: Collect all unique (assigneeName → [assigneeIds]) pairs
+    // BUG FIX 18102025-08e: CORRECT deduplication algorithm
+    // Previous attempts failed because same ID appeared with MULTIPLE names
+    // Example: ID "ltonct898ai3n4cgz9te1s6" appeared as both "Diana Castro" AND "Jonathan Aquino"
+    // When grouped by name first, later names OVERWROTE earlier mappings for shared IDs
+    //
+    // CORRECT APPROACH: Deduplicate by ID first, then group by name
+    // 1. Collect all (ID → names[]) pairs
+    // 2. For each ID, find MOST COMMON name (handles inconsistent data)
+    // 3. Group IDs by their canonical name
+    // 4. Build aliasMap with first ID in each group as canonical
+
+    // STEP 1: Build ID → names[] mapping
+    const idToNames = new Map<string, string[]>();
+
     for (const task of tasks) {
       const rawId = task.assigned_to || task.assignee_id || (task.owners?.[0]?.id) || task.created_by;
-
-      // BUG FIX 18102025-08b: Extract name directly from task instead of using getAssigneeName()
-      // getAssigneeName() with empty Map() falls back to returning ID, preventing consolidation
       let assigneeName = task.assignee_name ||
                          task.owners?.[0]?.name ||
                          task.created_by_name ||
                          null;
 
-      // Skip unassigned tasks or tasks without names
       if (!rawId || rawId === 'unassigned' || !assigneeName || assigneeName === 'Unassigned') {
         continue;
       }
 
-      // BUG FIX 18102025-08c: ULTRA aggressive name normalization
-      // Handles variations like "Diana Castro", "Diana Castro ", " Diana Castro", "diana castro"
-      // normalizedKey is used for grouping (lowercase, trimmed, collapsed spaces)
-      // assigneeName is preserved for display
-      const normalizedKey = this.normalizePersonName(assigneeName);
+      assigneeName = assigneeName.trim();
 
-      // Store first encountered display name for this normalized key
-      if (!normalizedKeyToDisplayName.has(normalizedKey)) {
-        normalizedKeyToDisplayName.set(normalizedKey, assigneeName.trim());
+      if (!idToNames.has(rawId)) {
+        idToNames.set(rawId, []);
+      }
+      idToNames.get(rawId)!.push(assigneeName);
+    }
+
+    // STEP 2: Find most common name for each ID (handles inconsistent data)
+    const idToCanonicalName = new Map<string, string>();
+
+    for (const [id, names] of idToNames.entries()) {
+      // Count frequency of each normalized name
+      const nameCounts = new Map<string, number>();
+      const nameToOriginal = new Map<string, string>();
+
+      for (const name of names) {
+        const normalizedName = this.normalizePersonName(name);
+        nameCounts.set(normalizedName, (nameCounts.get(normalizedName) || 0) + 1);
+        if (!nameToOriginal.has(normalizedName)) {
+          nameToOriginal.set(normalizedName, name);
+        }
       }
 
-      // Group IDs by normalized key
-      if (!nameToIds.has(normalizedKey)) {
-        nameToIds.set(normalizedKey, []);
+      // Find name with highest frequency
+      let maxCount = 0;
+      let canonicalNormalized = '';
+
+      for (const [normalizedName, count] of nameCounts.entries()) {
+        if (count > maxCount) {
+          maxCount = count;
+          canonicalNormalized = normalizedName;
+        }
       }
-      const ids = nameToIds.get(normalizedKey)!;
-      if (!ids.includes(rawId)) {
-        ids.push(rawId);
+
+      // Get original (non-normalized) version of most common name
+      const canonicalName = nameToOriginal.get(canonicalNormalized) || names[0];
+      idToCanonicalName.set(id, canonicalName);
+    }
+
+    // STEP 3: Group IDs by their canonical name
+    const nameToIds = new Map<string, string[]>();
+    const normalizedToDisplay = new Map<string, string>();
+
+    for (const [id, canonicalName] of idToCanonicalName.entries()) {
+      const normalized = this.normalizePersonName(canonicalName);
+
+      if (!nameToIds.has(normalized)) {
+        nameToIds.set(normalized, []);
+        normalizedToDisplay.set(normalized, canonicalName);
+      }
+
+      if (!nameToIds.get(normalized)!.includes(id)) {
+        nameToIds.get(normalized)!.push(id);
       }
     }
 
-    // DEBUG LOGGING 18102025-08d: Log collected names and IDs
-    console.log('[DEBUG 08d] buildUserAliasMap - Collected names:');
-    for (const [normalizedKey, ids] of nameToIds.entries()) {
-      const displayName = normalizedKeyToDisplayName.get(normalizedKey);
-      console.log(`  "${normalizedKey}" (display: "${displayName}") → [${ids.join(', ')}]`);
-    }
+    // STEP 4: Build final aliasMap
+    for (const [normalizedName, ids] of nameToIds.entries()) {
+      const canonicalId = ids[0]; // First ID becomes canonical for this group
+      const displayName = normalizedToDisplay.get(normalizedName) || normalizedName;
 
-    // Step 2: Build alias map - first ID becomes canonical
-    // Use normalized key for iteration but display name for output
-    for (const [normalizedKey, ids] of nameToIds.entries()) {
-      const canonicalId = ids[0]; // Use first ID as canonical
-      const displayName = normalizedKeyToDisplayName.get(normalizedKey) || normalizedKey;
       for (const id of ids) {
         aliasMap.set(id, {
           canonicalId,
@@ -818,8 +854,7 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
       }
     }
 
-    // Step 3: Special case - Automation consolidation (BUG FIX 18102025-08 Issue #6)
-    // All automation IDs should map to 'system_automation_job'
+    // STEP 5: Special case - Automation consolidation (BUG FIX 18102025-08 Issue #6)
     const automationIds: string[] = [];
     for (const [id, data] of aliasMap.entries()) {
       if (data.canonicalName.toLowerCase().includes('automation')) {
