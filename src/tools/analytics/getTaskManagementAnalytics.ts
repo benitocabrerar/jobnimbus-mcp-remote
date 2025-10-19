@@ -36,11 +36,21 @@ interface AssignmentAnalytics {
   completion_rate: number;
   avg_completion_time_hours: number;
   productivity_score: number;
+  load_index: number; // BUG FIX 18102025-09 Issue #2: pending_tasks / total_tasks ratio
   workload_status: 'Overloaded' | 'Optimal' | 'Underutilized';
 }
 
 interface TaskTypeMetrics {
   task_type: string;
+  count: number;
+  completed: number;
+  avg_completion_time_hours: number;
+  completion_rate: number;
+}
+
+// BUG FIX 18102025-09 Issue #3: Task category metrics (operational/admin/marketing)
+interface TaskCategoryMetrics {
+  category: 'operational' | 'administrative' | 'marketing';
   count: number;
   completed: number;
   avg_completion_time_hours: number;
@@ -184,6 +194,12 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         completionTimes: number[];
       }>();
       const typeMap = new Map<string, {
+        count: number;
+        completed: number;
+        completionTimes: number[];
+      }>();
+      // BUG FIX 18102025-09 Issue #3: Track completion times by task category
+      const categoryMap = new Map<'operational' | 'administrative' | 'marketing', {
         count: number;
         completed: number;
         completionTimes: number[];
@@ -347,6 +363,26 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
             typeData.completionTimes.push(taskCompletionTime);
           }
         }
+
+        // BUG FIX 18102025-09 Issue #3: Task category breakdown (operational/administrative/marketing)
+        const taskTitle = task.name || task.title || '';
+        const taskDescription = task.description || task.notes || '';
+        const taskCategory = this.classifyTaskType(taskTitle, taskDescription);
+
+        if (!categoryMap.has(taskCategory)) {
+          categoryMap.set(taskCategory, { count: 0, completed: 0, completionTimes: [] });
+        }
+        const categoryData = categoryMap.get(taskCategory)!;
+        categoryData.count++;
+        if (isCompleted) {
+          categoryData.completed++;
+          const createdDateSeconds = task.date_created || task.created_at || 0;
+          const completedDateSeconds = task.date_completed || task.date_updated || 0;
+          if (completedDateSeconds > 0 && createdDateSeconds > 0) {
+            const taskCompletionTime = (completedDateSeconds - createdDateSeconds) / 3600; // hours
+            categoryData.completionTimes.push(taskCompletionTime);
+          }
+        }
       }
 
       // Calculate metrics
@@ -398,8 +434,15 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
           data.total
         );
 
+        // BUG FIX 18102025-09 Issue #2: Calculate load_index and improve workload detection
+        const loadIndex = data.total > 0 ? data.pending / data.total : 0;
+
+        // Workload status considers both absolute pending count and load percentage
+        // Overloaded: >30 pending tasks OR >20% backlog
+        // Optimal: 5-29 pending AND <=20% backlog
+        // Underutilized: <5 pending
         const workloadStatus: 'Overloaded' | 'Optimal' | 'Underutilized' =
-          data.pending >= 20 ? 'Overloaded' :
+          (data.pending >= 30 || loadIndex > 0.20) ? 'Overloaded' :
           data.pending >= 5 ? 'Optimal' : 'Underutilized';
 
         assignmentAnalytics.push({
@@ -412,6 +455,7 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
           completion_rate: completionRate,
           avg_completion_time_hours: avgCompletionTime,
           productivity_score: productivityScore,
+          load_index: loadIndex,
           workload_status: workloadStatus,
         });
       }
@@ -431,6 +475,21 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         });
       }
       taskTypeMetrics.sort((a, b) => b.count - a.count);
+
+      // BUG FIX 18102025-09 Issue #3: Category metrics (operational/administrative/marketing)
+      const categoryMetrics: TaskCategoryMetrics[] = [];
+      for (const [category, data] of categoryMap.entries()) {
+        categoryMetrics.push({
+          category,
+          count: data.count,
+          completed: data.completed,
+          avg_completion_time_hours: data.completionTimes.length > 0
+            ? data.completionTimes.reduce((sum, t) => sum + t, 0) / data.completionTimes.length
+            : 0,
+          completion_rate: data.count > 0 ? (data.completed / data.count) * 100 : 0,
+        });
+      }
+      categoryMetrics.sort((a, b) => b.count - a.count);
 
       // Sort overdue tasks by urgency
       overdueTasks.sort((a, b) => b.urgency_score - a.urgency_score);
@@ -495,14 +554,17 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
           });
         }
 
-        // Calculate trends
+        // BUG FIX 18102025-09 Issue #4: Calculate trends with ±10% tolerance
+        // Prevents false "Declining" trends on minor variations
+        // Improved tolerance: ±10 percentage points instead of ±5
         for (let i = 1; i < productivityTrends.length; i++) {
           const current = productivityTrends[i];
           const previous = productivityTrends[i - 1];
+          const diff = current.completion_rate - previous.completion_rate;
 
-          if (current.completion_rate > previous.completion_rate + 5) {
+          if (diff > 10) {
             current.trend = 'Improving';
-          } else if (current.completion_rate < previous.completion_rate - 5) {
+          } else if (diff < -10) {
             current.trend = 'Declining';
           } else {
             current.trend = 'Stable';
@@ -543,6 +605,7 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         priority_breakdown: priorityBreakdown,
         assignment_analytics: assignmentAnalytics,
         task_type_metrics: taskTypeMetrics,
+        category_metrics: categoryMetrics,  // BUG FIX 18102025-09 Issue #3: Task category breakdown
         overdue_analysis: includeOverdue ? {
           total_overdue: overdueTasks.length,
           critical_overdue: overdueTasks.filter(t => t.urgency_score >= 80).length,
@@ -755,6 +818,24 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
                          statusName.includes('closed');
     }
 
+    // BUG FIX 18102025-09 Issue #5: Date consistency validation (due_date >= created_date)
+    // Prevents data corruption where due date is before creation date
+    const createdDate = task.date_created || 0;
+    const dueDate = task.date_end || 0;
+
+    // Validate that due date is after created date (if both are valid)
+    if (createdDate >= MIN_VALID_TIMESTAMP && dueDate >= MIN_VALID_TIMESTAMP) {
+      if (dueDate < createdDate) {
+        // Due date is before created date - this is logically impossible
+        // Fix: Set due date to created date + 3 business days
+        task.date_end = this.addBusinessDays(createdDate, 3);
+        task._date_validation_error = true;
+        task._date_fix_reason = task._date_fix_reason
+          ? `${task._date_fix_reason}; due_before_created`
+          : 'due_before_created';
+      }
+    }
+
     return task;
   }
 
@@ -884,21 +965,27 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
       }
     }
 
-    // STEP 5: Special case - Automation consolidation (BUG FIX 18102025-08 Issue #6)
-    const automationIds: string[] = [];
+    // STEP 5: Special case - System aliases consolidation (BUG FIX 18102025-08 Issue #6, 18102025-09 Issue #1)
+    // Consolidate all system/automation identities into one canonical ID
+    const systemIds: string[] = [];
+    const systemKeywords = ['automation', 'jobnimbus', 'system'];
+
     for (const [id, data] of aliasMap.entries()) {
-      if (data.canonicalName.toLowerCase().includes('automation')) {
-        automationIds.push(id);
+      const lowerName = data.canonicalName.toLowerCase();
+      // Check if name contains any system keyword
+      const isSystemAlias = systemKeywords.some(keyword => lowerName.includes(keyword));
+      if (isSystemAlias) {
+        systemIds.push(id);
       }
     }
 
-    if (automationIds.length > 0) {
-      const canonicalAutomationId = 'system_automation_job';
-      for (const id of automationIds) {
+    if (systemIds.length > 0) {
+      const canonicalSystemId = 'system_automation_job';
+      for (const id of systemIds) {
         aliasMap.set(id, {
-          canonicalId: canonicalAutomationId,
+          canonicalId: canonicalSystemId,
           canonicalName: 'Automation (Job)',
-          allIds: automationIds,
+          allIds: systemIds,
         });
       }
     }
@@ -920,6 +1007,38 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
   private getCanonicalUserId(assigneeId: string, aliasMap: Map<string, any>): string {
     const aliasData = aliasMap.get(assigneeId);
     return aliasData ? aliasData.canonicalId : assigneeId;
+  }
+
+  /**
+   * Classify task type based on title and description patterns
+   * BUG FIX 18102025-09 Issue #3: Categorize tasks as operational/administrative/marketing
+   *
+   * Categories:
+   * - marketing: Social media posts, videos, content creation
+   * - administrative: Reports, meetings, planning, scheduling
+   * - operational: Default category for all other tasks
+   *
+   * @param taskTitle - The task title/name
+   * @param taskDescription - Optional task description
+   * @returns Task category: 'marketing' | 'administrative' | 'operational'
+   */
+  private classifyTaskType(taskTitle: string, taskDescription?: string): 'marketing' | 'administrative' | 'operational' {
+    const combinedText = `${taskTitle || ''} ${taskDescription || ''}`.toLowerCase();
+
+    // Marketing keywords: posts, videos, social media, content
+    const marketingPattern = /post|video|social|content|marketing|campaign|ad|instagram|facebook|linkedin|tiktok|youtube/;
+    if (marketingPattern.test(combinedText)) {
+      return 'marketing';
+    }
+
+    // Administrative keywords: reports, meetings, planning, admin, scheduling
+    const adminPattern = /report|meeting|planning|admin|schedule|review|budget|finance|payroll|hr|documentation|compliance/;
+    if (adminPattern.test(combinedText)) {
+      return 'administrative';
+    }
+
+    // Default: operational (customer-facing work, installations, repairs, quotes, etc.)
+    return 'operational';
   }
 
   /**
