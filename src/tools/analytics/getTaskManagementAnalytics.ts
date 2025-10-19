@@ -762,12 +762,21 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
     // Step 1: Collect all unique (assigneeName → [assigneeIds]) pairs
     for (const task of tasks) {
       const rawId = task.assigned_to || task.assignee_id || (task.owners?.[0]?.id) || task.created_by;
-      const assigneeName = this.getAssigneeName(task, new Map());
 
-      // Skip unassigned tasks
+      // BUG FIX 18102025-08b: Extract name directly from task instead of using getAssigneeName()
+      // getAssigneeName() with empty Map() falls back to returning ID, preventing consolidation
+      let assigneeName = task.assignee_name ||
+                         task.owners?.[0]?.name ||
+                         task.created_by_name ||
+                         null;
+
+      // Skip unassigned tasks or tasks without names
       if (!rawId || rawId === 'unassigned' || !assigneeName || assigneeName === 'Unassigned') {
         continue;
       }
+
+      // Normalize name for consistent grouping (trim, handle case variations)
+      assigneeName = assigneeName.trim();
 
       // Group IDs by name
       if (!nameToIds.has(assigneeName)) {
