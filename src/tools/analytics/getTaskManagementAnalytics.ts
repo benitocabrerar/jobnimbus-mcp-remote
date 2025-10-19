@@ -290,17 +290,21 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         // Example: Diana Castro's 3 IDs all resolve to the same canonical ID
         const assigneeId = this.getCanonicalUserId(rawAssigneeId, userAliasMap);
 
+        // BUG FIX 18102025-08g (ROOT CAUSE FIX): Use canonical name from aliasMap
+        // CRITICAL: Previous code used raw assigneeName which got overwritten by each task
+        // Now we use the canonicalName from aliasMap to ensure consistency
+        const aliasData = userAliasMap.get(assigneeId);
+        const rawAssigneeName = this.getAssigneeName(task, userLookup);
+        const canonicalName = aliasData?.canonicalName || rawAssigneeName;
+
         // BUG FIX 18102025-08f: DEBUG - Show first 10 canonical resolutions
         if (debugCount < 10) {
-          console.log(`Task ${debugCount + 1}: rawId="${rawAssigneeId}" → canonical="${assigneeId}"${rawAssigneeId === assigneeId ? ' (UNCHANGED)' : ' (RESOLVED)'}`);
+          console.log(`Task ${debugCount + 1}: rawId="${rawAssigneeId}" → canonical="${assigneeId}", rawName="${rawAssigneeName}" → canonicalName="${canonicalName}"${rawAssigneeName === canonicalName ? ' (UNCHANGED)' : ' (RESOLVED)'}`);
         }
-
-        // Always call getAssigneeName() to use its comprehensive fallback logic
-        const assigneeName = this.getAssigneeName(task, userLookup);
 
         if (!assigneeMap.has(assigneeId)) {
           assigneeMap.set(assigneeId, {
-            name: assigneeName,
+            name: canonicalName,
             total: 0,
             completed: 0,
             pending: 0,
