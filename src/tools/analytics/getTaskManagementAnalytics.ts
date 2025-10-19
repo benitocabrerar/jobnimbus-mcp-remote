@@ -797,6 +797,13 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
       }
     }
 
+    // DEBUG LOGGING 18102025-08d: Log collected names and IDs
+    console.log('[DEBUG 08d] buildUserAliasMap - Collected names:');
+    for (const [normalizedKey, ids] of nameToIds.entries()) {
+      const displayName = normalizedKeyToDisplayName.get(normalizedKey);
+      console.log(`  "${normalizedKey}" (display: "${displayName}") → [${ids.join(', ')}]`);
+    }
+
     // Step 2: Build alias map - first ID becomes canonical
     // Use normalized key for iteration but display name for output
     for (const [normalizedKey, ids] of nameToIds.entries()) {
