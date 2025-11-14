@@ -45,6 +45,9 @@ export class GetPipelineForecastingTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const forecastMonths = input.forecast_months || 3;
       const includeProbability = input.include_probability !== false;
@@ -255,7 +258,8 @@ export class GetPipelineForecastingTool extends BaseTool<any, any> {
         riskFactors.push('Limited historical data - forecasts have higher uncertainty');
       }
 
-      return {
+      // Build response data
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         forecast_period: {
@@ -289,6 +293,33 @@ export class GetPipelineForecastingTool extends BaseTool<any, any> {
           `Growth rate: ${(growthRate * 100).toFixed(1)}%`,
         ],
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'pipeline_forecasting',
+          maxRows: stageForecasts.length,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            forecast_months: forecastMonths,
+            total_jobs: totalHistoricalJobs,
+            conversion_rate: overallConversionRate,
+            expected_revenue: expectedRevenueNextQuarter,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

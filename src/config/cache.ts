@@ -107,9 +107,10 @@ export const CACHE_TTL = {
  * Cache Configuration Interface
  */
 export interface CacheConfig {
-  // Redis connection
-  host: string;
-  port: number;
+  // Redis connection (prefer URL over individual params)
+  url?: string; // Redis URL (rediss://user:pass@host:port)
+  host?: string;
+  port?: number;
   password?: string;
   db: number;
 
@@ -144,11 +145,11 @@ export interface CacheConfig {
  * Get cache configuration from environment variables
  *
  * Environment Variables:
- * - REDIS_HOST: Redis server hostname
- * - REDIS_PORT: Redis server port (default: 6379)
- * - REDIS_PASSWORD: Redis authentication password
+ * - REDIS_URL: Complete Redis URL (preferred, e.g., rediss://user:pass@host:port)
+ * - REDIS_HOST: Redis server hostname (fallback)
+ * - REDIS_PORT: Redis server port (fallback, default: 6379)
+ * - REDIS_PASSWORD: Redis authentication password (fallback)
  * - REDIS_DB: Redis database number (default: 0)
- * - REDIS_TLS: Enable TLS (default: true in production)
  * - CACHE_ENABLED: Master switch for caching (default: true)
  * - CACHE_COMPRESSION: Enable GZIP compression (default: true)
  * - CACHE_MAX_ITEM_SIZE_KB: Max cache item size (default: 512KB)
@@ -157,11 +158,21 @@ export const getCacheConfig = (): CacheConfig => {
   const nodeEnv = process.env.NODE_ENV || 'development';
   const isProduction = nodeEnv === 'production';
 
+  // Check if REDIS_URL is provided (preferred method)
+  const redisUrl = process.env.REDIS_URL;
+  const useUrl = !!redisUrl;
+
+  // Parse URL if provided to determine if TLS is needed
+  const isTLS = redisUrl?.startsWith('rediss://') || false;
+
   return {
-    // Connection settings
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379', 10),
-    password: process.env.REDIS_PASSWORD,
+    // Connection settings (URL takes precedence)
+    ...(useUrl && { url: redisUrl }),
+    ...(!useUrl && {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      password: process.env.REDIS_PASSWORD,
+    }),
     db: parseInt(process.env.REDIS_DB || '0', 10),
 
     // Connection pool
@@ -169,8 +180,8 @@ export const getCacheConfig = (): CacheConfig => {
     enableReadyCheck: true,
     connectTimeout: 10000, // 10 seconds
 
-    // TLS configuration (only if explicitly enabled via REDIS_TLS_ENABLED)
-    ...(process.env.REDIS_TLS_ENABLED === 'true' && {
+    // TLS configuration (auto-detected from rediss:// or explicit flag)
+    ...(isTLS && {
       tls: {
         rejectUnauthorized: process.env.REDIS_TLS_REJECT_UNAUTHORIZED !== 'false',
       },
@@ -201,11 +212,12 @@ export const getCacheConfig = (): CacheConfig => {
 export const validateCacheConfig = (config: CacheConfig): void => {
   const errors: string[] = [];
 
-  if (!config.host || config.host.trim() === '') {
-    errors.push('REDIS_HOST is required');
+  // Check if either URL or host/port is provided
+  if (!config.url && (!config.host || config.host.trim() === '')) {
+    errors.push('Either REDIS_URL or REDIS_HOST is required');
   }
 
-  if (config.port < 1 || config.port > 65535) {
+  if (!config.url && config.port && (config.port < 1 || config.port > 65535)) {
     errors.push('REDIS_PORT must be between 1 and 65535');
   }
 

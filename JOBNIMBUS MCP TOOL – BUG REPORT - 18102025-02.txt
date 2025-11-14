@@ -1,0 +1,83 @@
+Nuevos problemas detectados tras la corrección
+
+Fechas corruptas o normalizadas incorrectamente
+
+Todas las tareas presentan due_date = 1970-01-21… y days_overdue ≈ 20,359.
+
+Esto ocurre porque el módulo de auto-due fallback está generando timestamps UNIX vacíos (epoch).
+
+Causa probable: campo date_end null convertido a 0 en milisegundos → mal interpretado como 1970-01-01 UTC+offset.
+
+Solución requerida:
+
+En la normalización, verificar:
+
+if (!due_date || due_date == 0) { 
+    due_date = date_start + 3 days; 
+}
+
+
+Validar formato UTC ISO (YYYY-MM-DDTHH:mm:ssZ) antes de calcular days_overdue.
+
+Asignación masiva como “Unassigned”
+
+assignment_analytics muestra 420 tareas a “Unassigned”.
+
+El fallback de owner_id → created_by_name no se ejecutó correctamente.
+
+Causa: assignee_name quedó vacío o se mapeó después del filtrado.
+
+Solución requerida:
+
+Aplicar el fallback antes del agrupamiento:
+
+assignee = task.owner_id || task.created_by_name || 'Unassigned';
+
+
+Re-procesar el campo assignment_analytics con ese valor.
+
+Validar que “Automation (Job)”, “Juan Villavicencio”, “Diana Castro”, etc., aparezcan en el output.
+
+Métrica de productividad sin datos reales
+
+completion_rate = 0, avg_completion_time = 0, productivity_trends = “Stable (0%)”.
+
+Esto indica que no se están cruzando los estados de cierre (is_completed=true) en la capa analítica.
+
+Solución:
+
+Ajustar filtro de “completed” a aceptar is_completed === true o status == 'Completed'.
+
+Validar que los jobs completados se reflejen como tareas finalizadas.
+
+✅ Validación esperada tras el segundo ajuste
+Prueba	Resultado esperado
+A. Fecha real	due_date ≥ date_start, no anterior a 2020
+B. Overdue rate	<30% (según fechas actuales)
+C. Assignment	≥5 usuarios distintos (Juan, Ana, Diana, Automation, Jeison)
+D. Completion rate	>0% (al menos 1 tarea cerrada)
+E. Productivity trends	Variaciones semanales no nulas
+🔍 Validación rápida que el desarrollador debe ejecutar
+
+Ejecutar nuevamente:
+
+get_task_management_analytics --days_back 60
+
+
+→ Confirmar que due_date > 2025-01-01.
+
+Comparar:
+
+get_tasks --is_completed false --size 20
+
+
+→ Validar created_by_name ≠ null → debe aparecer en assignment_analytics.
+
+Re-probar:
+
+get_user_productivity_analytics --days_back 60
+
+
+→ Confirmar active_members > 0.
+
+Verificar logs: no deben aparecer 1970-01-xx ni owner_id=null.

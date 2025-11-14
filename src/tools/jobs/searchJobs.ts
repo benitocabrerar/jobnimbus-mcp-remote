@@ -209,6 +209,9 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
   }
 
   async execute(input: SearchJobsInput, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     // Generate cache identifier
     const cacheIdentifier = generateCacheIdentifier(input);
 
@@ -242,9 +245,9 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
       input.sort_by;
 
     if (needsFullFetch) {
-      // Fetch all jobs with pagination
+      // Fetch all jobs with pagination (OPTIMIZATION: reduced from 50 to 10 iterations = 80% reduction)
       const batchSize = 100;
-      const maxIterations = 50;
+      const maxIterations = 10;
       let allJobs: Job[] = [];
       let offset = 0;
       let iteration = 0;
@@ -292,7 +295,51 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
       // Paginate
       const paginatedJobs = filteredJobs.slice(fromIndex, fromIndex + requestedSize);
 
-      // Apply compaction if not requesting full details
+      // Build page info
+      const pageInfo = {
+        has_more: fromIndex + paginatedJobs.length < filteredJobs.length,
+        total: filteredJobs.length,
+        current_page: Math.floor(fromIndex / requestedSize) + 1,
+        total_pages: Math.ceil(filteredJobs.length / requestedSize),
+      };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse(paginatedJobs, input, context, {
+          entity: 'jobs',
+          maxRows: requestedSize,
+          pageInfo,
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            count: paginatedJobs.length,
+            total_filtered: filteredJobs.length,
+            total_fetched: allJobs.length,
+            iterations: iteration,
+            from: fromIndex,
+            page_size: requestedSize,
+            query: input.query,
+            date_filter_applied: !!(dateFrom || dateTo),
+            date_from: dateFrom,
+            date_to: dateTo,
+            schedule_filter_applied: !!(
+              input.scheduled_from ||
+              input.scheduled_to ||
+              input.has_schedule !== undefined
+            ),
+            scheduled_from: input.scheduled_from,
+            scheduled_to: input.scheduled_to,
+            has_schedule: input.has_schedule,
+            sort_applied: !!input.sort_by,
+            sort_by: input.sort_by,
+            order: order,
+          },
+        };
+      }
+
+      // Fallback to legacy response
       const resultJobs = input.include_full_details
         ? paginatedJobs
         : compactArray(paginatedJobs, compactJob);
@@ -304,9 +351,9 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
         iterations: iteration,
         from: fromIndex,
         size: requestedSize,
-        has_more: fromIndex + paginatedJobs.length < filteredJobs.length,
-        total_pages: Math.ceil(filteredJobs.length / requestedSize),
-        current_page: Math.floor(fromIndex / requestedSize) + 1,
+        has_more: pageInfo.has_more,
+        total_pages: pageInfo.total_pages,
+        current_page: pageInfo.current_page,
         query: input.query,
         date_filter_applied: !!(dateFrom || dateTo),
         date_from: dateFrom,
@@ -339,7 +386,38 @@ export class SearchJobsTool extends BaseTool<SearchJobsInput, any> {
       const result = await this.client.get(context.apiKey, 'jobs', params);
       const jobs = result.data?.results || [];
 
-      // Apply compaction if not requesting full details
+      // Build page info
+      const pageInfo = {
+        has_more: false,
+        total: jobs.length,
+        current_page: Math.floor(fromIndex / requestedSize) + 1,
+        total_pages: Math.ceil(jobs.length / requestedSize),
+      };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse(jobs, input, context, {
+          entity: 'jobs',
+          maxRows: requestedSize,
+          pageInfo,
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            count: jobs.length,
+            total_filtered: jobs.length,
+            from: fromIndex,
+            page_size: requestedSize,
+            query: input.query,
+            date_filter_applied: false,
+            schedule_filter_applied: false,
+            sort_applied: false,
+          },
+        };
+      }
+
+      // Fallback to legacy response
       const resultJobs = input.include_full_details
         ? jobs
         : compactArray(jobs, compactJob);

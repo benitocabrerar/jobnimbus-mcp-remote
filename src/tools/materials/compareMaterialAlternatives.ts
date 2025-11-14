@@ -25,14 +25,44 @@ export class CompareMaterialAlternativesTool extends BaseTool {
     };
   }
 
-  async execute(input: any) {
+  async execute(input: any, context: any) {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     const allMaterials = Object.values(ROOFING_MATERIAL_SPECS);
     const baseMaterial: any = allMaterials.find((m: any) =>
       m.sku === input.base_material || m.name.includes(input.base_material)
     );
 
     if (!baseMaterial) {
-      return { success: false, error: 'Base material not found' };
+      const errorResult = { success: false, error: 'Base material not found' };
+
+      // Use handle-based response for errors if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([errorResult], input, context, {
+          entity: 'material_alternatives',
+          maxRows: 0,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: 0,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            calculation_type: 'material_comparison',
+            base_material: input.base_material,
+            error: true,
+            error_message: 'Base material not found',
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      return errorResult;
     }
 
     const alternatives = allMaterials
@@ -57,7 +87,7 @@ export class CompareMaterialAlternativesTool extends BaseTool {
         };
       });
 
-    return {
+    const result = {
       success: true,
       base_material: baseMaterial,
       alternatives,
@@ -65,6 +95,35 @@ export class CompareMaterialAlternativesTool extends BaseTool {
       best_quality: alternatives[0] || null,
       summary: `Found ${alternatives.length} alternative materials`
     };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const envelope = await this.wrapResponse([result], input, context, {
+        entity: 'material_alternatives',
+        maxRows: alternatives.length,
+        pageInfo: {
+          current_page: 1,
+          total_pages: 1,
+          has_more: false,
+          total: alternatives.length,
+        },
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          calculation_type: 'material_comparison',
+          base_material: input.base_material,
+          base_material_sku: baseMaterial.sku,
+          alternatives_count: alternatives.length,
+          has_cheaper_alternatives: alternatives.some((a: any) => a.cost_comparison.is_cheaper),
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
+    return result;
   }
 }
 

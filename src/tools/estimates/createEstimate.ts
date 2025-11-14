@@ -207,6 +207,9 @@ export class CreateEstimateTool extends BaseTool<CreateEstimateInput, any> {
   }
 
   async execute(input: CreateEstimateInput, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       // Calculate totals from items if not provided
       const calculatedSubtotal = input.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -286,7 +289,7 @@ export class CreateEstimateTool extends BaseTool<CreateEstimateInput, any> {
         requestBody
       );
 
-      return {
+      const successData = {
         success: true,
         message: 'Estimate created successfully',
         data: response.data,
@@ -309,8 +312,43 @@ export class CreateEstimateTool extends BaseTool<CreateEstimateInput, any> {
           timestamp: new Date().toISOString(),
         },
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([successData], input, context, {
+          entity: 'estimate',
+          maxRows: 1,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: 1,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            operation: 'create',
+            estimate_number: response.data.number,
+            estimate_jnid: response.data.jnid,
+            items_count: input.items.length,
+            total_amount: calculatedTotal,
+            profit: calculatedTotal - calculatedCost,
+            margin_percent: calculatedTotal > 0
+              ? ((calculatedTotal - calculatedCost) / calculatedTotal * 100).toFixed(2) + '%'
+              : '0%',
+            status: response.data.status_name || 'Created',
+            data_freshness: 'real-time',
+            api_endpoint: 'POST /api1/v2/estimates',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return successData;
     } catch (error) {
-      return {
+      const errorResponse = {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to create estimate',
         _metadata: {
@@ -318,6 +356,34 @@ export class CreateEstimateTool extends BaseTool<CreateEstimateInput, any> {
           timestamp: new Date().toISOString(),
         },
       };
+
+      // Use handle-based response if requested (even for errors)
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([errorResponse], input, context, {
+          entity: 'estimate',
+          maxRows: 0,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: 0,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            operation: 'create',
+            error: true,
+            error_message: error instanceof Error ? error.message : 'Failed to create estimate',
+            data_freshness: 'real-time',
+            api_endpoint: 'POST /api1/v2/estimates',
+          },
+        };
+      }
+
+      // Fallback to legacy error response
+      return errorResponse;
     }
   }
 }

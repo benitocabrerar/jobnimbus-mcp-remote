@@ -132,6 +132,9 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const timeWindowDays = input.time_window_days || 90;
       const includeRepAnalysis = input.include_rep_analysis !== false;
@@ -589,7 +592,7 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
         },
       ];
 
-      return {
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         time_window_days: timeWindowDays,
@@ -608,6 +611,42 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
           `Velocity trend: ${velocityTrend}`,
         ],
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const totalRecords = salesCycleAnalyses.length + repVelocities.length +
+                            velocityTrends.length + dealSegmentations.length +
+                            pipelineAccelerations.length + velocityOptimizations.length;
+
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'sales_velocity',
+          maxRows: totalRecords,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            time_window_days: timeWindowDays,
+            won_deals: wonDeals.length,
+            total_revenue: totalRevenueWon,
+            avg_sales_cycle: avgSalesCycle,
+            win_rate: winRate,
+            velocity_trend: velocityTrend,
+            velocity_score: velocityScore,
+            include_rep_analysis: includeRepAnalysis,
+            include_deal_segmentation: includeDealSegmentation,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

@@ -206,10 +206,35 @@ export class GetJobAnalyticsTool extends BaseTool<any, any> {
     const includeTrends = input.include_trends !== false;
     const groupByType = input.group_by_type !== false;
 
-    // Fetch data
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
+    // OPTIMIZATION (Week 2-3): Query Delegation Pattern
+    // Calculate time window boundary for server-side filtering
+    const nowDate = new Date();
+    const startDate = new Date(nowDate.getTime() - timePeriodDays * 24 * 60 * 60 * 1000);
+
+    const jobsFilter = JSON.stringify({
+      must: [{
+        range: {
+          date_created: {
+            gte: Math.floor(startDate.getTime() / 1000) // Unix timestamp in seconds
+          }
+        }
+      }]
+    });
+
+    // Fetch data with server-side filtering and field projection
     const [jobsResponse, estimatesResponse] = await Promise.all([
-      this.client.get(context.apiKey, 'jobs', { size: 100 }),
-      this.client.get(context.apiKey, 'estimates', { size: 100 }),
+      this.client.get(context.apiKey, 'jobs', {
+        size: 50, // OPTIMIZED: Reduced from 100 for token efficiency
+        filter: jobsFilter,
+        fields: ['jnid', 'number', 'date_created', 'status_name', 'job_type_name', 'record_type_name'], // JSONB Field Projection
+      }),
+      this.client.get(context.apiKey, 'estimates', {
+        size: 50, // OPTIMIZED: Reduced from 100 for token efficiency
+        fields: ['jnid', 'total', 'date_signed', 'status_name', 'related'], // JSONB Field Projection
+      }),
     ]);
 
     const jobs = jobsResponse.data?.results || [];
@@ -229,8 +254,8 @@ export class GetJobAnalyticsTool extends BaseTool<any, any> {
       }
     }
 
-    const now = Date.now();
-    const cutoffDate = now - (timePeriodDays * 24 * 60 * 60 * 1000);
+    const nowTimestamp = Date.now();
+    const cutoffDate = nowTimestamp - (timePeriodDays * 24 * 60 * 60 * 1000);
 
     // Filter jobs by time period
     const filteredJobs = jobs.filter((j: any) => {
@@ -303,8 +328,8 @@ export class GetJobAnalyticsTool extends BaseTool<any, any> {
       statusData.count++;
       statusData.totalValue += jobValue;
 
-      const createdDate = job.date_created || now;
-      const ageInDays = (now - createdDate) / (24 * 60 * 60 * 1000);
+      const createdDate = job.date_created || nowTimestamp;
+      const ageInDays = (nowTimestamp - createdDate) / (24 * 60 * 60 * 1000);
       statusData.totalAge += ageInDays;
 
       // Job type metrics
@@ -450,14 +475,15 @@ export class GetJobAnalyticsTool extends BaseTool<any, any> {
       insights.push(`📈 Revenue growing at ${trends.revenue_growth_rate.toFixed(1)}% - continue momentum`);
     }
 
-    return {
+    // Build response data
+    const responseData = {
       analysis_type: 'summary',
       data_source: 'Live JobNimbus API data',
       analysis_timestamp: new Date().toISOString(),
       time_period: {
         days: timePeriodDays,
         start_date: new Date(cutoffDate).toISOString(),
-        end_date: new Date(now).toISOString(),
+        end_date: new Date(nowTimestamp).toISOString(),
       },
       kpis: kpis,
       status_breakdown: statusBreakdown,
@@ -470,6 +496,32 @@ export class GetJobAnalyticsTool extends BaseTool<any, any> {
         overall: completionRate >= 60 && pendingRevenue > totalRevenue * 0.3 ? 'Strong' : 'Needs Improvement',
       },
     };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const envelope = await this.wrapResponse([responseData], input, context, {
+        entity: 'job_analytics_summary',
+        maxRows: 1,
+        pageInfo: {
+          current_page: 1,
+          total_pages: 1,
+          has_more: false,
+        },
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          analysis_type: 'summary',
+          time_period_days: timePeriodDays,
+          total_jobs_analyzed: totalJobs,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
+    return responseData;
   }
 
   // ==========================================================================
@@ -483,10 +535,20 @@ export class GetJobAnalyticsTool extends BaseTool<any, any> {
     const minValue = input.min_value || 0;
     const includeProximity = input.include_proximity_analysis !== false;
 
-    // Fetch data
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
+    // OPTIMIZATION (Week 2-3): JSONB Field Projection
+    // Fetch data with only required fields
     const [estimatesResponse, jobsResponse] = await Promise.all([
-      this.client.get(context.apiKey, 'estimates', { size: 100 }),
-      this.client.get(context.apiKey, 'jobs', { size: 100 }),
+      this.client.get(context.apiKey, 'estimates', {
+        size: 50, // OPTIMIZED: Reduced from 100 for token efficiency
+        fields: ['jnid', 'total', 'status_name', 'date_created', 'date_sent', 'date_approved', 'address_line1', 'city', 'state', 'state_text', 'zip', 'related'], // JSONB Field Projection
+      }),
+      this.client.get(context.apiKey, 'jobs', {
+        size: 50, // OPTIMIZED: Reduced from 100 for token efficiency
+        fields: ['jnid', 'address_line1', 'city', 'state', 'state_text', 'zip'], // JSONB Field Projection
+      }),
     ]);
 
     const estimates = estimatesResponse.data?.results || [];
@@ -740,7 +802,8 @@ export class GetJobAnalyticsTool extends BaseTool<any, any> {
       recommendations.push(`💰 ${incompleteHighValue} high-value estimate(s) with incomplete addresses - data cleanup needed`);
     }
 
-    return {
+    // Build response data
+    const responseData = {
       analysis_type: 'estimates_geo',
       data_source: 'Live JobNimbus API data',
       analysis_timestamp: new Date().toISOString(),
@@ -769,6 +832,33 @@ export class GetJobAnalyticsTool extends BaseTool<any, any> {
         `Most common missing field: ${this.getMostCommonMissingField(addressAnalytics.missing_fields_summary)}`,
       ],
     };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const envelope = await this.wrapResponse([responseData], input, context, {
+        entity: 'estimates_geo_analytics',
+        maxRows: estimatesWithAddresses.length,
+        pageInfo: {
+          current_page: 1,
+          total_pages: 1,
+          has_more: false,
+        },
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          analysis_type: 'estimates_geo',
+          grouping_level: groupingLevel,
+          total_estimates: estimatesWithAddresses.length,
+          total_locations: locationGroups.length,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
+    return responseData;
   }
 
   // ==========================================================================

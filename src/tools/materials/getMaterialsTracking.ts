@@ -154,33 +154,138 @@ export class GetMaterialsTrackingTool extends BaseTool<
     input: MaterialsTrackingInput,
     context: ToolContext
   ): Promise<MaterialsTrackingOutput> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
     const analysisType = input.analysis_type;
 
     try {
+      let result: MaterialsTrackingOutput;
+
       switch (analysisType) {
         case 'costs':
-          return await this.analyzeCosts(input, context);
+          result = await this.analyzeCosts(input, context);
+          break;
         case 'usage':
-          return await this.analyzeUsage(input, context);
+          result = await this.analyzeUsage(input, context);
+          break;
         case 'inventory':
-          return await this.analyzeInventory(input, context);
+          result = await this.analyzeInventory(input, context);
+          break;
         default:
-          return {
+          result = {
             error: `Invalid analysis_type: ${analysisType}. Must be one of: costs, usage, inventory`,
             status: 'Failed',
             analysis_type: analysisType,
           };
       }
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([result], input, context, {
+          entity: 'materials_tracking',
+          maxRows: 1,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: 1,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            analysis_type: analysisType,
+            date_range: {
+              date_from: input.date_from || 'current_month_start',
+              date_to: input.date_to || 'current_month_end',
+            },
+            category: input.category || null,
+            data_freshness: 'real-time',
+          },
+        } as any;
+      }
+
+      // Fallback to legacy response
+      return result;
     } catch (error) {
       if (error instanceof MaterialAnalysisError) {
+        // Use handle-based response for errors if requested
+        if (useHandleResponse) {
+          const errorResponse = {
+            success: false,
+            error: error.message,
+            error_code: error.code,
+            details: error.details,
+            analysis_type: analysisType,
+          };
+
+          const envelope = await this.wrapResponse([errorResponse], input, context, {
+            entity: 'materials_tracking',
+            maxRows: 0,
+            pageInfo: {
+              current_page: 1,
+              total_pages: 1,
+              has_more: false,
+              total: 0,
+            },
+          });
+
+          return {
+            ...envelope,
+            query_metadata: {
+              analysis_type: analysisType,
+              error: true,
+              error_message: error.message,
+              error_code: error.code,
+              data_freshness: 'real-time',
+            },
+          } as any;
+        }
+
         throw error;
       }
 
-      throw new MaterialAnalysisError(
+      const genericError = new MaterialAnalysisError(
         `Failed to execute materials tracking analysis: ${error}`,
         ErrorCode.CALCULATION_ERROR,
         { analysis_type: analysisType, input, error: String(error) }
       );
+
+      // Use handle-based response for errors if requested
+      if (useHandleResponse) {
+        const errorResponse = {
+          success: false,
+          error: genericError.message,
+          error_code: genericError.code,
+          details: genericError.details,
+          analysis_type: analysisType,
+        };
+
+        const envelope = await this.wrapResponse([errorResponse], input, context, {
+          entity: 'materials_tracking',
+          maxRows: 0,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: 0,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            analysis_type: analysisType,
+            error: true,
+            error_message: genericError.message,
+            error_code: genericError.code,
+            data_freshness: 'real-time',
+          },
+        } as any;
+      }
+
+      throw genericError;
     }
   }
 

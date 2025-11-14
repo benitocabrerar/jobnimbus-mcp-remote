@@ -65,8 +65,12 @@ export abstract class BaseTool<TInput = any, TOutput = any> {
     context: ToolContext,
     options?: Partial<ResponseBuilderOptions>
   ): Promise<ResponseEnvelope<T>> {
+    // OPTIMIZATION (Week 2-3): Force verbosity='compact' as default
+    // Prevents chat saturation by limiting response size automatically
+    const verbosity = input.verbosity || 'compact';
+
     const builderOptions: ResponseBuilderOptions = {
-      verbosity: input.verbosity,
+      verbosity,
       fields: input.fields,
       toolName: this.definition.name,
       context,

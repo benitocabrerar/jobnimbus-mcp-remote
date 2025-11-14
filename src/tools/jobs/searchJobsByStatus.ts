@@ -47,6 +47,9 @@ export class SearchJobsByStatusTool extends BaseTool<SearchJobsByStatusInput, an
   }
 
   async execute(input: SearchJobsByStatusInput, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     const limit = Math.min(input.limit || 20, 50);
     const searchStatus = input.status.toLowerCase().trim();
 
@@ -84,7 +87,38 @@ export class SearchJobsByStatusTool extends BaseTool<SearchJobsByStatusInput, an
     // Limit results
     const limitedJobs = matchingJobs.slice(0, limit);
 
-    // Apply compaction
+    // Build page info
+    const pageInfo = {
+      has_more: matchingJobs.length > limit,
+      total: matchingJobs.length,
+      current_page: 1,
+      total_pages: Math.ceil(matchingJobs.length / limit),
+    };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const envelope = await this.wrapResponse(limitedJobs, input, context, {
+        entity: 'jobs',
+        maxRows: limit,
+        pageInfo,
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          status_searched: input.status,
+          total_found: matchingJobs.length,
+          total_returned: limitedJobs.length,
+          jobs_scanned: allJobs.length,
+          iterations: iteration,
+          has_more: matchingJobs.length > limit,
+          search_efficiency: allJobs.length > 0 ? (matchingJobs.length / allJobs.length) * 100 : 0,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
     const useCompactMode = !input.include_full_details;
     const resultJobs = useCompactMode
       ? compactArray(limitedJobs, compactJob)

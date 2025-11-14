@@ -1,0 +1,120 @@
+JOBNIMBUS MCP TOOL – INFORME TÉCNICO PARA DESARROLLADOR (INSTANCIA STAMFORD)
+
+RESUMEN
+Tras las correcciones, el motor analítico ya procesa 420 tareas (312 completadas, 108 pendientes), 46 atrasadas (~11 %), tiempo promedio de cierre positivo (≈ 215.96 h ≈ 9.0 días), 12 miembros detectados y tendencias semanales con datos. Persisten temas menores de normalización de identidades y consolidación de “Automation”, además de oportunidades de afinamiento en tendencias y tiempos de ciclo.
+
+ERRORES IDENTIFICADOS (HISTÓRICOS Y RESIDUALES) Y ACCIONES DE CORRECCIÓN
+
+1. Asignaciones “Unassigned” (corregido a nivel general, revisar consistencia por módulos)
+   Síntoma: previamente todas las tareas figuraban como “Unassigned”.
+   Causa raíz: mapeo owner_id → assignee_name aplicado después de la agregación.
+   Acción: garantizar que el fallback se ejecute en la fase de normalización (antes del agrupamiento).
+   Regla:
+   assignee = task.owner_id || task.assigned_to_name || task.created_by_name || 'Unassigned'
+   Asegurar que esta regla se use en TODOS los módulos (assignment_analytics, overdue_analysis, productivity_trends, task_type_metrics).
+
+2. Tiempo promedio negativo (corregido)
+   Síntoma: avg_completion_time_hours negativo.
+   Causa raíz: resta de timestamps invertida y/o TZ inconsistente.
+   Acción aplicada: diff = completed_at - created_at; normalizar ambos a UTC.
+   Mantener test unitarios de dirección de tiempo y TZ.
+
+3. Fechas “epoch” 1970 (corregido)
+   Síntoma: due_date = 1970-01-xx y overdue masivo irreal.
+   Causa raíz: auto-due fallback sobre null/0 sin control.
+   Acción aplicada: si due_date es null/0, usar date_start + 3 días hábiles; guardar bandera auto_due_generated=true.
+   Mantener validación de formato ISO UTC.
+
+4. Tendencias semanales en cero (corregido parcialmente; afinar)
+   Síntoma: productivity_trends con semanas “0/0/Stable”.
+   Causa raíz: segmentación por semana sin contemplar tareas creadas en una semana y cerradas en otra.
+   Acción aplicada: agrupar por semana usando completed_at si existe; si no, usar created_at. Permitir que una tarea “cuente” en created y otra en completed sin excluirla.
+   Afine: revisar ventanas de corte y TZ en week boundaries (ISO week).
+
+5. Duplicados de identidad de usuario (pendiente de afinamiento)
+   Síntoma: una misma persona aparece con varios IDs (ej.: “Diana Castro” con dos IDs distintos).
+   Causa raíz: fuentes múltiples de identidad (ID histórico, ID activo, alias, sync externo).
+   Acción requerida:
+   a) Implementar user_alias_map: { canonical_user_id: [id1, id2, …], display_name }
+   b) Durante la normalización, resolver assignee_id a su canonical_user_id.
+   c) Unificar métricas por persona en todos los módulos.
+   Resultado esperado: un solo registro por usuario en assignment_analytics y productividad.
+
+6. Consolidación de “Automation (Job)” (pendiente de afinamiento)
+   Síntoma: “Automation (Job)” aparece con varios IDs (p.ej., system_automation_job y otros).
+   Causa raíz: múltiples orígenes/etiquetas para tareas automáticas.
+   Acción requerida:
+   a) Normalizar todos los IDs de automatización a un único canonical_id (system_automation_job).
+   b) Etiquetar explícitamente task.source = 'automation' para análisis diferenciados.
+   Resultado esperado: un único bloque “Automation (Job)” en assignment_analytics y métricas consistentes.
+
+7. Tiempo de ciclo promedio elevado (~9 días) y tendencia “Declining” en Weeks 2–4 (oportunidad de mejora de cálculo y lectura)
+   Observación: la métrica ya es positiva y coherente, pero elevada para ciertas colas.
+   Acciones sugeridas:
+   a) Verificar que outliers extremos (p.ej., tareas heredadas) se capen o se informen por separado (winsorizing o percentil 95).
+   b) Emitir métricas por tipo de tarea y aplicar umbrales razonables por categoría (operativas vs marketing).
+   c) Confirmar que reopenings no dupliquen duración (si se reabre, recomputar tramo activo).
+
+PRUEBAS DE VALIDACIÓN QUE DEBE EJECUTAR EL DESARROLLADOR
+
+A) Validación de asignaciones (owner mapping)
+Comando:
+get_task_management_analytics --days_back 60
+Criterios de aceptación:
+- assignment_analytics debe listar ≥ 5 usuarios distintos (p.ej., Juan Villavicencio, Ana Macassi, Diana Castro, Jeison Castro, Jonathan Aquino, Automation).
+- “Unassigned” < 10 % del total.
+- Los totales por usuario suman ≈ total_tasks (tolerancia por redondeo).
+
+B) Validación de tiempos de ciclo
+SQL de referencia:
+SELECT AVG(TIMESTAMPDIFF(HOUR, created_at, completed_at))
+FROM tasks
+WHERE is_completed = true;
+Criterios de aceptación:
+- Promedio positivo.
+- Promedio razonable por tipo (operativas 6–36 h en promedio; marketing puede ser mayor).
+- Sin valores negativos; percentiles 50/90/95 disponibles.
+
+C) Validación de tendencias semanales
+Comando:
+get_task_management_analytics --include_productivity_trends true --days_back 60
+Criterios de aceptación:
+- Cada semana con tasks_created > 0 y tasks_completed > 0.
+- Variación no trivial entre semanas (no todo “Stable”).
+- Al menos una semana con completion_rate > 70 %.
+
+D) Validación de alias de usuarios (deduplicación)
+Proceso:
+1) Ejecutar get_users() y construir user_alias_map.
+2) Ejecutar get_task_management_analytics tras activar alias.
+Criterios de aceptación:
+- Ningún display_name se repite con múltiples IDs en assignment_analytics.
+- El total por usuario consolidado no cambia al alternar IDs.
+
+E) Validación de consolidación de Automation
+Proceso:
+1) Normalizar IDs de Automation a system_automation_job.
+2) Recalcular métricas.
+Criterios de aceptación:
+- Un solo bloque “Automation (Job)” en assignment_analytics.
+- Coincidencia de totales de tareas automáticas antes y después de la consolidación (solo cambia la distribución por ID, no el conteo).
+
+F) Validación cruzada con muestra cruda
+Comando:
+get_tasks --is_active true --is_completed false --size 50
+Criterios de aceptación:
+- Los due_date son fechas válidas (no 1970).
+- Los owners de la muestra aparecen en assignment_analytics.
+- Las prioridades y tipos se reflejan en priority_breakdown y task_type_metrics.
+
+MÉTRICAS OBJETIVO (POST-AJUSTES FINALES)
+
+* Completion rate: 70–85 % (global, con diferencias por tipo).
+* Overdue: < 15 % (global).
+* Avg completion time: positivo; 6–36 h en operativas; diferenciar colas con SLA más largo.
+* Distinct assignees: ≥ 5, sin duplicados por alias.
+* “Unassigned”: < 10 %.
+* Tendencias semanales: no nulas y con variación; al menos una semana > 70 % de cierre.
+
+NOTAS FINALES
+El pipeline de datos y la lógica principal ya funcionan. Los ajustes restantes son de normalización y presentación (alias de usuario, consolidación de Automation, control de outliers y consistencia de tiempos). Al completar estas acciones y pasar las pruebas, la MCP Tool quedará lista para alimentar dashboards operativos y ejecutivos sin distorsiones.

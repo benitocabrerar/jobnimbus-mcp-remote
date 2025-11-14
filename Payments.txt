@@ -1,0 +1,46 @@
+Payments
+The Payment API endpoint allows you to view Payments within JobNimbus.
+
+Referenced Path:
+Plain Text
+/payments
+URL:
+Plain Text
+https://app.jobnimbus.com/api1/payments
+GET
+Retrieve ALL Payments
+https://app.jobnimbus.com/api1/payments
+This request allows you to retrieve all of the work orders within a JobNimbus account.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+POST
+Create a Payment
+https://app.jobnimbus.com/api2/v2/payments
+This request allows you to create a payment within a JobNimbus account.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+HTTP Status 500 = failure (most likely missing a required field)
+
+Anything other status code = failure and will include an error message in the response
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json

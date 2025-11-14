@@ -1,0 +1,156 @@
+Aquí tienes el **texto plano profesional y técnico**, listo para enviar al desarrollador de la **MCP Tool JobNimbus (instancia Stamford)**, con los errores detectados, pasos de corrección y validaciones necesarias:
+
+---
+
+### 🧩 JOBNIMBUS MCP TOOL – POST-FIX VALIDATION REPORT (STAMFORD)
+
+#### 1. **Issue: “Unassigned” task ownership still persists**
+
+**Symptoms:**
+All 420 tasks are grouped under `assignee_name: "Unassigned"` in the `assignment_analytics` block, even though the raw task data and `overdue_analysis` correctly show owners such as “Ana Macassi”, “Jeison Castro”, “Juan Villavicencio”, “Diana Castro”, and “Automation (Job)”.
+
+**Root cause:**
+The fallback mapping from `owner_id` to `created_by_name` (or `last_modified_by`) is being applied **after** aggregation instead of before.
+
+**Required Fix:**
+Move the fallback logic **before building the `assignment_analytics` object.**
+
+```js
+if (!assignee_name || assignee_name === 'Unassigned') {
+    assignee_name = created_by_name || last_modified_by || 'Unassigned';
+}
+```
+
+* Apply this during task normalization, **before grouping** by assignee.
+* Ensure this mapping also cascades into `productivity_score` calculations.
+
+**Expected Outcome:**
+Assignment distribution should show multiple team members, not a single “Unassigned” category.
+
+---
+
+#### 2. **Issue: Negative average completion time**
+
+**Symptoms:**
+`avg_completion_time_hours = -487845.0` hours (≈ –20,327 days) appears in both summary and task_type_metrics.
+
+**Root cause:**
+Incorrect date subtraction order or mismatched timezone conversion between `created_at` and `completed_at`.
+
+**Required Fix:**
+Reverse and validate timestamp subtraction:
+
+```js
+const diff = new Date(completed_at) - new Date(created_at);
+avg_completion_time_hours = diff > 0 
+    ? diff / 3600000 
+    : Math.abs(diff) / 3600000;
+```
+
+* Also ensure both timestamps are parsed in **UTC** or normalized to the same timezone before calculating differences.
+
+**Expected Outcome:**
+Average completion time should fall between **6–36 hours**, depending on task type.
+
+---
+
+#### 3. **Issue: Productivity trends static**
+
+**Symptoms:**
+All four weeks in `productivity_trends` show `0 tasks created / completed`, “Stable” trend.
+Yet analytics show 312 completed tasks in total.
+
+**Root cause:**
+The weekly trend module is referencing filtered time windows with no overlap between creation and completion timestamps.
+
+**Required Fix:**
+Update time-window segmentation logic:
+
+```js
+group_by_week = task => getISOWeek(new Date(task.completed_at || task.created_at));
+```
+
+* Include tasks that started in one week and finished in another.
+* Allow flexible window overlap for ongoing tasks.
+
+**Expected Outcome:**
+Weekly trends should show variations in completion counts (approx. 70–90 per week) and progressive improvement curves.
+
+---
+
+### ✅ Validation Plan
+
+After applying the above fixes, the developer must run the following tests:
+
+#### A. **Owner Mapping Validation**
+
+```bash
+get_task_management_analytics --days_back 60
+```
+
+**Expected:**
+
+* `assignment_analytics` contains ≥ 5 different `assignee_name`.
+* `"Unassigned"` represents <10% of total tasks.
+* `workload_status` per user shows correct proportional distribution.
+
+#### B. **Completion Time Validation**
+
+Query average completion hours directly:
+
+```bash
+SELECT AVG(TIMESTAMPDIFF(HOUR, created_at, completed_at)) FROM tasks WHERE is_completed = true;
+```
+
+**Expected:** 6 ≤ avg ≤ 36 hours.
+No negative values.
+
+#### C. **Weekly Trend Validation**
+
+```bash
+get_task_management_analytics --include_productivity_trends true
+```
+
+**Expected:**
+
+* Each week shows tasks_created > 0 and tasks_completed > 0.
+* At least one week has a completion_rate > 70%.
+
+#### D. **Cross-Check User Productivity**
+
+```bash
+get_user_productivity_analytics --days_back 60
+```
+
+**Expected:**
+
+* `active_members > 4`
+* `avg_productivity_score > 0`
+* Top performer identified (not “N/A”)
+
+---
+
+### 🔍 Expected Final Output After Fix
+
+| Metric              | Expected Value    | Status Goal |
+| ------------------- | ----------------- | ----------- |
+| Completion Rate     | 70–80%            | ✅           |
+| Overdue Tasks       | <15%              | ✅           |
+| Avg Completion Time | 6–36 h            | ✅           |
+| Distinct Assignees  | ≥ 5               | ✅           |
+| Unassigned %        | <10%              | ✅           |
+| Weekly Trend        | Active (non-zero) | ✅           |
+
+---
+
+### 💡 Summary for Developer
+
+The core logic and API connection now function correctly.
+Only the **post-processing layer** needs adjustment:
+
+1. Apply `assignee` mapping before analytics aggregation.
+2. Correct date-difference direction and timezone normalization.
+3. Enable dynamic weekly trend segmentation.
+
+Once fixed and validated, the MCP analytics engine will fully represent **real operational data** and can safely power Notion, Power BI, or GA dashboards without distortion.
+

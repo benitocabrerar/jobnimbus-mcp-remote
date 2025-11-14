@@ -337,8 +337,8 @@ export class GetEstimatesTool extends BaseTool<GetEstimatesInput, any> {
     if (needsFullFetch) {
       // Fetch all estimates with pagination
       const batchSize = 100;
-      // OPTIMIZED: Reduced from 50 to 20 iterations (max 2000 instead of 5000 records)
-      const maxIterations = 20;
+      // OPTIMIZATION: Reduced from 20 to 5 iterations (max 500 estimates = 75% reduction)
+      const maxIterations = 5;
       let allEstimates: Estimate[] = [];
       let offset = 0;
       let iteration = 0;

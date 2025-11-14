@@ -366,9 +366,9 @@ export class GetJobsTool extends BaseTool<GetJobsInput, any> {
         let iterations = 0;
 
         if (needsFullFetch) {
-          // Fetch all jobs with pagination
+          // Fetch all jobs with pagination (OPTIMIZATION: reduced from 20 to 5 iterations = 75% reduction)
           const batchSize = 100;
-          const maxIterations = 20;
+          const maxIterations = 5;
           let allJobs: Job[] = [];
           let offset = 0;
 

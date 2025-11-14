@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobNimbus Invoices API - Coverage Analysis Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .coverage-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 40px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-number {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .critical { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .success { color: #28a745; }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .alert {
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid;
+        }
+
+        .alert-danger {
+            background: #fff5f5;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .alert-warning {
+            background: #fff9e6;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .alert-info {
+            background: #e7f3ff;
+            border-color: #2196F3;
+            color: #004085;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+        }
+
+        th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #eee;
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-missing {
+            background: #dc3545;
+            color: white;
+        }
+
+        .badge-implemented {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-required {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+            margin: 15px 0;
+        }
+
+        .field-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .field-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .field-name {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .field-type {
+            font-size: 0.85em;
+            color: #666;
+            font-style: italic;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 40px;
+            background: #e9ecef;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 20px 0;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc3545 0%, #c82333 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: width 1s ease;
+        }
+
+        .recommendations {
+            background: #e7f3ff;
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 5px solid #2196F3;
+        }
+
+        .recommendations h3 {
+            color: #2196F3;
+            margin-bottom: 15px;
+        }
+
+        .recommendations ul {
+            margin-left: 20px;
+        }
+
+        .recommendations li {
+            margin: 10px 0;
+            line-height: 1.8;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .timestamp {
+            font-size: 0.9em;
+            color: #999;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 JobNimbus Invoices API</h1>
+            <p>Coverage Analysis Report</p>
+        </div>
+
+        <div class="coverage-summary">
+            <div class="stat-card">
+                <div class="stat-label">Coverage</div>
+                <div class="stat-number critical">0%</div>
+                <div class="stat-label">Implementation Status</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Documented Operations</div>
+                <div class="stat-number">5</div>
+                <div class="stat-label">Official API Endpoints</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Implemented Tools</div>
+                <div class="stat-number critical">0</div>
+                <div class="stat-label">Currently Available</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Missing Tools</div>
+                <div class="stat-number warning">5</div>
+                <div class="stat-label">Need Implementation</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="alert alert-danger">
+                <strong>⚠️ CRITICAL: Zero Implementation Coverage</strong><br>
+                The Invoices API has <strong>0% implementation coverage</strong>. None of the 5 documented operations from the official JobNimbus API documentation (Invoices.txt) are currently implemented in the MCP tool system.
+            </div>
+
+            <div class="section">
+                <h2>Coverage Progress</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%;">
+                        0% - No Implementation
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Operations Coverage Status</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Operation</th>
+                            <th>HTTP Method</th>
+                            <th>Endpoint</th>
+                            <th>Tool Name</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Get All Invoices</strong></td>
+                            <td>GET</td>
+                            <td><code>/v2/invoices</code></td>
+                            <td>get_invoices</td>
+                            <td><span class="badge badge-missing">❌ Missing</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Get Single Invoice</strong></td>
+                            <td>GET</td>
+                            <td><code>/v2/invoices/{jnid}</code></td>
+                            <td>get_invoice</td>
+                            <td><span class="badge badge-missing">❌ Missing</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Create Invoice</strong></td>
+                            <td>POST</td>
+                            <td><code>/v2/invoices</code></td>
+                            <td>create_invoice</td>
+                            <td><span class="badge badge-missing">❌ Missing</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Update Invoice</strong></td>
+                            <td>PUT</td>
+                            <td><code>/v2/invoices/{jnid}</code></td>
+                            <td>update_invoice</td>
+                            <td><span class="badge badge-missing">❌ Missing</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Delete Invoice</strong></td>
+                            <td>PUT</td>
+                            <td><code>/v2/invoices/{jnid}</code></td>
+                            <td>delete_invoice</td>
+                            <td><span class="badge badge-missing">❌ Missing</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <h2>Invoice Field Properties (48 Fields)</h2>
+                <div class="alert alert-info">
+                    Based on official JobNimbus API documentation (Invoices.txt), the Invoice entity has 48 documented field properties. Below is the complete field mapping with required fields highlighted.
+                </div>
+
+                <h3 style="margin-top: 30px; color: #667eea;">Core Identifiers (5 fields)</h3>
+                <div class="field-grid">
+                    <div class="field-item">
+                        <div class="field-name">jnid</div>
+                        <div class="field-type">string - Unique identifier</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">type</div>
+                        <div class="field-type">string - Must be "invoice" <span class="badge badge-required">Required</span></div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">customer</div>
+                        <div class="field-type">string - Customer ID</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">guid</div>
+                        <div class="field-type">string - Global unique identifier</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">recid</div>
+                        <div class="field-type">number - Record ID</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px; color: #667eea;">Invoice Information (9 fields)</h3>
+                <div class="field-grid">
+                    <div class="field-item">
+                        <div class="field-name">number</div>
+                        <div class="field-type">string - Invoice number</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">attachment_id</div>
+                        <div class="field-type">string - Attachment identifier</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">external_id</div>
+                        <div class="field-type">string - External system ID</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">template_id</div>
+                        <div class="field-type">string - Template identifier</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">internal_note</div>
+                        <div class="field-type">string - Internal notes</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">note</div>
+                        <div class="field-type">string - Customer-visible notes</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">terms</div>
+                        <div class="field-type">string - Payment terms</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">version</div>
+                        <div class="field-type">string - Version identifier</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">duplicate_from_id</div>
+                        <div class="field-type">string - Source invoice if duplicated</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px; color: #667eea;">Status & Flags (6 fields)</h3>
+                <div class="field-grid">
+                    <div class="field-item">
+                        <div class="field-name">is_active</div>
+                        <div class="field-type">boolean - Active status <span class="badge badge-required">Required</span></div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">is_archived</div>
+                        <div class="field-type">boolean - Archived status</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">esigned</div>
+                        <div class="field-type">boolean - E-signature status</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">status</div>
+                        <div class="field-type">number - Status code <span class="badge badge-required">Required</span></div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">status_name</div>
+                        <div class="field-type">string - Status name</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">signature_status</div>
+                        <div class="field-type">string - Signature status</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px; color: #667eea;">Dates (7 fields)</h3>
+                <div class="field-grid">
+                    <div class="field-item">
+                        <div class="field-name">date_created</div>
+                        <div class="field-type">number - Unix timestamp of creation</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">date_updated</div>
+                        <div class="field-type">number - Unix timestamp of last update</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">date_invoice</div>
+                        <div class="field-type">number - Unix timestamp of invoice date</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">date_due</div>
+                        <div class="field-type">number - Unix timestamp of due date</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">date_paid_in_full</div>
+                        <div class="field-type">number - Unix timestamp when paid</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">date_status_change</div>
+                        <div class="field-type">number - Unix timestamp of status change</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">first_payment_date</div>
+                        <div class="field-type">number - Unix timestamp of first payment</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px; color: #667eea;">Financial (7 fields)</h3>
+                <div class="field-grid">
+                    <div class="field-item">
+                        <div class="field-name">subtotal</div>
+                        <div class="field-type">number - Subtotal amount</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">tax</div>
+                        <div class="field-type">number - Tax amount</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">total</div>
+                        <div class="field-type">number - Total amount</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">cost</div>
+                        <div class="field-type">number - Total cost</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">margin</div>
+                        <div class="field-type">number - Profit margin</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">total_paid</div>
+                        <div class="field-type">number - Total amount paid</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">due</div>
+                        <div class="field-type">number - Amount due</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px; color: #667eea;">Items & Payments (2 fields)</h3>
+                <div class="field-grid">
+                    <div class="field-item">
+                        <div class="field-name">items</div>
+                        <div class="field-type">array - Invoice line items <span class="badge badge-required">Required</span></div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">payments</div>
+                        <div class="field-type">array - Payment records</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px; color: #667eea;">Location & Ownership (4 fields)</h3>
+                <div class="field-grid">
+                    <div class="field-item">
+                        <div class="field-name">location</div>
+                        <div class="field-type">object - Location information</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">owners</div>
+                        <div class="field-type">array - Invoice owners</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">sales_rep</div>
+                        <div class="field-type">string - Sales rep user JNID</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">sales_rep_name</div>
+                        <div class="field-type">string - Sales rep name</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px; color: #667eea;">Related Entities (1 field)</h3>
+                <div class="field-grid">
+                    <div class="field-item">
+                        <div class="field-name">related</div>
+                        <div class="field-type">array - Related jobs/contacts <span class="badge badge-required">Required</span></div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px; color: #667eea;">Metadata & Other (7 fields)</h3>
+                <div class="field-grid">
+                    <div class="field-item">
+                        <div class="field-name">created_by</div>
+                        <div class="field-type">string - Creator user JNID</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">created_by_name</div>
+                        <div class="field-type">string - Creator name</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">sections</div>
+                        <div class="field-type">array - Invoice sections</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">merged</div>
+                        <div class="field-type">any - Merged information</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">class_id</div>
+                        <div class="field-type">string - QuickBooks class ID</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">class_name</div>
+                        <div class="field-type">string - QuickBooks class name</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">supplier</div>
+                        <div class="field-type">any - Supplier information</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Required Fields for POST Create Invoice</h2>
+                <div class="alert alert-warning">
+                    When creating a new invoice via POST /v2/invoices, the following fields are required:
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>type</strong></td>
+                            <td>string</td>
+                            <td>Must be exactly "invoice"</td>
+                            <td><code>"invoice"</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>is_active</strong></td>
+                            <td>boolean</td>
+                            <td>Active status of invoice</td>
+                            <td><code>true</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>status</strong></td>
+                            <td>number</td>
+                            <td>Status code (1 = Draft, etc.)</td>
+                            <td><code>1</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>related</strong></td>
+                            <td>array</td>
+                            <td>Related entities (jobs, contacts)</td>
+                            <td><code>[{"id": "job123", "type": "job"}]</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>items</strong></td>
+                            <td>array</td>
+                            <td>Invoice line items</td>
+                            <td><code>[{...item details...}]</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <h2>Invoice Item Structure</h2>
+                <p>Each item in the items array has the following structure:</p>
+                <div class="code-block">{
+  "quickbooksId": "1",
+  "showGroupTotal": null,
+  "addMarkup": null,
+  "addMarkupIsExcluded": null,
+  "photos": [],
+  "jnid": "PRODUCT_JNID",
+  "name": "Service Name",
+  "uom": "Items",
+  "item_type": "material",
+  "description": "Item description",
+  "quantity": 1,
+  "price": 10000,
+  "preSurchargePrice": null,
+  "cost": 10000,
+  "amount": 10000,
+  "tax_couch_id": null,
+  "tax_name": null,
+  "tax_rate": 0,
+  "labor": {
+    "quickbooksId": null,
+    "price": 0,
+    "preSurchargePrice": null,
+    "cost": 0,
+    "addMarkup": null,
+    "addMarkupIsExcluded": null,
+    "amount": 0,
+    "tax_couch_id": null,
+    "tax_name": null,
+    "tax_rate": 0
+  },
+  "sku": null,
+  "color": null,
+  "category": null
+}</div>
+            </div>
+
+            <div class="section">
+                <h2>Example API Requests</h2>
+
+                <h3 style="color: #667eea; margin-top: 30px;">1. Create Invoice (POST)</h3>
+                <div class="code-block">POST /api1/v2/invoices
+Content-Type: application/json
+Authorization: Bearer {API_KEY}
+
+{
+  "type": "invoice",
+  "date_created": 1683819562,
+  "date_updated": 1684160281,
+  "date_invoice": 1683781200,
+  "date_due": 1683781200,
+  "external_id": "993479",
+  "number": "1047-795",
+  "is_active": true,
+  "status": 1,
+  "internal_note": "Project Invoice",
+  "related": [
+    {
+      "id": "{jobId}",
+      "type": "job"
+    }
+  ],
+  "items": [
+    {
+      "name": "Services",
+      "description": "Test and Troy Coone / SIDING",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": 15438.99,
+      "jnid": "{itemId}"
+    }
+  ]
+}</div>
+
+                <h3 style="color: #667eea; margin-top: 30px;">2. Get Single Invoice (GET)</h3>
+                <div class="code-block">GET /api1/v2/invoices/{jnid}
+Authorization: Bearer {API_KEY}</div>
+
+                <h3 style="color: #667eea; margin-top: 30px;">3. Get All Invoices (GET with pagination)</h3>
+                <div class="code-block">GET /api1/v2/invoices?from=0&size=50
+Authorization: Bearer {API_KEY}</div>
+
+                <h3 style="color: #667eea; margin-top: 30px;">4. Update Invoice (PUT)</h3>
+                <div class="code-block">PUT /api1/v2/invoices/{jnid}
+Content-Type: application/json
+Authorization: Bearer {API_KEY}
+
+{
+  "status": 2,
+  "internal_note": "Updated invoice status"
+}</div>
+
+                <h3 style="color: #667eea; margin-top: 30px;">5. Delete Invoice - Soft Delete (PUT)</h3>
+                <div class="code-block">PUT /api1/v2/invoices/{jnid}
+Content-Type: application/json
+Authorization: Bearer {API_KEY}
+
+{
+  "is_active": false
+}</div>
+            </div>
+
+            <div class="section">
+                <h2>Implementation Path Forward</h2>
+                <div class="recommendations">
+                    <h3>🎯 Recommended Implementation Strategy</h3>
+                    <p>To achieve 100% coverage of the Invoices API, implement the following tools using the same patterns established for Estimates:</p>
+                    <ul>
+                        <li><strong>Priority 1 - Read Operations (GET):</strong>
+                            <ul style="margin-top: 10px;">
+                                <li><code>get_invoices</code> - List all invoices with pagination and filtering</li>
+                                <li><code>get_invoice</code> - Retrieve single invoice by JNID with complete field mapping</li>
+                            </ul>
+                        </li>
+                        <li><strong>Priority 2 - Create Operation (POST):</strong>
+                            <ul style="margin-top: 10px;">
+                                <li><code>create_invoice</code> - Create new invoice with items and financial calculations</li>
+                            </ul>
+                        </li>
+                        <li><strong>Priority 3 - Update Operation (PUT):</strong>
+                            <ul style="margin-top: 10px;">
+                                <li><code>update_invoice</code> - Update existing invoice properties</li>
+                            </ul>
+                        </li>
+                        <li><strong>Priority 4 - Delete Operation (PUT):</strong>
+                            <ul style="margin-top: 10px;">
+                                <li><code>delete_invoice</code> - Soft delete invoice by setting is_active to false</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3 style="margin-top: 25px;">📋 Implementation Checklist</h3>
+                    <ul>
+                        <li>✅ Create <code>src/tools/invoices/</code> directory</li>
+                        <li>✅ Implement GetInvoicesTool with pagination support</li>
+                        <li>✅ Implement GetInvoiceTool with complete 48-field mapping</li>
+                        <li>✅ Implement CreateInvoiceTool with required field validation</li>
+                        <li>✅ Implement UpdateInvoiceTool with partial update support</li>
+                        <li>✅ Implement DeleteInvoiceTool with soft delete pattern</li>
+                        <li>✅ Add cache integration (30-minute TTL for invoice details, 20-minute for list)</li>
+                        <li>✅ Register all 5 tools in <code>src/tools/index.ts</code></li>
+                        <li>✅ Build and test TypeScript compilation</li>
+                        <li>✅ Deploy to production (Render.com)</li>
+                        <li>✅ Test all operations with real API calls</li>
+                        <li>✅ Generate completion report with 100% coverage verification</li>
+                    </ul>
+
+                    <h3 style="margin-top: 25px;">🔧 Technical Implementation Notes</h3>
+                    <ul>
+                        <li><strong>Follow Estimates Pattern:</strong> Use the same structure as Estimates tools for consistency</li>
+                        <li><strong>Complete Field Coverage:</strong> Map all 48 fields explicitly in GET operations</li>
+                        <li><strong>Financial Calculations:</strong> Auto-calculate subtotal, total, cost, margin, and due amounts</li>
+                        <li><strong>Date Handling:</strong> Provide both Unix timestamps and ISO 8601 formatted dates</li>
+                        <li><strong>Cache Integration:</strong> Use withCache wrapper for GET operations</li>
+                        <li><strong>Error Handling:</strong> Return success/error objects with metadata</li>
+                        <li><strong>API v2 Compliance:</strong> Include jnid in request body for PUT operations</li>
+                        <li><strong>Type Safety:</strong> Create complete TypeScript interfaces for Invoice entity</li>
+                    </ul>
+
+                    <h3 style="margin-top: 25px;">📈 Expected Outcome</h3>
+                    <p>Upon completion of all 5 tools:</p>
+                    <ul>
+                        <li>Coverage will increase from <strong>0% → 100%</strong></li>
+                        <li>All 5 documented operations will be fully implemented</li>
+                        <li>Total MCP tools will increase from 88 → 93</li>
+                        <li>Invoices will have feature parity with Estimates</li>
+                        <li>Complete CRUD operations available for invoice management</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Documentation Source</h2>
+                <div class="alert alert-info">
+                    <strong>📄 Official API Documentation:</strong><br>
+                    File: <code>C:\Users\benito\poweria\jobnimbus\jobnimbus-mcp-remote\Invoices.txt</code><br>
+                    Lines: 641<br>
+                    Verified: January 2025<br><br>
+                    This report is based on the official JobNimbus API v2 documentation for the /v2/invoices endpoint.
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>JobNimbus MCP Remote Integration</strong></p>
+            <p>Invoices API Coverage Analysis</p>
+            <p class="timestamp">Generated: January 14, 2025 | Status: 0% Implementation Coverage</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -6,6 +6,7 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import compression from 'compression';
 import { extractApiKey } from '../middleware/apiKeyExtractor.js';
 import { rateLimiter } from '../middleware/rateLimiter.js';
 import { errorHandler } from '../middleware/errorHandler.js';
@@ -27,6 +28,20 @@ app.use(helmet());
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   credentials: true,
+}));
+
+/**
+ * Compression middleware (OPTIMIZATION: 60-70% bandwidth reduction)
+ */
+app.use(compression({
+  level: 6, // Balanced compression (1-9, higher = more compression but slower)
+  threshold: 1024, // Only compress responses > 1KB
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
 }));
 
 /**

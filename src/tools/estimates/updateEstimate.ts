@@ -219,6 +219,9 @@ export class UpdateEstimateTool extends BaseTool<UpdateEstimateInput, any> {
   }
 
   async execute(input: UpdateEstimateInput, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       // Build update body with only provided fields
       // CRITICAL: Include jnid in body (JobNimbus API v2 requirement)
@@ -400,7 +403,7 @@ export class UpdateEstimateTool extends BaseTool<UpdateEstimateInput, any> {
           : '0%';
       }
 
-      return {
+      const successData = {
         success: true,
         message: 'Estimate updated successfully',
         data: response.data,
@@ -410,8 +413,39 @@ export class UpdateEstimateTool extends BaseTool<UpdateEstimateInput, any> {
           timestamp: new Date().toISOString(),
         },
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([successData], input, context, {
+          entity: 'estimate',
+          maxRows: 1,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: 1,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            operation: 'update',
+            estimate_jnid: input.jnid,
+            fields_updated: Object.keys(updateBody).length,
+            updated_fields: Object.keys(updateBody),
+            items_updated: !!input.items,
+            items_count: input.items?.length || 0,
+            data_freshness: 'real-time',
+            api_endpoint: `PUT /api1/v2/estimates/${input.jnid}`,
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return successData;
     } catch (error) {
-      return {
+      const errorResponse = {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update estimate',
         jnid: input.jnid,
@@ -420,6 +454,35 @@ export class UpdateEstimateTool extends BaseTool<UpdateEstimateInput, any> {
           timestamp: new Date().toISOString(),
         },
       };
+
+      // Use handle-based response if requested (even for errors)
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([errorResponse], input, context, {
+          entity: 'estimate',
+          maxRows: 0,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: 0,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            operation: 'update',
+            estimate_jnid: input.jnid,
+            error: true,
+            error_message: error instanceof Error ? error.message : 'Failed to update estimate',
+            data_freshness: 'real-time',
+            api_endpoint: `PUT /api1/v2/estimates/${input.jnid}`,
+          },
+        };
+      }
+
+      // Fallback to legacy error response
+      return errorResponse;
     }
   }
 }

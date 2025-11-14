@@ -61,6 +61,9 @@ export class GetMarginAnalysisTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const minJobCount = input.min_job_count || 3;
       const focusArea = input.focus_area || 'all';
@@ -225,7 +228,8 @@ export class GetMarginAnalysisTool extends BaseTool<any, any> {
         medianValue
       );
 
-      return {
+      // Build response data
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         filters: {
@@ -248,6 +252,32 @@ export class GetMarginAnalysisTool extends BaseTool<any, any> {
         pricing_insights: insights,
         recommendations: this.generateRecommendations(marginByTypeArray, marginByRepArray, insights),
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'margin_analysis',
+          maxRows: marginByTypeArray.length + marginByRepArray.length + insights.length,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            focus_area: focusArea,
+            total_jobs: totalJobs,
+            team_avg_deal: teamAvgDeal,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

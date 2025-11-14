@@ -1,0 +1,648 @@
+Account
+The Account API endpoint allows you to view, create or edit settings within a JobNimbus account.
+
+Referenced Path:
+Plain Text
+/account
+GET
+Retrieve Account Settings
+https://app.jobnimbus.com/api1/account/settings
+This request allows you to retrieve the configuration of a JobNimbus account's settings.
+
+Response Codes:
+
+HTTP Status 200 = success
+Anything other status code = failure and will include an error message in the response
+Response:
+
+If a field is passed then the API will return a value in that field from the customer object.
+If a field is null then see an example of the partial response below:
+{
+  "workflows": [
+    {
+      "id": 1,
+      "order": 1,
+      "object_type": "contact",
+      "name": "Customer",
+      "is_sub_contractor": false,
+      "is_supplier": false,
+      "is_active": true,
+      "can_access_by_all": false,
+      "is_vendor": false,
+      "icon": null,
+    "status": [
+        {
+          "id": 1,
+          "name": "Lead",
+          "is_lead": true,
+          "is_closed": false,
+          "is_active": true,
+          "is_archived": false,
+          "send_to_quickbooks": false,
+          "force_mobile_sync": false,
+          "order": 1,
+          "profile_ids": [
+            0
+          ]
+        },....]      
+    },
+    .....
+  ],
+  "fileTypes": [
+    {
+      "FileTypeId": 1,
+      "TypeName": "Document",
+      "IsActive": true
+    },
+  .....
+  ],
+  "taskTypes": [
+    {
+      "TaskTypeId": 1,
+      "TypeName": "Task",
+      "DefaultName": "Task",
+      "Icon": "",
+      "HideFromTaskList": false,
+      "HideFromCalendarView": false,
+      "IsActive": true
+    },
+ .....
+  ],
+  "activityTypes": [
+    {
+      "ActivityTypeId": 1,
+      "TypeName": "Note",
+      "ShowInJobShare": false,
+      "IsActive": true
+    },
+  .....
+  ],
+  "sources": [
+    {
+      "JobSourceId": 1,
+      "SourceName": "Referral",
+      "IsActive": true
+    },
+     .....
+  ]
+}
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Example Request
+Retrieve Account Settings
+curl
+curl --location 'https://app.jobnimbus.com/api1/account/settings' \
+--header 'Authorization: bearer <token>' \
+--header 'Content-Type: application/json'
+Example Response
+Body
+Headers (0)
+No response body
+This request doesn't return any response body
+GET
+Retrieve Group Information
+https://app.jobnimbus.com/api1/account/settings?field=groups
+This request allows you to retrieve the configuration of a JobNimbus account's settings.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+Response:
+
+If a field is passed then the API will return a value in that field from the customer object.
+
+If a field is null then see an example of the partial response below:
+[
+ {
+ "name": "Sales",
+ "managers": [
+  "managerid1",
+   "managerid2",
+  "managerid3"
+ ],
+ "members": [ 
+  "memberid1",
+  "memberid2",
+  "memberid3"
+ ]
+},
+...
+]
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+PARAMS
+field
+groups
+
+Example Request
+Retrieve Group Information
+curl
+curl --location 'https://app.jobnimbus.com/api1/account/settings?field=groups' \
+--header 'Authorization: bearer <token>' \
+--header 'Content-Type: application/json'
+Example Response
+Body
+Headers (0)
+No response body
+This request doesn't return any response body
+GET
+Retrieve Users or Team Members
+https://app.jobnimbus.com/api1/account/users
+This request allows you to retrieve a list of an account's JobNimbus users.
+
+Response Codes:
+
+HTTP Status 200 = success
+Anything other status code = failure and will include an error message in the response
+Response:
+
+Example of a partial response:
+{
+    "users": [
+        {
+            "first_name": "fname",
+            "last_name": "lname",
+            "image_url": "",
+            "id": "abcdid", // this is user's contact jnid
+            "calendar_color": "#2ECC71",
+            "email": "abc@jobnimbus.com",
+            "is_active": true // whether user is active or disabled
+        },....
+   "date_updated": 1519413931 // last time when this document updated (user added, updated, modified)
+}
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Example Request
+Retrieve Users or Team Members
+curl
+curl --location 'https://app.jobnimbus.com/api1/account/users' \
+--header 'Authorization: bearer <token>' \
+--header 'Content-Type: application/json'
+Example Response
+Body
+Headers (0)
+No response body
+This request doesn't return any response body
+GET
+Retrieve UoMs
+https://app.jobnimbus.com/api1/utility/uoms
+This request allows you to retrieve a list of Units of Measurement.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+Response:
+
+Example of a partial response:
+
+Plain Text
+[
+"SQ",
+"UOM1",...
+]
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+POST
+Create a Workflow
+https://app.jobnimbus.com/api1/account/workflow
+This request allows you to create a new workflow within a Jobnimbus account. Note: The token used must have an access profile level with access to the account settings page.
+
+Response Codes:
+
+HTTP Status 200 = success
+Anything other status code = failure and will include an error message in the response
+Response:
+
+If a workflow already exists, then the API endpoint will return with a response with the status for that workflow. If the workflow didn't exist, then the API endpoint will return a response similar to the example, below:
+{
+      "id": 1,
+      "order": 1,
+      "object_type": "contact",
+      "name": "Customer",
+      "is_sub_contractor": false,
+      "is_supplier": false,
+      "is_active": true,
+      "can_access_by_all": false,
+      "is_vendor": false,
+      "icon": null,
+    "status": [
+        {
+          "id": 1,
+          "name": "Lead",
+          "is_lead": true,
+          "is_closed": false,
+          "is_active": true,
+          "is_archived": false,
+          "send_to_quickbooks": false,
+          "force_mobile_sync": false,
+          "order": 1,
+          "profile_ids": [
+            0
+          ]
+        },....]      
+    },
+    .....
+  ]
+}
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw
+{
+    "name":"Customer", //workflow name, it's required parameter
+    "object_type":"contact", //workflow object type, it's requied paramter, (valid values: contact, job, workorder)
+    "is_sub_contractor": true/false, //optional field (default = false)
+    "can_access_by_all": true/false, //optional field (default = false)
+    "is_vendor": true/false, //optional field (default = false)
+    "is_active": true/false, //optional field (default = true)
+    "is_supplier": true/false, //optional field (default = false)
+}
+
+POST
+Create a Status within a Workflow
+https://app.jobnimbus.com/api1/account/workflow/<workflowid>/status
+This request allows you to create a new status within a workflow within a Jobnimbus account. Note: The token used must have an access profile level with access to the account settings page.
+
+Response Codes:
+
+HTTP Status 200 = success
+Anything other status code = failure and will include an error message in the response
+Response:
+
+If a workflow already exists, then the API endpoint will return with a response with the status for that workflow. If the workflow didn't exist, then the API endpoint will return a response similar to the example, below:
+
+View More
+Plain Text
+{
+  "id": 1,
+  "name": "Lead",
+  "is_lead": true,
+  "is_closed": false,
+  "is_active": true,
+  "is_archived": false,
+  "send_to_quickbooks": false,
+  "force_mobile_sync": false,
+  "order": 1,
+  "profile_ids": [
+    0
+  ]
+}
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw
+{
+    "name":"Lead", //status name, it's required parameter
+    "is_lead": true/false, //optional field (default = false)
+    "is_closed": true/false, //optional field (default = false)
+    "is_archived": true/false, //optional field (default = false)
+    "send_to_quickbooks": true/false, //optional field (default = false)
+    "force_mobile_sync": true/false, //optional field (default = false)
+    "is_active": true/false, //optional field (default = true)
+}
+Example Request
+Create a Status within a Workflow
+View More
+curl
+curl --location 'https://app.jobnimbus.com/api1/account/workflow/<workflowid>/status' \
+--header 'Authorization: bearer <token>' \
+--header 'Content-Type: application/json' \
+--data '{
+    "name":"Lead", //status name, it'\''s required parameter
+    "is_lead": true/false, //optional field (default = false)
+    "is_closed": true/false, //optional field (default = false)
+    "is_archived": true/false, //optional field (default = false)
+    "send_to_quickbooks": true/false, //optional field (default = false)
+    "force_mobile_sync": true/false, //optional field (default = false)
+    "is_active": true/false, //optional field (default = true)
+}'
+Example Response
+Body
+Headers (0)
+No response body
+This request doesn't return any response body
+POST
+Create a Lead Source
+https://app.jobnimbus.com/api1/account/leadsource
+This request allows you to create a new workflow within a Jobnimbus account. Note: The token used must have an access profile level with access to the account settings page.
+
+Response Codes:
+
+HTTP Status 200 = success
+Anything other status code = failure and will include an error message in the response
+Response:
+
+If a workflow already exists, then the API endpoint will return with a response with the status for that workflow. If the workflow didn't exist, then the API endpoint will return a response similar to the example, below:
+{
+      "id": 1,
+      "order": 1,
+      "object_type": "contact",
+      "name": "Customer",
+      "is_sub_contractor": false,
+      "is_supplier": false,
+      "is_active": true,
+      "can_access_by_all": false,
+      "is_vendor": false,
+      "icon": null,
+    "status": [
+        {
+          "id": 1,
+          "name": "Lead",
+          "is_lead": true,
+          "is_closed": false,
+          "is_active": true,
+          "is_archived": false,
+          "send_to_quickbooks": false,
+          "force_mobile_sync": false,
+          "order": 1,
+          "profile_ids": [
+            0
+          ]
+        },....]      
+    },
+    .....
+  ]
+}
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw
+{
+    "SourceName":"Google", //lead source name, it's required parameter
+    "IsActive": true/false, //optional field (default = true)
+}
+Example Request
+Create a Lead Source
+curl
+curl --location 'https://app.jobnimbus.com/api1/account/leadsource' \
+--header 'Authorization: bearer <token>' \
+--header 'Content-Type: application/json' \
+--data '{
+    "SourceName":"Google", //lead source name, it'\''s required parameter
+    "IsActive": true/false, //optional field (default = true)
+}'
+Example Response
+Body
+Headers (0)
+No response body
+This request doesn't return any response body
+POST
+Create a Custom Field
+https://app.jobnimbus.com/api1/account/customfield
+This request allows you to create a new custom field within a Jobnimbus account. Note: The token used must have an access profile level with access to the account settings page.
+
+Response Codes:
+
+HTTP Status 200 = success
+Anything other status code = failure and will include an error message in the response
+Response:
+
+If a custom field with that name already exists, then the API endpoint will return with a response with the status for that custom field. If the custom field didn't exist, then the API endpoint will return a response similar to the example, below:
+{
+    "title": "new2",
+    "type": "string",
+    "visible": true,
+    "is_currency": false,
+    "is_ddn": true,
+    "is_required": false,
+    "options": [
+        "test",
+        "test1"
+    ],
+    "field": "cf_string_7"
+}
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw
+{
+    "title":"Claim Number", //custom field title/UI name, it's required parameter
+    "object_type":"contact", //object type, it's requied paramter, (valid values: contact, job, workorder)
+    "type": "dropdown", //custom field type, it's required paramter (valid values: date, double, long, string, boolean, dropdown)
+    "is_required": true/false, //optional field (default = false)
+    "is_currency": true/false, //optional field (default = false), only valid for field_type = double
+    "options": [ "val1", "val2", "val3"] //requited field if field_type is dropdown (all possible options)
+}
+
+POST
+Create a File Type
+https://app.jobnimbus.com/api1/account/filetype
+This request allows you to create a new file type within a Jobnimbus account. Note: The token used must have an access profile level with access to the account settings page.
+
+Response Codes:
+
+HTTP Status 200 = success
+Anything other status code = failure and will include an error message in the response
+Response:
+
+If a file type with that name already exists, then the API endpoint will return with a response with the status for that file type. If the file type didn't exist, then the API endpoint will return a response similar to the example, below:
+
+Plain Text
+{
+    "FileTypeId": 895,
+    "TypeName": "Document",
+    "IsActive": true
+}
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw
+{
+    "TypeName":"Document", //file type name (attachment category name), it's required parameter
+    "IsActive": true/false, //optional field (default = true)
+}
+POST
+Create a Task Type
+https://app.jobnimbus.com/api1/account/tasktype
+This request allows you to create a new task type within a Jobnimbus account. Note: The token used must have an access profile level with access to the account settings page.
+
+Response Codes:
+
+HTTP Status 200 = success
+Anything other status code = failure and will include an error message in the response
+Response:
+
+If a task type with that name already exists, then the API endpoint will return with a response with the status for that task type. If the task type didn't exist, then the API endpoint will return a response similar to the example, below:
+{
+    "TaskTypeId": 1469,
+    "TypeName": "Task",
+    "DefaultName": "Task",
+    "Icon": null,
+    "HideFromTaskList": false,
+    "HideFromCalendarView": false,
+    "IsActive": true
+}
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw
+{
+    "TypeName":"Task", //task type name, it's required parameter
+    "IsActive": true/false, //optional field (default = true)
+    "HideFromCalendarView": true/false, //optional field (default = false)
+    "HideFromTaskList": true/false, //optional field (default = false)
+    "DefaultName": "Task Name" //optional field (default value will be same as name)
+}
+POST
+Create an Activity Type
+https://app.jobnimbus.com/api1/account/activitytype
+This request allows you to create a new activity type within a Jobnimbus account. Note: The token used must have an access profile level with access to the account settings page.
+
+Response Codes:
+
+HTTP Status 200 = success
+Anything other status code = failure and will include an error message in the response
+Response:
+
+If an activity type with that name already exists, then the API endpoint will return with a response with the status for that activity type. If the activity type didn't exist, then the API endpoint will return a response similar to the example, below:
+
+Plain Text
+{
+    "ActivityTypeId": 1518,
+    "TypeName": "Note",
+    "ShowInJobShare": true,
+    "IsActive": true
+}
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw
+{
+    "TypeName":"Task", //task type name, it's required parameter
+    "IsActive": true/false, //optional field (default = true)
+    "HideFromCalendarView": true/false, //optional field (default = false)
+    "HideFromTaskList": true/false, //optional field (default = false)
+    "DefaultName": "Task Name" //optional field (default value will be same as name)
+}
+POST
+Create a Location
+https://app.jobnimbus.com/api1/account/location
+This request allows you to create a new location within a Jobnimbus account. Note: The token used must have an access profile level with access to the account settings page.
+
+Response Codes:
+
+HTTP Status 200 = success
+Anything other status code = failure and will include an error message in the response
+Response:
+
+If a location with that name already exists, then the API endpoint will return with a response with the status for that location. If the location didn't exist, then the API endpoint will return a response similar to the example, below:
+Eg1:
+{
+    "id": 4,
+    "name": "Location Name",
+    "is_active": true,
+    "address_line1": "address1",
+    "address_line2": "address2",
+    "code": "HH",
+    "city": "American Fork",
+    "zip": "84004",
+    "phone": "999-999-9999"
+}
+Eg2:
+{
+    "id": 1,
+    "name": "HungryHead",
+    "code": "HH",
+    "address_line1": "102, sapetrshi apt",
+    "address_line2": "sagrampura",
+    "city": "Surat",
+    "state_text": "Gujarat",
+    "country_name": "India",
+    "zip": "392002",
+    "phone": "9033204250",
+    "logo_id": "j5m9a0agbjnt3xvv",
+    "header_color": "#c1cfd8",
+    "is_active": true,
+    "calendar": {
+        "weekends": true,
+        "start_day": 0,
+        "business_hours": {
+            "start": 1502649000,
+            "end": 1502734500
+        }
+    }
+}
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw
+{
+    "name":"Location Name", //Location name, it's required parameter
+    "address_line1": "address1", //optional field
+    "address_line2": "address2", //optional field
+    "code": "HH", //optional field
+    "city": "American Fork", //optional field
+    "zip": "84004", //optional field
+    "phone": "999-999-9999", //optional field
+    "is_active": true/false, //optional field (default = true)
+}
+

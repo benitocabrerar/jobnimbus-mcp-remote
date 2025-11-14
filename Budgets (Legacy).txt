@@ -1,0 +1,23 @@
+Budgets (Legacy)
+The Budget API endpoint allows you to view Budgets within JobNimbus.
+
+Referenced Path:
+Plain Text
+/budgets
+URL:
+Plain Text
+https://app.jobnimbus.com/api1/budgets
+GET
+Retrieve ALL Budgets
+https://app.jobnimbus.com/api1/budgets
+This request allows you to retrieve all of the work orders within a JobNimbus account.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+HEADERS
+Authorization
+bearer <token>

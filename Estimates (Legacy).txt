@@ -1,0 +1,893 @@
+Estimates (Legacy)
+The Estimates API endpoint allows you to create, view, and update an individual or group of Estimates within JobNimbus.
+
+Referenced Path:
+Plain Text
+/v2/estimates
+URL:
+Plain Text
+https://app.jobnimbus.com/api1/v2/estimates
+Field Properties:
+Table
+Field Name	Description	Required to POST	Format
+attachment_id	jnid of PDF file	no	text
+cost	Total cost of the estimate	no	long
+created_by	ID of the creator	no	text
+created_by_name	Name of the creator	no	text
+customer	Customer JNID	no	text
+date_created	Unix timestamp of creation date	no	date
+date_estimate	Unix timestamp of estimate date	no	date
+date_status_change	Unix timestamp of last status change	no	date
+date_updated	Unix timestamp of last update	no	date
+esigned	Boolean indicating if electronically signed	no	boolean
+external_id		no	string
+guid	Globally Unique Identifier	no	string
+is_active	Boolean indicating if estimate is active	yes	boolean
+is_archived	Boolean indicating if estimate is archived	no	boolean
+items	Array of invoice items	yes	array
+jnid	JobNimbus ID	no	string
+location	Object containing location ID	no	array
+margin	Profit margin	no	integer
+number	Invoice number	no	string
+owners	Array of owner objects	no	array
+payments	Array of payment objects	no	array
+recid	Record ID	no	long
+related	Array of related objects (jobs, contacts)	yes	array
+sales_rep	Sales representative ID	no	string
+sales_rep_name	Sales representative name	no	string
+status	Numeric status code	yes	integer
+status_name	Status name	no	string
+subtotal	Subtotal amount	no	string
+tax	Tax Amount	no	long
+template_id	ID of the invoice template	no	string
+total	Total invoice amount	no	long
+type	Type of document (always "estimate" for this endpoint)	yes	string
+
+POST
+Create an Estimate
+https://app.jobnimbus.com/api1/v2/estimates
+This request allows you to create a new estimate within JobNimbus.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw (json)
+{
+  "type": "estimate",
+  "date_created": 1683819562,
+  "date_updated": 1684160281,
+  "date_estimate": 1683781200,
+  "external_id": "993479",
+  "number": "1047",
+  "is_active": true,
+  "status": 1,  
+  "internal_note": "Project Estimate",
+  "related": [
+    {
+      "id": "lyu27jrnumcrz2u89k3ydyr",
+      "type": "job"
+    }
+  ],
+  "items": [
+    {
+      "name": "Services",
+      "description": "Test and Troy Coon / SIDING",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": 15438.99,
+      "jnid": "lyqi3qx3ee8hvnwh8g53wo9"
+    },
+    {
+      "name": "Services",
+      "description": "Shake siding",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": 1303,
+      "jnid": "lyqi3qx3ee8hvnwh8g53wo9"
+    },
+    {
+      "name": "Services",
+      "description": "Remove Lights",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": -349.52,
+      "jnid": "lyqi3qx3ee8hvnwh8g53wo9"
+    }
+  ]
+}
+PUT
+Update an Estimate
+https://app.jobnimbus.com/api1/v2/estimates/<jnid>
+Update Existing Estimate
+This endpoint allows you to update an existing Estimate within JobNimbus.
+
+Request Body
+type: 'estimate'
+
+date_created: Timestamp of the creation date
+
+date_updated: Timestamp of the last update date
+
+date_estimate: Timestamp of the estimate date
+
+jnid: Unique identifier for the estimate
+
+number: estimate number
+
+is_active: Indicates if the estimate is active
+
+status: Status of the estimate
+
+internal_note: Internal note for the estimate
+
+related: Array of related entities with their IDs and types
+
+items: Array of items included in the estimate with details like name, description, quantity, price, etc.
+
+Response
+The response of this request can be documented as a JSON schema. Here is a partial example of the response:
+{
+    "type": "estimate",
+    "external_id": null,
+    "guid": "12345678-ABCD-1234-EFGH-1234567890AB",
+    "merged": null,
+    "class_id": null,
+    "class_name": null,
+    "supplier": null,
+    "recid": 1000,
+    "attachment_id": "ATTACHMENT_ID_123",
+    "customer": "CUSTOMER_ID_123",
+    "created_by": "system_qbo",
+    "created_by_name": "QuickBooks",
+    "date_created": 1600000000,
+    "date_updated": 1600000001,
+    "esigned": false,
+    "is_active": true,
+    "is_archived": true,
+    "related": [
+        {
+            "id": "JOB_ID_123",
+            "name": "John Doe / PROJECT-123",
+            "number": "1000",
+            "type": "job",
+            "email": null,
+            "subject": null
+        },
+        {
+            "id": "CONTACT_ID_123",
+            "name": "John Doe (CLIENT-123)",
+            "number": "2000",
+            "type": "contact",
+            "email": null,
+            "subject": null
+        }
+    ],
+    "status": 4,
+    "status_name": "Closed",
+    "number": "INV-001",
+    "location": {
+        "id": 1
+    },
+    "subtotal": 10000,
+    "margin": 0,
+    "tax": 0,
+    "total": 10000,
+    "cost": 10000,
+    "terms": null,
+    "note": "",
+    "date_estimate": 1600000003,
+    "date_status_change": 1600000004,
+    "items": [
+        {
+            "quickbooksId": "1",
+            "showGroupTotal": null,
+            "addMarkup": null,
+            "photos": [],
+            "jnid": "ITEM_ID_123",
+            "name": "Service",
+            "uom": "Items",
+            "item_type": "material",
+            "description": "John Doe / PROJECT-123 / SERVICE",
+            "quantity": 1,
+            "price": 10000,
+            "preSurchargePrice": null,
+            "cost": 10000,
+            "amount": 10000,
+            "tax_couch_id": null,
+            "tax_name": null,
+            "tax_rate": 0,
+            "labor": {
+                "quickbooksId": null,
+                "price": 0,
+                "preSurchargePrice": null,
+                "cost": 0,
+                "addMarkup": null,
+                "amount": 0,
+                "tax_couch_id": null,
+                "tax_name": null,
+                "tax_rate": 0
+            },
+            "sku": null,
+            "color": null,
+            "category": null
+        }
+    ],
+    "sections": [],
+    "owners": [
+        {
+            "id": "OWNER_ID_123"
+        }
+    ],
+    "sales_rep": "SALES_REP_ID_123",
+    "sales_rep_name": "Jane Smith",
+    "jnid": "INVOICE_ID_123",
+    "internal_note": "",
+    "template_id": "TEMPLATE_ID_123"
+}
+
+Response JSON Schema:
+{
+    "type": "object",
+    "properties": {
+        "type": {"type": "string"},
+        "external_id": {"type": ["string", "null"]},
+        "guid": {"type": "string"},
+        "merged": {"type": ["string", "null"]},
+        "class_id": {"type": ["string", "null"]},
+        "class_name": {"type": ["string", "null"]},
+        "supplier": {"type": ["string", "null"]},
+        "recid": {"type": "integer"},
+        "attachment_id": {"type": "string"},
+        "customer": {"type": "string"},
+        "created_by": {"type": "string"},
+        "created_by_name": {"type": "string"},
+        "date_created": {"type": "integer"},
+        "date_updated": {"type": "integer"},
+        "esigned": {"type": "boolean"},
+        "is_active": {"type": "boolean"},
+        "is_archived": {"type": "boolean"},
+        "related": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "name": {"type": "string"},
+                    "number": {"type": "string"},
+                    "type": {"type": "string"},
+                    "email": {"type": ["string", "null"]},
+                    "subject": {"type": ["string", "null"]}
+                }
+            }
+        },
+        "status": {"type": "integer"},
+        "status_name": {"type": "string"},
+        "number": {"type": "string"},
+        "location": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"}
+            }
+        },
+        "subtotal": {"type": "integer"},
+        "margin": {"type": "integer"},
+        "tax": {"type": "integer"},
+        "total": {"type": "integer"},
+        "cost": {"type": "integer"},
+        "note": {"type": "string"},
+        "date_estimate": {"type": "integer"},
+        "date_status_change": {"type": "integer"},
+        "items": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "quickbooksId": {"type": ["string", "null"]},
+                    "showGroupTotal": {"type": ["string", "null"]},
+                    "addMarkup": {"type": ["string", "null"]},
+                    "photos": {"type": "array"},
+                    "jnid": {"type": "string"},
+                    "name": {"type": "string"},
+                    "uom": {"type": "string"},
+                    "item_type": {"type": "string"},
+                    "description": {"type": "string"},
+                    "quantity": {"type": "integer"},
+                    "price": {"type": "integer"},
+                    "preSurchargePrice": {"type": ["string", "null"]},
+                    "cost": {"type": "integer"},
+                    "amount": {"type": "integer"},
+                    "tax_couch_id": {"type": ["string", "null"]},
+                    "tax_name": {"type": ["string", "null"]},
+                    "tax_rate": {"type": "integer"},
+                    "labor": {
+                        "type": "object",
+                        "properties": {
+                            "quickbooksId": {"type": ["string", "null"]},
+                            "price": {"type": "integer"},
+                            "preSurchargePrice": {"type": ["string", "null"]},
+                            "cost": {"type": "integer"},
+                            "addMarkup": {"type": ["string", "null"]},
+                            "amount": {"type": "integer"},
+                            "tax_couch_id": {"type": ["string", "null"]},
+                            "tax_name": {"type": ["string", "null"]},
+                            "tax_rate": {"type": "integer"}
+                        }
+                    },
+                    "sku": {"type": ["string", "null"]},
+                    "color": {"type": ["string", "null"]},
+                    "category": {"type": ["string", "null"]}
+                }
+            }
+        },
+        "sections": {"type": "array"},
+        "owners": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"}
+                }
+            }
+        },
+        "sales_rep": {"type": "string"},
+        "sales_rep_name": {"type": "string"},
+        "jnid": {"type": "string"},
+        "internal_note": {"type": "string"},
+        "template_id": {"type": "string"},
+        "version": {"type": ["string", "null"]},
+        "duplicate_from_id": {"type": ["string", "null"]}
+    }
+}
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw (json)
+{
+    "type": "estimate",
+    "date_created": 1600000000,
+    "date_updated": 1600000001,
+    "date_estimate": 1600000002,
+    "external_id": "EXT-123456",
+    "number": "INV-001",
+    "is_active": true,
+    "status": 1,
+    "internal_note": "Sample Estimate Note",
+    "related": [
+        {
+            "id": "JOB-123456",
+            "type": "job"
+        }
+    ],
+    "items": [
+        {
+            "name": "Service A",
+            "description": "Description of Service A",
+            "uom": "Items",
+            "item_type": "material",
+            "quantity": 1,
+            "price": 1000.00,
+            "jnid": "ITEM-123456"
+        },
+        {
+            "name": "Service B",
+            "description": "Description of Service B",
+            "uom": "Items",
+            "item_type": "material",
+            "quantity": 1,
+            "price": 500.00,
+            "jnid": "ITEM-123456"
+        },
+        {
+            "name": "Discount",
+            "description": "Discount Description",
+            "uom": "Items",
+            "item_type": "material",
+            "quantity": 1,
+            "price": -100.00,
+            "jnid": "ITEM-123456"
+        }
+    ]
+}
+
+PUT
+Delete an Estimate
+https://app.jobnimbus.com/api1/v2/estimates/<jnid>
+Delete an Existing Estimate
+This endpoint allows you to update an existing estimate within JobNimbus.
+
+Request Body
+is_active: Indicates if the estimate is active or not
+Response
+The response of this request can be documented as a JSON schema. Here is a partial example of the response:
+{    
+  "is_active": false,    
+  "type": "estimate",
+  "date_created": 1683819562,
+  "date_updated": 1684160281,
+  "date_estimate": 1683781200,
+  "external_id": "993479",
+  "number": "1047",
+  "status": 1,  
+  "internal_note": "Project Estimate",
+  "related": [
+    {
+      "id": "lyu27jrnumcrz2u89k3ydyr",
+      "type": "job"
+    }
+  ],
+  "items": [
+    {
+      "name": "Services",
+      "description": "Test and Troy Coon / SIDING",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": 15438.99,
+      "jnid": "lyqi3qx3ee8hvnwh8g53wo9"
+    },
+    {
+      "name": "Services",
+      "description": "Shake siding",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": 1303,
+      "jnid": "lyqi3qx3ee8hvnwh8g53wo9"
+    },
+    {
+      "name": "Services",
+      "description": "Remove Lights",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": -349.52,
+      "jnid": "lyqi3qx3ee8hvnwh8g53wo9"
+    }
+  ]
+}
+
+Response JSON Schema:
+{
+    "type": "object",
+    "properties": {
+        "type": {"type": "string"},
+        "external_id": {"type": ["string", "null"]},
+        "guid": {"type": "string"},
+        "merged": {"type": ["string", "null"]},
+        "class_id": {"type": ["string", "null"]},
+        "class_name": {"type": ["string", "null"]},
+        "supplier": {"type": ["string", "null"]},
+        "recid": {"type": "integer"},
+        "attachment_id": {"type": "string"},
+        "customer": {"type": "string"},
+        "created_by": {"type": "string"},
+        "created_by_name": {"type": "string"},
+        "date_created": {"type": "integer"},
+        "date_updated": {"type": "integer"},
+        "esigned": {"type": "boolean"},
+        "is_active": {"type": "boolean"},
+        "is_archived": {"type": "boolean"},
+        "related": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "name": {"type": "string"},
+                    "number": {"type": "string"},
+                    "type": {"type": "string"},
+                    "email": {"type": ["string", "null"]},
+                    "subject": {"type": ["string", "null"]}
+                }
+            }
+        },
+        "status": {"type": "integer"},
+        "status_name": {"type": "string"},
+        "number": {"type": "string"},
+        "location": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"}
+            }
+        },
+        "subtotal": {"type": "integer"},
+        "margin": {"type": "integer"},
+        "tax": {"type": "integer"},
+        "total": {"type": "integer"},
+        "cost": {"type": "integer"},
+        "terms": {"type": ["string", "null"]},
+        "note": {"type": "string"},
+        "date_estimate": {"type": "integer"},
+        "date_status_change": {"type": "integer"},
+        "items": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "quickbooksId": {"type": ["string", "null"]},
+                    "showGroupTotal": {"type": ["string", "null"]},
+                    "addMarkup": {"type": ["string", "null"]},
+                    "photos": {"type": "array"},
+                    "jnid": {"type": "string"},
+                    "name": {"type": "string"},
+                    "uom": {"type": "string"},
+                    "item_type": {"type": "string"},
+                    "description": {"type": "string"},
+                    "quantity": {"type": "integer"},
+                    "price": {"type": "integer"},
+                    "preSurchargePrice": {"type": ["string", "null"]},
+                    "cost": {"type": "integer"},
+                    "amount": {"type": "integer"},
+                    "tax_couch_id": {"type": ["string", "null"]},
+                    "tax_name": {"type": ["string", "null"]},
+                    "tax_rate": {"type": "integer"},
+                    "labor": {
+                        "type": "object",
+                        "properties": {
+                            "quickbooksId": {"type": ["string", "null"]},
+                            "price": {"type": "integer"},
+                            "preSurchargePrice": {"type": ["string", "null"]},
+                            "cost": {"type": "integer"},
+                            "addMarkup": {"type": ["string", "null"]},
+                            "amount": {"type": "integer"},
+                            "tax_couch_id": {"type": ["string", "null"]},
+                            "tax_name": {"type": ["string", "null"]},
+                            "tax_rate": {"type": "integer"}
+                        }
+                    },
+                    "sku": {"type": ["string", "null"]},
+                    "color": {"type": ["string", "null"]},
+                    "category": {"type": ["string", "null"]}
+                }
+            }
+        },
+        "sections": {"type": "array"},
+        "owners": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"}
+                }
+            }
+        },
+        "sales_rep": {"type": "string"},
+        "sales_rep_name": {"type": "string"},
+        "jnid": {"type": "string"},
+        "internal_note": {"type": "string"},
+        "template_id": {"type": "string"},
+        "version": {"type": ["string", "null"]},
+        "duplicate_from_id": {"type": ["string", "null"]}
+    }
+}
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw (json)
+json
+{
+    "is_active": false
+}
+
+GET
+Retrieve an Estimate
+https://app.jobnimbus.com/api1/v2/estimates/{jnid}
+Retrieve Estimate
+This endpoint allows you to retrieve a single estimate within a JobNimbus account by providing the estimateID in the URL.
+
+Request Body
+This is a GET request and does not require a request body.
+
+Response Body
+The response will contain the details of the retrieved estimate, including the type, guid, source, recid, attachment_id, customer, created_by, created_by_name, date_sign_requested, date_signed, date_created, date_updated, is_active, signature_status, related (with id, name, number, type, email, and subject), owners (with id), sales_rep, status, status_name, number, cost, margin, subtotal, tax, total, location (with id), date_estimate, date_status_change, items (with jnid, name, description, quantity, cost, price, uom, sku, category, item_type, and amount), sections (with index, name, group, and showGroupTotal), jnid, template_id, is_archived, esigned, and sales_rep_name.
+
+Example of a partial response:
+{
+    "type": "estimate",
+    "guid": "12345678-ABCD-1234-EFGH-1234567890AB",
+    "recid": 1000,
+    "attachment_id": "ATTACHMENT_ID_123",
+    "customer": "CUSTOMER_ID_123",
+    "created_by": "system_qbo",
+    "created_by_name": "QuickBooks",
+    "date_created": 1600000000,
+    "date_updated": 1600000001,
+    "esigned": false,
+    "is_active": true,
+    "is_archived": true,
+    "related": [
+        {
+            "id": "JOB_ID_123",
+            "name": "John Doe / PROJECT-123",
+            "number": "1000",
+            "type": "job",
+            "email": null,
+            "subject": null
+        },
+        {
+            "id": "CONTACT_ID_123",
+            "name": "John Doe (CLIENT-123)",
+            "number": "2000",
+            "type": "contact",
+            "email": null,
+            "subject": null
+        }
+    ],
+    "status": 4,
+    "status_name": "Closed",
+    "number": "EST-001",
+    "location": {
+        "id": 1
+    },
+    "subtotal": 10000,
+    "margin": 0,
+    "tax": 0,
+    "total": 10000,
+    "cost": 10000,
+    "terms": null,
+    "note": "",
+    "date_estimate": 1600000003,
+    "date_status_change": 1600000004,
+    "items": [
+        {
+            "jnid": "ITEM_ID_123",
+            "name": "Service",
+            "uom": "Items",
+            "item_type": "material",
+            "description": "John Doe / PROJECT-123 / SERVICE",
+            "quantity": 1,
+            "price": 10000,
+            "cost": 10000,
+            "amount": 10000
+        }
+    ],
+    "sections": [],
+    "owners": [
+        {
+            "id": "OWNER_ID_123"
+        }
+    ],
+    "sales_rep": "SALES_REP_ID_123",
+    "sales_rep_name": "Jane Smith",
+    "jnid": "INVOICE_ID_123",
+    "internal_note": "",
+    "template_id": "TEMPLATE_ID_123",
+    "first_payment_date": 1600000006
+}
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Example Request
+Retrieve an Estimate
+curl
+curl --location -g 'https://app.jobnimbus.com/api1/v2/estimates/{jnid}' \
+--header 'Authorization: bearer <token>' \
+--header 'Content-Type: application/json'
+Example Response
+Body
+Headers (0)
+No response body
+This request doesn't return any response body
+GET
+Retrieve ALL Estimates
+https://app.jobnimbus.com/api1/v2/estimates
+Retrieve Estimates
+This endpoint allows you to retrieve all estimates within a JobNimbus account.
+
+Request Parameters:
+
+from (optional): Starting index for pagination (e.g., 10)
+
+size (optional): Number of results to return (e.g., 5)
+
+Response:
+
+The response will contain an array of estimates with the following fields:
+
+attachment_id: ID of the attachment
+
+cost: Total cost of the estimate
+
+created_by: ID of the user who created the estimate
+
+created_by_name: Name of the user who created the estimate
+
+customer: ID of the customer associated with the estimate
+
+date_created: Timestamp of the creation date
+
+date_estimate: Timestamp of the estimate date
+
+date_sign_requested: Timestamp of the sign request date
+
+date_signed: Timestamp of the sign date
+
+date_status_change: Timestamp of the status change date
+
+date_updated: Timestamp of the last update
+
+esigned: Boolean indicating if the estimate is e-signed
+
+guid: Unique identifier of the estimate
+
+is_active: Boolean indicating if the estimate is active
+
+is_archived: Boolean indicating if the estimate is archived
+
+items: Array of items within the estimate, each containing amount, cost, item type, name, price, quantity, and unit of measure
+
+jnid: ID of the estimate
+
+location: Object containing the ID of the location
+
+margin: Margin of the estimate
+
+number: Estimate number
+
+owners: Array of owners, each containing the ID
+
+recid: Record ID
+
+related: Array of related entities, each containing ID, name, number, and type
+
+sales_rep: ID of the sales representative
+
+sales_rep_name: Name of the sales representative
+
+sections: Array of sections
+
+signature_status: Status of the signature
+
+source: Source of the estimate
+
+status: Status code of the estimate
+
+status_name: Name of the status
+
+subtotal: Subtotal of the estimate
+
+tax: Tax amount
+
+template_id: ID of the template used for the estimate
+
+total: Total amount of the estimate
+
+type: always 'estimate'
+
+Example of a partial response:
+{
+    "count": 1000,
+    "results": [
+        {
+            "attachment_id": "attachmentjnid",
+            "cost": 10000,
+            "created_by": "system_qbo",
+            "created_by_name": "QuickBooks",
+            "customer": "customerjnid",
+            "date_created": 1600000000,
+            "date_estimate": 1600000000,
+            "date_sign_requested": 1600000000,
+            "date_signed": 1600000000,
+            "date_status_change": 1600000000,
+            "date_updated": 1600000000,
+            "esigned": false,
+            "guid": "12345678-ABCD-1234-EFGH-1234567890AB",
+            "is_active": true,
+            "is_archived": true,
+            "items": [
+                {
+                    "amount": 10000,
+                    "cost": 10000,
+                    "item_type": "material",
+                    "name": "Service",
+                    "price": 10000,
+                    "quantity": 1,
+                    "uom": "Items"
+                }
+            ],
+            "jnid": "Estimate_ID",
+            "location": {
+                "id": 1
+            },
+            "margin": 0,
+            "number": "EST-001",
+            "owners": [
+                {
+                    "id": "OWNER_ID_1"
+                }
+            ],
+            "recid": 1000,
+            "related": [
+                {
+                    "id": "JOB_ID_1",
+                    "name": "Sample Project / SAMPLE-ID",
+                    "number": "1000",
+                    "type": "job"
+                },
+                {
+                    "id": "CONTACT_ID_1",
+                    "name": "John Doe (SAMPLE-ID)",
+                    "number": "1001",
+                    "type": "contact"
+                }
+            ],
+            "sales_rep": "salesrepjnid",
+            "sales_rep_name": "Jane Smith",
+            "sections": [],
+            "status": 4,
+            "status_name": "Closed",
+            "subtotal": 10000,
+            "tax": 0,
+            "template_id": "templatejnid",
+            "total": 10000,
+            "type": "estimate"
+        }
+    ]
+}
+
+Response Codes:
+
+HTTP Status 200: Success
+
+Any other status code: Failure with an error message in the response
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Example Request
+Retrieve ALL Estimates
+curl
+curl --location 'https://app.jobnimbus.com/api1/v2/estimates' \
+--header 'Authorization: bearer <token>' \
+--header 'Content-Type: application/json'
+Example Response
+Body
+Headers (0)
+No response body
+This request doesn't return any response body

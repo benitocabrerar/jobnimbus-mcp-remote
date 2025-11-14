@@ -51,7 +51,39 @@ export class AnalyzeRetailPipelineTool extends BaseTool<any, any> {
   }
 
   async execute(_input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(_input);
+
     const jobs = await this.client.get(context.apiKey, 'jobs', { size: 100 });
-    return { summary: 'Retail pipeline analysis', data: jobs.data };
+
+    const responseData = {
+      summary: 'Retail pipeline analysis',
+      data: jobs.data
+    };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const jobCount = jobs.data?.results?.length || 0;
+      const envelope = await this.wrapResponse([responseData], _input, context, {
+        entity: 'retail_pipeline',
+        maxRows: jobCount,
+        pageInfo: {
+          current_page: 1,
+          total_pages: 1,
+          has_more: false,
+        },
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          total_jobs: jobCount,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
+    return responseData;
   }
 }

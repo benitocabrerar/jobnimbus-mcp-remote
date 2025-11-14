@@ -164,6 +164,9 @@ export class GetEstimateTool extends BaseTool<GetEstimateInput, any> {
   }
 
   async execute(input: GetEstimateInput, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     // Wrap with cache layer
     return await withCache(
       {
@@ -184,101 +187,134 @@ export class GetEstimateTool extends BaseTool<GetEstimateInput, any> {
           const estimate: Estimate = response.data;
 
           // Format response with all fields explicitly mapped
-          return {
-            success: true,
-            data: {
-              // Core identifiers
-              jnid: estimate.jnid,
-              type: estimate.type,
-              customer: estimate.customer,
-              guid: estimate.guid || null,
-              recid: estimate.recid || null,
+          const estimateData = {
+            // Core identifiers
+            jnid: estimate.jnid,
+            type: estimate.type,
+            customer: estimate.customer,
+            guid: estimate.guid || null,
+            recid: estimate.recid || null,
 
-              // Estimate information
-              number: estimate.number,
-              attachment_id: estimate.attachment_id || null,
-              external_id: estimate.external_id || null,
-              template_id: estimate.template_id || null,
-              internal_note: estimate.internal_note || null,
-              note: estimate.note || null,
-              terms: estimate.terms || null,
+            // Estimate information
+            number: estimate.number,
+            attachment_id: estimate.attachment_id || null,
+            external_id: estimate.external_id || null,
+            template_id: estimate.template_id || null,
+            internal_note: estimate.internal_note || null,
+            note: estimate.note || null,
+            terms: estimate.terms || null,
 
-              // Status
-              is_active: estimate.is_active ?? true,
-              is_archived: estimate.is_archived ?? false,
-              esigned: estimate.esigned ?? false,
-              status: estimate.status,
-              status_name: estimate.status_name,
-              signature_status: estimate.signature_status || null,
-              source: estimate.source || null,
+            // Status
+            is_active: estimate.is_active ?? true,
+            is_archived: estimate.is_archived ?? false,
+            esigned: estimate.esigned ?? false,
+            status: estimate.status,
+            status_name: estimate.status_name,
+            signature_status: estimate.signature_status || null,
+            source: estimate.source || null,
 
-              // Dates - both ISO 8601 and Unix timestamps
-              date_created: this.formatDate(estimate.date_created || 0),
-              date_created_unix: estimate.date_created,
-              date_updated: this.formatDate(estimate.date_updated || 0),
-              date_updated_unix: estimate.date_updated,
-              date_estimate: this.formatDate(estimate.date_estimate || 0),
-              date_estimate_unix: estimate.date_estimate,
-              date_status_change: this.formatDate(estimate.date_status_change || 0),
-              date_status_change_unix: estimate.date_status_change,
-              date_signed: this.formatDate(estimate.date_signed || 0),
-              date_signed_unix: estimate.date_signed,
-              date_sign_requested: this.formatDate(estimate.date_sign_requested || 0),
-              date_sign_requested_unix: estimate.date_sign_requested,
+            // Dates - both ISO 8601 and Unix timestamps
+            date_created: this.formatDate(estimate.date_created || 0),
+            date_created_unix: estimate.date_created,
+            date_updated: this.formatDate(estimate.date_updated || 0),
+            date_updated_unix: estimate.date_updated,
+            date_estimate: this.formatDate(estimate.date_estimate || 0),
+            date_estimate_unix: estimate.date_estimate,
+            date_status_change: this.formatDate(estimate.date_status_change || 0),
+            date_status_change_unix: estimate.date_status_change,
+            date_signed: this.formatDate(estimate.date_signed || 0),
+            date_signed_unix: estimate.date_signed,
+            date_sign_requested: this.formatDate(estimate.date_sign_requested || 0),
+            date_sign_requested_unix: estimate.date_sign_requested,
 
-              // Financial
-              subtotal: estimate.subtotal || 0,
-              tax: estimate.tax || 0,
-              total: estimate.total || 0,
-              cost: estimate.cost || 0,
-              margin: estimate.margin || 0,
+            // Financial
+            subtotal: estimate.subtotal || 0,
+            tax: estimate.tax || 0,
+            total: estimate.total || 0,
+            cost: estimate.cost || 0,
+            margin: estimate.margin || 0,
 
-              // Calculated profit margin percentage
-              profit_margin_percent: estimate.total && estimate.cost
-                ? ((estimate.total - estimate.cost) / estimate.total * 100).toFixed(2) + '%'
-                : null,
+            // Calculated profit margin percentage
+            profit_margin_percent: estimate.total && estimate.cost
+              ? ((estimate.total - estimate.cost) / estimate.total * 100).toFixed(2) + '%'
+              : null,
 
-              // Items with counts
-              items: estimate.items || [],
-              items_count: estimate.items?.length || 0,
+            // Items with counts
+            items: estimate.items || [],
+            items_count: estimate.items?.length || 0,
 
-              // Location and ownership
-              location: estimate.location,
-              location_id: estimate.location?.id,
-              owners: estimate.owners || [],
-              owners_count: estimate.owners?.length || 0,
-              sales_rep: estimate.sales_rep,
-              sales_rep_name: estimate.sales_rep_name,
+            // Location and ownership
+            location: estimate.location,
+            location_id: estimate.location?.id,
+            owners: estimate.owners || [],
+            owners_count: estimate.owners?.length || 0,
+            sales_rep: estimate.sales_rep,
+            sales_rep_name: estimate.sales_rep_name,
 
-              // Related entities
-              related: estimate.related || [],
-              related_count: estimate.related?.length || 0,
+            // Related entities
+            related: estimate.related || [],
+            related_count: estimate.related?.length || 0,
 
-              // Sections and other
-              sections: estimate.sections || [],
-              sections_count: estimate.sections?.length || 0,
-              merged: estimate.merged || null,
-              class_id: estimate.class_id || null,
-              class_name: estimate.class_name || null,
-              supplier: estimate.supplier || null,
-              version: estimate.version || null,
-              duplicate_from_id: estimate.duplicate_from_id || null,
+            // Sections and other
+            sections: estimate.sections || [],
+            sections_count: estimate.sections?.length || 0,
+            merged: estimate.merged || null,
+            class_id: estimate.class_id || null,
+            class_name: estimate.class_name || null,
+            supplier: estimate.supplier || null,
+            version: estimate.version || null,
+            duplicate_from_id: estimate.duplicate_from_id || null,
 
-              // Metadata
-              created_by: estimate.created_by || null,
-              created_by_name: estimate.created_by_name || null,
-              payments: estimate.payments || [],
+            // Metadata
+            created_by: estimate.created_by || null,
+            created_by_name: estimate.created_by_name || null,
+            payments: estimate.payments || [],
 
-              _metadata: {
-                api_endpoint: 'GET /api1/v2/estimates/<jnid>',
-                field_coverage: 'complete',
-                cached: false,
-                timestamp: new Date().toISOString(),
-              },
+            _metadata: {
+              api_endpoint: 'GET /api1/v2/estimates/<jnid>',
+              field_coverage: 'complete',
+              cached: false,
+              timestamp: new Date().toISOString(),
             },
           };
-        } catch (error) {
+
+          // Use handle-based response if requested
+          if (useHandleResponse) {
+            const envelope = await this.wrapResponse([estimateData], input, context, {
+              entity: 'estimate',
+              maxRows: 1,
+              pageInfo: {
+                current_page: 1,
+                total_pages: 1,
+                has_more: false,
+                total: 1,
+              },
+            });
+
+            return {
+              ...envelope,
+              query_metadata: {
+                jnid: estimate.jnid,
+                estimate_number: estimate.number,
+                estimate_status: estimate.status_name,
+                estimate_total: estimate.total,
+                items_count: estimate.items?.length || 0,
+                related_count: estimate.related?.length || 0,
+                is_signed: estimate.esigned ?? false,
+                is_active: estimate.is_active ?? true,
+                data_freshness: 'real-time',
+                api_endpoint: 'GET /api1/v2/estimates/<jnid>',
+              },
+            };
+          }
+
+          // Fallback to legacy response
           return {
+            success: true,
+            data: estimateData,
+          };
+        } catch (error) {
+          const errorResponse = {
             success: false,
             error: error instanceof Error ? error.message : 'Failed to retrieve estimate',
             jnid: input.jnid,
@@ -287,6 +323,34 @@ export class GetEstimateTool extends BaseTool<GetEstimateInput, any> {
               timestamp: new Date().toISOString(),
             },
           };
+
+          // Use handle-based response if requested (even for errors)
+          if (useHandleResponse) {
+            const envelope = await this.wrapResponse([errorResponse], input, context, {
+              entity: 'estimate',
+              maxRows: 0,
+              pageInfo: {
+                current_page: 1,
+                total_pages: 1,
+                has_more: false,
+                total: 0,
+              },
+            });
+
+            return {
+              ...envelope,
+              query_metadata: {
+                jnid: input.jnid,
+                error: true,
+                error_message: error instanceof Error ? error.message : 'Failed to retrieve estimate',
+                data_freshness: 'real-time',
+                api_endpoint: 'GET /api1/v2/estimates/<jnid>',
+              },
+            };
+          }
+
+          // Fallback to legacy error response
+          return errorResponse;
         }
       }
     );

@@ -1,12 +1,43 @@
 /**
  * JobNimbus API Client
  * Stateless client - API key passed in each request
+ *
+ * OPTIMIZATION (Week 2-3): Enhanced with JSONB Field Projection support
+ * Supports Query Delegation Pattern for filtering, sorting, and pagination at API level
  */
 
 import { JobNimbusResponse } from '../types/index.js';
 import { JobNimbusApiError } from '../utils/errors.js';
 import config from '../config/index.js';
 import logger from '../utils/logger.js';
+
+/**
+ * API Query Options for optimization strategies
+ *
+ * JSONB Field Projection (Strategy 2):
+ * - fields: Select specific fields to reduce response size by 80-95%
+ * - exclude_jsonb: Skip heavy JSONB fields when not needed
+ *
+ * Query Delegation Pattern (Strategy 1):
+ * - filter: Elasticsearch JSON filter for server-side filtering
+ * - size/from: Pagination parameters
+ * - sort_by/order: Server-side sorting
+ */
+export interface APIOptions {
+  // JSONB Field Projection
+  fields?: string[];
+  exclude_jsonb?: boolean;
+
+  // Query Delegation
+  filter?: string;
+  size?: number;
+  from?: number;
+  sort_by?: string;
+  order?: 'asc' | 'desc';
+
+  // Allow any additional params
+  [key: string]: any;
+}
 
 export class JobNimbusClient {
   private baseUrl: string;
@@ -18,14 +49,23 @@ export class JobNimbusClient {
   /**
    * Execute GET request to JobNimbus API
    * @param customBaseUrl - Optional custom base URL (for endpoints that don't use /api1/)
+   *
+   * OPTIMIZATION: Supports JSONB Field Projection and Query Delegation
+   * Example: get(apiKey, 'jobs', { fields: ['jnid', 'name'], exclude_jsonb: true, filter: {...} })
    */
   async get<T = any>(
     apiKey: string,
     endpoint: string,
-    params?: Record<string, any>,
+    params?: APIOptions,
     customBaseUrl?: string
   ): Promise<JobNimbusResponse<T>> {
-    return this.request<T>(apiKey, endpoint, 'GET', params, undefined, customBaseUrl);
+    // Process fields array to comma-separated string if provided
+    const processedParams: Record<string, any> = params ? { ...params } : {};
+    if (params?.fields && Array.isArray(params.fields)) {
+      processedParams.fields = params.fields.join(',');
+    }
+
+    return this.request<T>(apiKey, endpoint, 'GET', processedParams, undefined, customBaseUrl);
   }
 
   /**

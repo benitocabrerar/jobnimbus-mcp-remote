@@ -169,6 +169,9 @@ export class SearchJobNotesTool extends BaseTool<SearchJobNotesInput, any> {
   }
 
   async execute(input: SearchJobNotesInput, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     const requestedSize = Math.min(input.size || 50, 200);
     const startFrom = input.from || 0;
 
@@ -218,6 +221,44 @@ export class SearchJobNotesTool extends BaseTool<SearchJobNotesInput, any> {
     // Paginate results
     const paginatedMatches = matches.slice(startFrom, startFrom + requestedSize);
 
+    // Build page info
+    const pageInfo = {
+      has_more: startFrom + paginatedMatches.length < matches.length,
+      total: matches.length,
+      current_page: Math.floor(startFrom / requestedSize) + 1,
+      total_pages: Math.ceil(matches.length / requestedSize),
+    };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const envelope = await this.wrapResponse(paginatedMatches, input, context, {
+        entity: 'job_notes',
+        maxRows: requestedSize,
+        pageInfo,
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          query: input.query,
+          total_jobs_searched: allJobs.length,
+          total_matches: matches.length,
+          returned_matches: paginatedMatches.length,
+          from: startFrom,
+          page_size: requestedSize,
+          search_config: {
+            include_description: input.include_description !== false,
+            include_notes: input.include_notes !== false,
+            search_mentions: input.search_mentions !== false && input.query.startsWith('@'),
+            is_mention_search: input.query.startsWith('@'),
+          },
+          search_efficiency: allJobs.length > 0 ? (matches.length / allJobs.length) * 100 : 0,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
     return {
       query: input.query,
       total_jobs_searched: allJobs.length,

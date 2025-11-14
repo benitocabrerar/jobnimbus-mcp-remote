@@ -73,6 +73,9 @@ export class GetActivitiesAnalyticsTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const timePeriodDays = input.time_period_days || 30;
       const includeUserBreakdown = input.include_user_breakdown !== false;
@@ -374,7 +377,7 @@ export class GetActivitiesAnalyticsTool extends BaseTool<any, any> {
         recommendations.push(`✅ Most effective: ${mostEffectiveType.activity_type} with ${mostEffectiveType.effectiveness_score.toFixed(1)} effectiveness score`);
       }
 
-      return {
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         time_period: {
@@ -394,6 +397,34 @@ export class GetActivitiesAnalyticsTool extends BaseTool<any, any> {
           userProductivity.length > 0 ? `${userProductivity.length} team members tracked` : 'No user data available',
         ],
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'activities_analytics',
+          maxRows: totalActivities + activityTypeBreakdown.length + userProductivity.length,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            time_period_days: timePeriodDays,
+            total_activities: totalActivities,
+            completion_rate: completionRate,
+            overdue_activities: overdueActivities,
+            user_count: userProductivity.length,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

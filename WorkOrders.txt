@@ -1,0 +1,108 @@
+WorkOrders
+The WorkOrders API endpoint allows you to create, view, and update an individual or group of WorkOrders within JobNimbus.
+
+Referenced Path:
+Plain Text
+/v2/workorders
+POST
+Create a WorkOrder
+https://app.jobnimbus.com/api1/v2/workorders
+This request allows you to create a work order within a JobNimbus account.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+PUT
+Update a WorkOrder
+https://app.jobnimbus.com/api1/v2/workorders/{id}
+This request allows you to update a specific work order within a JobNimbus account.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+PUT
+Delete a WorkOrder
+https://app.jobnimbus.com/api1/v2/workorders/{id}
+This request allows you to update a specific work order within a JobNimbus account.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw (json)
+json
+{
+    "is_active": false
+}
+
+GET
+Retrieve a WorkOrder
+https://app.jobnimbus.com/api1/v2/workorders/<jnid>
+This request allows you to retrieve a specific work order within a JobNimbus account.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+HEADERS
+Authorization
+bearer <token>
+
+GET
+Retrieve ALL WorkOrders
+https://app.jobnimbus.com/api1/v2/workorders
+This request allows you to retrieve all of the work orders within a JobNimbus account.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+Query Parameters:
+
+from: Starting index for pagination (e.g., 10)
+
+size: Number of results to return (e.g., 5)
+
+Additional details:
+
+size equals 1,000 by default if not included in the request.
+
+The maximum value for size is 10,000.
+
+The count property in the response body refers to the number of work orders in the account, not the number of work orders returned in the request.
+
+HEADERS
+Authorization
+bearer <token>

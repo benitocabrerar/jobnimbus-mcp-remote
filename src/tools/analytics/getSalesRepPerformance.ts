@@ -40,7 +40,10 @@ export class GetSalesRepPerformanceTool extends BaseTool<any, any> {
     };
   }
 
-  async execute(_input: any, context: ToolContext): Promise<any> {
+  async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       // Fetch jobs and estimates from JobNimbus API
       const [jobsResponse, estimatesResponse] = await Promise.all([
@@ -183,7 +186,8 @@ export class GetSalesRepPerformanceTool extends BaseTool<any, any> {
         totalApproved += rep.estimates_approved;
       }
 
-      return {
+      // Build response data
+      const responseData = {
         data_source: 'Live JobNimbus API data with FIXED matching logic',
         analysis_timestamp: new Date().toISOString(),
         total_sales_reps: repPerformance.size,
@@ -198,6 +202,32 @@ export class GetSalesRepPerformanceTool extends BaseTool<any, any> {
         performance_by_rep: sortedReps.slice(0, 15),
         fix_status: 'APPLIED - Job-estimate matching corrected',
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'sales_rep_performance',
+          maxRows: sortedReps.length,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            total_reps: repPerformance.size,
+            total_jobs: totalJobs,
+            total_value: totalValue,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

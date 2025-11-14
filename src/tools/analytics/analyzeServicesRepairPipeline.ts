@@ -54,6 +54,9 @@ export class AnalyzeServicesRepairPipelineTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const timeWindowDays = input.time_window_days || 90;
       const includePredict = input.include_predictions !== false;
@@ -302,7 +305,7 @@ export class AnalyzeServicesRepairPipelineTool extends BaseTool<any, any> {
         optimizations.push('Create service packages for recurring customers to increase predictability');
       }
 
-      return {
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         analysis_period: {
@@ -331,6 +334,34 @@ export class AnalyzeServicesRepairPipelineTool extends BaseTool<any, any> {
           `Emergency vs Scheduled ratio: ${emergencyJobs}/${scheduledJobs}`,
         ],
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'services_repair_pipeline',
+          maxRows: serviceJobs.length + topTechnicians.length + serviceTypes.length,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            time_window_days: timeWindowDays,
+            total_service_jobs: serviceJobs.length,
+            completed_jobs: completedJobs,
+            total_revenue: totalRevenue,
+            on_time_rate: onTimeRate,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

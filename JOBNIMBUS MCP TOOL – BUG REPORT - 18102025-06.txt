@@ -1,0 +1,135 @@
+### JOBNIMBUS MCP TOOL – TEXTO PLANO PARA EL DESARROLLADOR
+
+**Contexto:**
+La versión actual del módulo `get_task_management_analytics` ya muestra datos consistentes y corregidos (74.3% completion rate, 9 usuarios, sin fechas 1970, sin valores negativos en tiempo). Sin embargo, existen **errores residuales menores** y **ajustes técnicos pendientes** que deben abordarse para consolidar la estabilidad del análisis en producción.
+
+---
+
+### 🧩 ERRORES DETECTADOS Y ACCIONES DE CORRECCIÓN
+
+1. **Alias del sistema “JobNimbus” duplicado con usuarios reales**
+
+   * **Síntoma:** En el bloque `assignment_analytics`, aparece un registro con nombre “JobNimbus” (ID `me1nhiahh2xkslc7r8uya48`) que representa al sistema, no a un usuario real.
+   * **Causa:** El proceso de normalización de usuarios no filtra correctamente los IDs del sistema.
+   * **Acción requerida:**
+
+     * Implementar una regla dentro del parser:
+
+       ```python
+       if assignee_name.lower() in ["jobnimbus", "automation", "system", "system automation job"]:
+           assignee_role = "system"
+       ```
+     * Excluir estos IDs del conteo de usuarios activos.
+     * Incluirlos en un mapa de alias:
+
+       ```json
+       { "system_alias_map": ["system_automation_job", "jobnimbus", "automation_job"] }
+       ```
+     * Resultado esperado: todos los procesos automáticos se consoliden bajo un único ID `system_automation_job`.
+
+---
+
+2. **Desbalance de carga laboral entre usuarios**
+
+   * **Síntoma:** Usuarios como *Juan Villavicencio*, *Ana Macassi* y *Deivis Castro* aparecen con estado `"Overloaded"`.
+   * **Causa:** Distribución desigual de tareas recurrentes (post, videos, citas, actualizaciones).
+   * **Acción requerida:**
+
+     * Implementar una lógica de alerta interna en el MCP que detecte sobrecarga (> 30 tareas pendientes o > 20% de backlog activo).
+     * Sugerir redistribución automática a usuarios con estado `"Underutilized"` o `"Optimal"`.
+     * Agregar campo `load_index = pending_tasks / total_tasks`.
+     * Resultado esperado: balance dinámico semanal y alerta de carga al administrador.
+
+---
+
+3. **Cálculo de tiempo promedio de finalización**
+
+   * **Síntoma:** Aunque ya positivo (215.96 horas ≈ 9 días), aún hay desviaciones entre usuarios con tiempos anómalos (> 400 horas).
+   * **Causa:** La métrica no distingue entre tareas administrativas y operativas.
+   * **Acción requerida:**
+
+     * Implementar un clasificador de tipo de tarea (`operational`, `administrative`, `marketing`).
+     * Calcular métricas diferenciadas por categoría.
+     * Resultado esperado: informes con `avg_completion_time_operational` y `avg_completion_time_admin` separados.
+
+---
+
+4. **Tendencias semanales inconsistentes en Week 2–4**
+
+   * **Síntoma:** El campo `"trend"` marca “Declining” en las semanas finales, aunque las tasas son aceptables.
+   * **Causa:** El cálculo de tendencia compara valores absolutos de completion rate sin margen de tolerancia.
+   * **Acción requerida:**
+
+     * Redefinir criterio de tendencia:
+
+       ```python
+       if diff < -10: trend = "Declining"
+       elif diff > 10: trend = "Improving"
+       else: trend = "Stable"
+       ```
+     * Resultado esperado: comportamiento más realista y estable en los informes semanales.
+
+---
+
+5. **Ausencia de validación cruzada con tareas crudas**
+
+   * **Síntoma:** No hay un proceso automático que verifique que los `due_date` del dataset coinciden con los que se usan en el análisis.
+   * **Acción requerida:**
+
+     * Crear test interno:
+
+       ```python
+       assert all(task['due_date'] >= task['created_date'] for task in tasks)
+       ```
+     * Validar que ningún `due_date` se autocorrige a 1970 o null.
+     * Resultado esperado: control preventivo ante corrupción de fechas.
+
+---
+
+### 🧪 PRUEBAS DE VALIDACIÓN QUE DEBE EJECUTAR EL DESARROLLADOR
+
+**1. Prueba de alias de sistema**
+
+* Ejecutar `get_task_management_analytics` y confirmar que solo aparece un bloque “Automation (Job)” consolidado.
+* Criterio de aceptación: no debe existir ningún registro con nombre “JobNimbus”.
+
+**2. Prueba de distribución de carga**
+
+* Ejecutar `get_user_productivity_analytics --include_workload_analysis true`.
+* Verificar:
+
+  * ≤ 3 usuarios “Overloaded”.
+  * Ninguno con carga > 30 tareas pendientes.
+
+**3. Prueba de tiempo promedio por categoría**
+
+* Validar que el cálculo diferenciado produce valores coherentes:
+
+  * `operational` < 72 h promedio.
+  * `administrative` < 216 h promedio.
+
+**4. Prueba de tendencias**
+
+* Forzar dataset simulado con variaciones de ±5 % en completion rate.
+* Esperado: “Stable”.
+* Con variaciones ±15 %: “Improving” o “Declining” según el caso.
+
+**5. Prueba de consistencia de fechas**
+
+* Obtener muestra con `get_tasks --is_active true --size 50`.
+* Comprobar que todos los `due_date` son > `created_date`.
+* Confirmar que ningún registro tiene valor epoch o null.
+
+---
+
+### 🎯 RESULTADO FINAL ESPERADO
+
+Después de implementar estas correcciones:
+
+* No existirán alias duplicados del sistema.
+* La carga de trabajo estará equilibrada y auditable.
+* Los tiempos promedios serán realistas y separados por tipo de tarea.
+* Las tendencias mostrarán variaciones confiables.
+* Todas las fechas estarán validadas y consistentes.
+
+Con estas acciones, la **MCP Tool de JobNimbus Stamford** quedará completamente afinada para uso en dashboards ejecutivos y monitoreo operativo sin inconsistencias de datos.

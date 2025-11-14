@@ -49,6 +49,9 @@ export class GetAutomatedFollowupTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const priorityLevel = (input.priority_level || 'high').toUpperCase();
       const maxFollowups = input.max_followups || 5;
@@ -176,7 +179,8 @@ export class GetAutomatedFollowupTool extends BaseTool<any, any> {
         LOW: followupRecommendations.filter((r) => r.priority === 'LOW').length,
       };
 
-      return {
+      // Build response data
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         filter_applied: {
@@ -199,6 +203,33 @@ export class GetAutomatedFollowupTool extends BaseTool<any, any> {
         ],
         next_steps: this.generateNextSteps(priorityCounts),
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'automated_followup',
+          maxRows: limitedRecommendations.length,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            priority_level: priorityLevel,
+            total_followups: followupRecommendations.length,
+            urgent_count: priorityCounts.HIGH,
+            showing: limitedRecommendations.length,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

@@ -176,7 +176,10 @@ export class GetMonthlySummaryTool extends BaseTool<GetMonthlySummaryInput, Mont
     });
   }
 
-  async execute(input: GetMonthlySummaryInput, context: ToolContext): Promise<MonthlySummaryResponse> {
+  async execute(input: GetMonthlySummaryInput, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       // Parse month to date range
       const dateRange = this.parseMonth(input.month);
@@ -190,7 +193,7 @@ export class GetMonthlySummaryTool extends BaseTool<GetMonthlySummaryInput, Mont
       };
 
       // Wrap with cache layer (1 hour TTL for monthly data)
-      return await withCache(
+      const responseData = await withCache(
         cacheKey,
         getTTL('ANALYTICS'), // 1 hour - analytics aggregation TTL
         async () => {
@@ -316,6 +319,33 @@ export class GetMonthlySummaryTool extends BaseTool<GetMonthlySummaryInput, Mont
           };
         }
       );
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'monthly_summary',
+          maxRows: Object.keys(responseData.by_status || {}).length,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            instance: input.instance,
+            month: input.month,
+            total_invoiced: responseData.summary?.total_invoiced,
+            accounts_receivable: responseData.summary?.accounts_receivable,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         success: false,

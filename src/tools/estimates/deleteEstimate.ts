@@ -39,6 +39,9 @@ export class DeleteEstimateTool extends BaseTool<DeleteEstimateInput, any> {
   }
 
   async execute(input: DeleteEstimateInput, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       // Soft delete by setting is_active to false
       // CRITICAL: Include jnid in body (JobNimbus API v2 requirement)
@@ -51,7 +54,7 @@ export class DeleteEstimateTool extends BaseTool<DeleteEstimateInput, any> {
         }
       );
 
-      return {
+      const successData = {
         success: true,
         message: 'Estimate soft deleted successfully (is_active set to false)',
         jnid: input.jnid,
@@ -63,8 +66,38 @@ export class DeleteEstimateTool extends BaseTool<DeleteEstimateInput, any> {
           timestamp: new Date().toISOString(),
         },
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([successData], input, context, {
+          entity: 'estimate',
+          maxRows: 1,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: 1,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            operation: 'delete',
+            estimate_jnid: input.jnid,
+            action: 'soft_delete',
+            is_active_set_to: false,
+            can_reactivate: true,
+            data_freshness: 'real-time',
+            api_endpoint: `PUT /api1/v2/estimates/${input.jnid}`,
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return successData;
     } catch (error) {
-      return {
+      const errorResponse = {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to delete estimate',
         jnid: input.jnid,
@@ -74,6 +107,36 @@ export class DeleteEstimateTool extends BaseTool<DeleteEstimateInput, any> {
           timestamp: new Date().toISOString(),
         },
       };
+
+      // Use handle-based response if requested (even for errors)
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([errorResponse], input, context, {
+          entity: 'estimate',
+          maxRows: 0,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: 0,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            operation: 'delete',
+            estimate_jnid: input.jnid,
+            action: 'soft_delete',
+            error: true,
+            error_message: error instanceof Error ? error.message : 'Failed to delete estimate',
+            data_freshness: 'real-time',
+            api_endpoint: `PUT /api1/v2/estimates/${input.jnid}`,
+          },
+        };
+      }
+
+      // Fallback to legacy error response
+      return errorResponse;
     }
   }
 }

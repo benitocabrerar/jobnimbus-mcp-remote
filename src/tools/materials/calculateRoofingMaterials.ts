@@ -80,28 +80,92 @@ export class CalculateRoofingMaterialsTool extends BaseTool {
   }
 
   async execute(input: RoofingCalculationInput, context: any) {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       // Calculate materials using RoofingCalculator service
-      const result = await this.calculator.calculateMaterials(input);
+      const calcResult = await this.calculator.calculateMaterials(input);
 
-      return {
+      const result = {
         success: true,
-        calculation_summary: result.calculation_summary,
-        materials: result.materials,
-        totals: result.totals,
-        recommendations: result.recommendations,
-        warnings: result.warnings,
+        calculation_summary: calcResult.calculation_summary,
+        materials: calcResult.materials,
+        totals: calcResult.totals,
+        recommendations: calcResult.recommendations,
+        warnings: calcResult.warnings,
         metadata: {
           calculated_at: new Date().toISOString(),
           instance: context.instanceName || 'unknown'
         }
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([result], input, context, {
+          entity: 'roofing_materials',
+          maxRows: calcResult.materials.length,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: calcResult.materials.length,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            calculation_type: 'roofing',
+            roof_type: input.roof_type,
+            roof_area_sqft: input.roof_area_sqft,
+            pitch: input.pitch,
+            complexity: input.roof_complexity || 'moderate',
+            materials_count: calcResult.materials.length,
+            total_cost: calcResult.totals.total_cost,
+            total_price: calcResult.totals.total_price,
+            warnings_count: calcResult.warnings?.length || 0,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return result;
     } catch (error) {
-      return {
+      const errorResult = {
         success: false,
         error: error instanceof Error ? error.message : 'Calculation failed',
         details: error
       };
+
+      // Use handle-based response for errors if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([errorResult], input, context, {
+          entity: 'roofing_materials',
+          maxRows: 0,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: 0,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            calculation_type: 'roofing',
+            roof_type: input.roof_type,
+            error: true,
+            error_message: error instanceof Error ? error.message : 'Calculation failed',
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy error response
+      return errorResult;
     }
   }
 }

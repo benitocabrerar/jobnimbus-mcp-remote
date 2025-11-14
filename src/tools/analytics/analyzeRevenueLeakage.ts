@@ -66,6 +66,9 @@ export class AnalyzeRevenueLeakageTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const lookbackDays = input.lookback_days || 90;
       const includeActive = input.include_active !== false;
@@ -264,7 +267,8 @@ export class AnalyzeRevenueLeakageTool extends BaseTool<any, any> {
       // Sort lost opportunities by value
       lostOpportunities.sort((a, b) => b.estimated_value - a.estimated_value);
 
-      return {
+      // Build response data
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         analysis_period: {
@@ -286,6 +290,33 @@ export class AnalyzeRevenueLeakageTool extends BaseTool<any, any> {
         insights: this.generateInsights(leakageSourcesArray, conversionDelays, lostOpportunities),
         action_plan: this.generateActionPlan(leakageSourcesArray, conversionDelays, totalLeakedRevenue),
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'revenue_leakage',
+          maxRows: leakageSourcesArray.length + conversionDelays.length + lostOpportunities.length,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            lookback_days: lookbackDays,
+            total_revenue_at_risk: totalLeakedRevenue,
+            critical_issues: leakageSourcesArray.filter(s => s.severity === 'Critical').length,
+            lost_opportunities_count: lostOpportunities.length,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

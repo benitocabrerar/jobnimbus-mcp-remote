@@ -114,6 +114,9 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const assigneeFilter = input.assignee_filter;
       const priorityFilter = input.priority_filter;
@@ -597,7 +600,7 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
         recommendations.push(`⏱️ High average completion time (${(metrics.avg_completion_time_hours / 24).toFixed(1)} days) - streamline workflows`);
       }
 
-      return {
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         analysis_period_days: daysBack,
@@ -620,6 +623,48 @@ export class GetTaskManagementAnalyticsTool extends BaseTool<any, any> {
           `${assignmentAnalytics.length} team member(s) tracked`,
         ],
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const totalRecords = metrics.total_tasks + priorityBreakdown.length +
+                            assignmentAnalytics.length + taskTypeMetrics.length +
+                            categoryMetrics.length + (productivityTrends?.length || 0);
+
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'task_management',
+          maxRows: totalRecords,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            days_back: daysBack,
+            total_tasks: metrics.total_tasks,
+            completion_rate: metrics.completion_rate,
+            overdue_tasks: metrics.overdue_tasks,
+            assignee_count: assignmentAnalytics.length,
+            priority_breakdown: {
+              critical: priorityBreakdown.find(p => p.priority_level === 'Critical')?.task_count || 0,
+              high: priorityBreakdown.find(p => p.priority_level === 'High')?.task_count || 0,
+              normal: priorityBreakdown.find(p => p.priority_level === 'Normal')?.task_count || 0,
+              low: priorityBreakdown.find(p => p.priority_level === 'Low')?.task_count || 0,
+            },
+            assignee_filter: assigneeFilter || 'all',
+            priority_filter: priorityFilter || 'all',
+            include_overdue_analysis: includeOverdue,
+            include_productivity_trends: includeProductivity,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

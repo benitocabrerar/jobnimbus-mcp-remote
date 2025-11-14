@@ -76,6 +76,9 @@ export class GetLeadScoringAnalyticsTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const minScore = input.min_score || 0;
       const includePredictions = input.include_predictions !== false;
@@ -299,7 +302,11 @@ export class GetLeadScoringAnalyticsTool extends BaseTool<any, any> {
         recommendations.push(`💰 ${highValueLeads} high-value lead(s) - assign senior sales rep`);
       }
 
-      return {
+      const avgLeadScore = leadScores.length > 0
+        ? leadScores.reduce((sum, l) => sum + l.lead_score, 0) / leadScores.length
+        : 0;
+
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         analysis_period_days: daysBack,
@@ -308,9 +315,7 @@ export class GetLeadScoringAnalyticsTool extends BaseTool<any, any> {
           hot_leads: leadScores.filter(l => l.qualification_status === 'Hot').length,
           warm_leads: leadScores.filter(l => l.qualification_status === 'Warm').length,
           cold_leads: leadScores.filter(l => l.qualification_status === 'Cold').length,
-          avg_lead_score: leadScores.length > 0
-            ? leadScores.reduce((sum, l) => sum + l.lead_score, 0) / leadScores.length
-            : 0,
+          avg_lead_score: avgLeadScore,
         },
         scoring_factors: scoringFactors,
         lead_scores: leadScores,
@@ -319,10 +324,43 @@ export class GetLeadScoringAnalyticsTool extends BaseTool<any, any> {
         recommendations: recommendations,
         key_insights: [
           `${hotLeadsCount} hot lead(s) ready for immediate contact`,
-          `Average lead score: ${leadScores.length > 0 ? (leadScores.reduce((sum, l) => sum + l.lead_score, 0) / leadScores.length).toFixed(1) : 0}/100`,
+          `Average lead score: ${avgLeadScore.toFixed(1)}/100`,
           `Top priority: ${leadScores[0]?.contact_name || 'N/A'}`,
         ],
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const totalRecords = leadScores.length + leadDistribution.length +
+                            (conversionPredictions?.length || 0) + scoringFactors.length;
+
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'lead_scoring',
+          maxRows: totalRecords,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            days_back: daysBack,
+            total_leads: leadScores.length,
+            hot_leads: hotLeadsCount,
+            avg_lead_score: avgLeadScore,
+            min_score_filter: minScore,
+            qualification_filter: qualificationFilter || 'all',
+            include_predictions: includePredictions,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

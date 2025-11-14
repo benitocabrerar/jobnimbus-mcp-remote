@@ -1,0 +1,640 @@
+Invoices
+The Invoice API endpoint allows you to create, view, and update an individual or group of Invoices within JobNimbus.
+
+Referenced Path:
+Plain Text
+/v2/invoices
+URL:
+Plain Text
+https://app.jobnimbus.com/api1/v2/invoices
+Field Properties:
+Table
+Field Name	Description	Required to POST	Format
+attachment_id	jnid of PDF file	no	text
+cost	Total cost of the invoice	no	long
+created_by	ID of the creator	no	text
+created_by_name	Name of the creator	no	text
+customer	Customer JNID	no	text
+date_created	Unix timestamp of creation date	no	date
+date_due	Unix timestamp of due date	no	date
+date_invoice	Unix timestamp of invoice date	no	date
+date_paid_in_full	Unix timestamp of full payment date	no	date
+date_status_change	Unix timestamp of last status change	no	date
+date_updated	Unix timestamp of last update	no	date
+due	Amount due	no	long
+esigned	Boolean indicating if electronically signed	no	boolean
+external_id		no	string
+guid	Globally Unique Identifier	no	string
+is_active	Boolean indicating if invoice is active	yes	boolean
+is_archived	Boolean indicating if invoice is archived	no	boolean
+items	Array of invoice items	yes	array
+jnid	JobNimbus ID	no	string
+location	Object containing location ID	no	array
+margin	Profit margin	no	integer
+number	Invoice number	no	string
+owners	Array of owner objects	no	array
+payments	Array of payment objects	no	array
+recid	Record ID	no	long
+related	Array of related objects (jobs, contacts)	yes	array
+sales_rep	Sales representative ID	no	string
+sales_rep_name	Sales representative name	no	string
+status	Numeric status code	yes	integer
+status_name	Status name	no	string
+subtotal	Subtotal amount	no	string
+tax	Tax Amount	no	long
+template_id	ID of the invoice template	no	string
+total	Total invoice amount	no	long
+total_paid	Total amount paid	no	long
+type	Type of document (always "invoice" for this endpoint)	yes	string
+
+POST
+Create an Invoice
+https://app.jobnimbus.com/api1/v2/invoices
+This request allows you to create a new invoice within JobNimbus.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw (json)
+{
+  "type": "invoice",
+  "date_created": 1683819562,
+  "date_updated": 1684160281,
+  "date_invoice": 1683781200,
+  "date_due": 1683781200,
+  "external_id": "993479",
+  "number": "1047-795",
+  "is_active": true,
+  "status": 1,  
+  "internal_note": "Project Invoice",
+  "related": [
+    {
+      "id": "{jobId}",
+      "type": "job"
+    }
+  ],
+  "items": [
+    {
+      "name": "Services",
+      "description": "Test and Troy Coone / SIDING",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": 15438.99,
+      "jnid": "{itemId}"
+    },
+    {
+      "name": "Services",
+      "description": "Shake siding",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": 1303,
+      "jnid": "{itemId}"
+    },
+    {
+      "name": "Services",
+      "description": "Remove Lights",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": -349.52,
+      "jnid": "{itemId}"
+    }
+  ]
+}
+
+PUT
+Update an Invoice
+https://app.jobnimbus.com/api1/v2/invoices/<jnid>
+This request allows you to update an existing invoice within JobNimbus.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+Response:
+
+Example of a partial response:
+{
+    "type": "invoice",
+    "external_id": null,
+    "guid": "12345678-ABCD-1234-EFGH-1234567890AB",
+    "merged": null,
+    "class_id": null,
+    "class_name": null,
+    "supplier": null,
+    "recid": 1000,
+    "attachment_id": "ATTACHMENT_ID_123",
+    "customer": "CUSTOMER_ID_123",
+    "created_by": "system_qbo",
+    "created_by_name": "QuickBooks",
+    "date_created": 1600000000,
+    "date_updated": 1600000001,
+    "esigned": false,
+    "is_active": true,
+    "is_archived": true,
+    "related": [
+        {
+            "id": "JOB_ID_123",
+            "name": "John Doe / PROJECT-123",
+            "number": "1000",
+            "type": "job",
+            "email": null,
+            "subject": null
+        },
+        {
+            "id": "CONTACT_ID_123",
+            "name": "John Doe (CLIENT-123)",
+            "number": "2000",
+            "type": "contact",
+            "email": null,
+            "subject": null
+        }
+    ],
+    "status": 4,
+    "status_name": "Closed",
+    "number": "INV-001",
+    "location": {
+        "id": 1
+    },
+    "subtotal": 10000,
+    "margin": 0,
+    "tax": 0,
+    "total": 10000,
+    "cost": 10000,
+    "total_paid": 10000,
+    "due": 0,
+    "terms": null,
+    "note": "",
+    "date_due": 1600000002,
+    "date_invoice": 1600000003,
+    "date_status_change": 1600000004,
+    "date_paid_in_full": 1600000005,
+    "items": [
+        {
+            "quickbooksId": "1",
+            "showGroupTotal": null,
+            "addMarkup": null,
+            "addMarkupIsExcluded": null,
+            "photos": [],
+            "jnid": "ITEM_ID_123",
+            "name": "Service",
+            "uom": "Items",
+            "item_type": "material",
+            "description": "John Doe / PROJECT-123 / SERVICE",
+            "quantity": 1,
+            "price": 10000,
+            "preSurchargePrice": null,
+            "cost": 10000,
+            "amount": 10000,
+            "tax_couch_id": null,
+            "tax_name": null,
+            "tax_rate": 0,
+            "labor": {
+                "quickbooksId": null,
+                "price": 0,
+                "preSurchargePrice": null,
+                "cost": 0,
+                "addMarkup": null,
+                "addMarkupIsExcluded": null,
+                "amount": 0,
+                "tax_couch_id": null,
+                "tax_name": null,
+                "tax_rate": 0
+            },
+            "sku": null,
+            "color": null,
+            "category": null
+        }
+    ],
+    "sections": [],
+    "payments": [],
+    "owners": [
+        {
+            "id": "OWNER_ID_123"
+        }
+    ],
+    "sales_rep": "SALES_REP_ID_123",
+    "sales_rep_name": "Jane Smith",
+    "jnid": "INVOICE_ID_123",
+    "internal_note": "",
+    "template_id": "TEMPLATE_ID_123",
+    "first_payment_date": 1600000006,
+    "version": null,
+    "duplicate_from_id": null
+}
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw (json)
+{
+    "type": "invoice",
+    "date_created": 1600000000,
+    "date_updated": 1600000001,
+    "date_invoice": 1600000002,
+    "date_due": 1600000003,
+    "external_id": "EXT-123456",
+    "number": "INV-001",
+    "is_active": true,
+    "status": 1,
+    "dummy_status_name": "closed",
+    "dummy_origin": "SystemName",
+    "internal_note": "Sample Invoice Note",
+    "related": [
+        {
+            "id": "JOB-123456",
+            "type": "job"
+        }
+    ],
+    "items": [
+        {
+            "name": "Service A",
+            "description": "Description of Service A",
+            "uom": "Items",
+            "item_type": "material",
+            "quantity": 1,
+            "price": 1000.00,
+            "jnid": "ITEM-123456"
+        },
+        {
+            "name": "Service B",
+            "description": "Description of Service B",
+            "uom": "Items",
+            "item_type": "material",
+            "quantity": 1,
+            "price": 500.00,
+            "jnid": "ITEM-123456"
+        },
+        {
+            "name": "Discount",
+            "description": "Discount Description",
+            "uom": "Items",
+            "item_type": "material",
+            "quantity": 1,
+            "price": -100.00,
+            "jnid": "ITEM-123456"
+        }
+    ]
+}
+
+PUT
+Delete an Invoice
+https://app.jobnimbus.com/api1/v2/invoices/<jnid>
+This request allows you to delete an existing invoice within JobNimbus.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+Response:
+
+Example of a partial response:
+{ 
+    "is_active": false,
+  "type": "invoice",
+  "date_created": 1683819562,
+  "date_updated": 1684160281,
+  "date_invoice": 1683781200,
+  "date_due": 1683781200,
+  "external_id": "993479",
+  "number": "1047-795",
+  "status": 1,  
+  "internal_note": "Project Invoice",
+  "related": [
+    {
+      "id": "{jobId}",
+      "type": "job"
+    }
+  ],
+  "items": [
+    {
+      "name": "Services",
+      "description": "Test and Troy Coone / SIDING",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": 15438.99,
+      "jnid": "{itemId}"
+    },
+    {
+      "name": "Services",
+      "description": "Shake siding",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": 1303,
+      "jnid": "{itemId}"
+    },
+    {
+      "name": "Services",
+      "description": "Remove Lights",
+      "uom": "Items",
+      "item_type": "material",
+      "quantity": 1,
+      "price": -349.52,
+      "jnid": "{itemId}"
+    }
+  ]
+}
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Body
+raw (json)
+json
+{
+    "is_active": false
+}
+Example Request
+Delete an Invoice
+curl
+curl --location --request PUT 'https://app.jobnimbus.com/api1/v2/invoices/<jnid>' \
+--header 'Authorization: bearer <token>' \
+--header 'Content-Type: application/json' \
+--data '{
+    "is_active": false
+}'
+Example Response
+Body
+Headers (0)
+No response body
+This request doesn't return any response body
+GET
+Retrieve an Invoice
+https://app.jobnimbus.com/api1/v2/invoices/<jnid>
+This request allows you to retrieve a single invoice within a JobNimbus account.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+Response:
+
+Example of a partial response:
+{
+    "type": "invoice",
+    "external_id": null,
+    "guid": "12345678-ABCD-1234-EFGH-1234567890AB",
+    "merged": null,
+    "class_id": null,
+    "class_name": null,
+    "supplier": null,
+    "recid": 1000,
+    "attachment_id": "ATTACHMENT_ID_123",
+    "customer": "CUSTOMER_ID_123",
+    "created_by": "system_qbo",
+    "created_by_name": "QuickBooks",
+    "date_created": 1600000000,
+    "date_updated": 1600000001,
+    "esigned": false,
+    "is_active": true,
+    "is_archived": true,
+    "related": [
+        {
+            "id": "JOB_ID_123",
+            "name": "John Doe / PROJECT-123",
+            "number": "1000",
+            "type": "job",
+            "email": null,
+            "subject": null
+        },
+        {
+            "id": "CONTACT_ID_123",
+            "name": "John Doe (CLIENT-123)",
+            "number": "2000",
+            "type": "contact",
+            "email": null,
+            "subject": null
+        }
+    ],
+    "status": 4,
+    "status_name": "Closed",
+    "number": "INV-001",
+    "location": {
+        "id": 1
+    },
+    "subtotal": 10000,
+    "margin": 0,
+    "tax": 0,
+    "total": 10000,
+    "cost": 10000,
+    "total_paid": 10000,
+    "due": 0,
+    "terms": null,
+    "note": "",
+    "date_due": 1600000002,
+    "date_invoice": 1600000003,
+    "date_status_change": 1600000004,
+    "date_paid_in_full": 1600000005,
+    "items": [
+        {
+            "quickbooksId": "1",
+            "showGroupTotal": null,
+            "addMarkup": null,
+            "addMarkupIsExcluded": null,
+            "photos": [],
+            "jnid": "ITEM_ID_123",
+            "name": "Service",
+            "uom": "Items",
+            "item_type": "material",
+            "description": "John Doe / PROJECT-123 / SERVICE",
+            "quantity": 1,
+            "price": 10000,
+            "preSurchargePrice": null,
+            "cost": 10000,
+            "amount": 10000,
+            "tax_couch_id": null,
+            "tax_name": null,
+            "tax_rate": 0,
+            "labor": {
+                "quickbooksId": null,
+                "price": 0,
+                "preSurchargePrice": null,
+                "cost": 0,
+                "addMarkup": null,
+                "addMarkupIsExcluded": null,
+                "amount": 0,
+                "tax_couch_id": null,
+                "tax_name": null,
+                "tax_rate": 0
+            },
+            "sku": null,
+            "color": null,
+            "category": null
+        }
+    ],
+    "sections": [],
+    "payments": [],
+    "owners": [
+        {
+            "id": "OWNER_ID_123"
+        }
+    ],
+    "sales_rep": "SALES_REP_ID_123",
+    "sales_rep_name": "Jane Smith",
+    "jnid": "INVOICE_ID_123",
+    "internal_note": "",
+    "template_id": "TEMPLATE_ID_123",
+    "first_payment_date": 1600000006,
+    "version": null,
+    "duplicate_from_id": null
+}
+
+HEADERS
+Authorization
+bearer <token>
+
+Content-Type
+application/json
+
+Example Request
+Retrieve an Invoice
+curl
+curl --location 'https://app.jobnimbus.com/api1/v2/invoices/<jnid>' \
+--header 'Authorization: bearer <token>' \
+--header 'Content-Type: application/json'
+Example Response
+Body
+Headers (0)
+No response body
+This request doesn't return any response body
+GET
+Retrieve ALL Invoices
+https://app.jobnimbus.com/api1/v2/invoices
+This request allows you to retrieve all of the invoices within a JobNimbus account.
+
+Response Codes:
+
+HTTP Status 200 = success
+
+Anything other status code = failure and will include an error message in the response
+
+Query Parameters:
+
+from: Starting index for pagination (e.g., 10)
+
+size: Number of results to return (e.g., 5)
+
+Response:
+
+Example of a partial response:
+{
+    "count": 1000,
+    "results": [
+        {
+            "attachment_id": "attachmentjnid",
+            "class_id": null,
+            "class_name": null,
+            "cost": 10000,
+            "created_by": "system_qbo",
+            "created_by_name": "QuickBooks",
+            "customer": "customerjnid",
+            "date_created": 1600000000,
+            "date_due": 1600000001,
+            "date_invoice": 1600000002,
+            "date_paid_in_full": 1600000003,
+            "date_status_change": 1600000004,
+            "date_updated": 1600000005,
+            "due": 0,
+            "duplicate_from_id": null,
+            "esigned": false,
+            "external_id": null,
+            "first_payment_date": 1600000006,
+            "guid": "12345678-ABCD-1234-EFGH-1234567890AB",
+            "internal_note": "",
+            "is_active": true,
+            "is_archived": true,
+            "items": [
+                {
+                    "amount": 10000,
+                    "cost": 10000,
+                    "description": "Sample Project / SAMPLE-ID / SERVICE",
+                    "item_type": "material",
+                    "jnid": "ITEM_ID_1",
+                    "labor": {
+                        "amount": 0,
+                        "cost": 0,
+                        "price": 0,
+                        "tax_rate": 0
+                    },
+                    "name": "Service",
+                    "price": 10000,
+                    "quantity": 1,
+                    "quickbooksId": "1",
+                    "tax_rate": 0,
+                    "uom": "Items"
+                }
+            ],
+            "jnid": "INVOICE_ID_1",
+            "location": {
+                "id": 1
+            },
+            "margin": 0,
+            "note": "",
+            "number": "INV-001",
+            "owners": [
+                {
+                    "id": "OWNER_ID_1"
+                }
+            ],
+            "payments": [],
+            "recid": 1000,
+            "related": [
+                {
+                    "id": "JOB_ID_1",
+                    "name": "Sample Project / SAMPLE-ID",
+                    "number": "1000",
+                    "type": "job"
+                },
+                {
+                    "id": "CONTACT_ID_1",
+                    "name": "John Doe (SAMPLE-ID)",
+                    "number": "1001",
+                    "type": "contact"
+                }
+            ],
+            "sales_rep": "salesrepjnid",
+            "sales_rep_name": "Jane Smith",
+            "sections": [],
+            "status": 4,
+            "status_name": "Closed",
+            "subtotal": 10000,
+            "supplier": null,
+            "tax": 0,
+            "template_id": "templatejnid",
+            "terms": null,
+            "total": 10000,
+            "total_paid": 10000,
+            "type": "invoice",
+            "version": null
+        }
+    ]
+}

@@ -134,14 +134,16 @@ export class GetDoorSalesAnalyticsTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
     const analysisType = input.analysis_type;
 
     try {
       switch (analysisType) {
         case 'scripts':
-          return await this.analyzeScripts(input, context);
+          return await this.analyzeScripts(input, context, useHandleResponse);
         case 'timing':
-          return await this.analyzeTiming(input, context);
+          return await this.analyzeTiming(input, context, useHandleResponse);
         default:
           return {
             error: `Invalid analysis_type: ${analysisType}. Must be one of: scripts, timing`,
@@ -161,7 +163,7 @@ export class GetDoorSalesAnalyticsTool extends BaseTool<any, any> {
   // SCRIPTS ANALYSIS (from get_door_knocking_scripts_by_area)
   // ==========================================================================
 
-  private async analyzeScripts(input: any, context: ToolContext): Promise<any> {
+  private async analyzeScripts(input: any, context: ToolContext, useHandleResponse: boolean): Promise<any> {
     const targetArea = input.area;
     const serviceType = input.service_type || 'general services';
     const includeObjections = input.include_objection_handlers !== false;
@@ -336,7 +338,7 @@ export class GetDoorSalesAnalyticsTool extends BaseTool<any, any> {
     recommendations.push('📱 Use tablet/phone to show before/after photos during pitch');
     recommendations.push('🤝 Always ask for referrals in high win-rate areas');
 
-    return {
+    const responseData = {
       analysis_type: 'scripts',
       data_source: 'Live JobNimbus API data',
       analysis_timestamp: new Date().toISOString(),
@@ -361,6 +363,36 @@ export class GetDoorSalesAnalyticsTool extends BaseTool<any, any> {
         'Always follow up within 24 hours of initial contact',
       ],
     };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const totalRecords = areaProfiles.length + scriptTemplates.length + insights.length;
+
+      const envelope = await this.wrapResponse([responseData], input, context, {
+        entity: 'door_sales_scripts',
+        maxRows: totalRecords,
+        pageInfo: {
+          current_page: 1,
+          total_pages: 1,
+          has_more: false,
+        },
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          analysis_type: 'scripts',
+          target_area: targetArea || 'All areas',
+          areas_analyzed: areaProfiles.length,
+          scripts_generated: scriptTemplates.length,
+          avg_win_rate: avgWinRate,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
+    return responseData;
   }
 
   /**
@@ -454,7 +486,7 @@ export class GetDoorSalesAnalyticsTool extends BaseTool<any, any> {
   // TIMING ANALYSIS (from get_seasonal_door_timing)
   // ==========================================================================
 
-  private async analyzeTiming(input: any, context: ToolContext): Promise<any> {
+  private async analyzeTiming(input: any, context: ToolContext, useHandleResponse: boolean): Promise<any> {
     const serviceType = input.service_type || 'general services';
     const includeWeather = input.include_weather_analysis !== false;
     const currentMonthOnly = input.current_month_only || false;
@@ -687,7 +719,7 @@ export class GetDoorSalesAnalyticsTool extends BaseTool<any, any> {
     recommendations.push('🌡️ Weather matters - check forecast before planning routes');
     recommendations.push('🎯 Weekday evenings (5-7:30 PM) have highest contact rates year-round');
 
-    return {
+    const responseData = {
       analysis_type: 'timing',
       data_source: 'Live JobNimbus API data + Industry best practices',
       analysis_timestamp: new Date().toISOString(),
@@ -713,5 +745,37 @@ export class GetDoorSalesAnalyticsTool extends BaseTool<any, any> {
         `Weather-dependent services (roofing, exteriors) peak in spring/fall`,
       ],
     };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const totalRecords = seasonalWindows.length + monthlyTimings.length + recommendations.length;
+
+      const envelope = await this.wrapResponse([responseData], input, context, {
+        entity: 'door_sales_timing',
+        maxRows: totalRecords,
+        pageInfo: {
+          current_page: 1,
+          total_pages: 1,
+          has_more: false,
+        },
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          analysis_type: 'timing',
+          service_type: serviceType,
+          current_month: currentMonthName,
+          current_season: currentSeason,
+          seasonal_windows_count: seasonalWindows.length,
+          monthly_timings_count: monthlyTimings.length,
+          include_weather_analysis: includeWeather,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
+    return responseData;
   }
 }

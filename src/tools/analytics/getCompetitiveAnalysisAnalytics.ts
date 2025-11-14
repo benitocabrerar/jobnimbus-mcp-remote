@@ -140,6 +140,9 @@ export class GetCompetitiveAnalysisAnalyticsTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const timeWindowDays = input.time_window_days || 180;
       const includeBattleCards = input.include_battle_cards !== false;
@@ -520,7 +523,7 @@ export class GetCompetitiveAnalysisAnalyticsTool extends BaseTool<any, any> {
         }
       }
 
-      return {
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         time_window_days: timeWindowDays,
@@ -540,6 +543,37 @@ export class GetCompetitiveAnalysisAnalyticsTool extends BaseTool<any, any> {
           `Competitive strength score: ${competitiveStrengthScore.toFixed(0)}/100`,
         ],
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const totalRecords = competitorProfiles.length + winLossReasons.length +
+                            marketShareAnalyses.length + battleCardInsights.length;
+
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'competitive_analysis',
+          maxRows: totalRecords,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            time_window_days: timeWindowDays,
+            total_competitive_deals: totalCompetitiveDeals,
+            competitive_win_rate: competitiveWinRate,
+            market_position: marketPosition,
+            competitor_count: competitorProfiles.length,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

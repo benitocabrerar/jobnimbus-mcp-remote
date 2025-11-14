@@ -61,6 +61,9 @@ export class GetEstimateMaterialsTool extends BaseTool<
     input: GetEstimateMaterialsInput,
     context: ToolContext
   ): Promise<GetEstimateMaterialsOutput> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       this.validateInput(input);
 
@@ -76,17 +79,113 @@ export class GetEstimateMaterialsTool extends BaseTool<
         input.include_cost_analysis || false
       );
 
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([result], input, context, {
+          entity: 'estimate_materials',
+          maxRows: result.materials?.length || 0,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: result.materials?.length || 0,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            estimate_id: input.estimate_id,
+            materials_count: result.materials?.length || 0,
+            include_labor: includeLabor,
+            filter_by_type: input.filter_by_type || 'material',
+            include_cost_analysis: input.include_cost_analysis || false,
+            total_cost: result.summary?.total_cost || 0,
+            total_revenue: result.summary?.total_revenue || 0,
+            total_margin: result.summary?.total_margin || 0,
+            data_freshness: 'real-time',
+          },
+        } as any;
+      }
+
+      // Fallback to legacy response
       return result;
     } catch (error) {
       if (error instanceof MaterialAnalysisError) {
+        // Use handle-based response for errors if requested
+        if (useHandleResponse) {
+          const errorResponse = {
+            success: false,
+            error: error.message,
+            error_code: error.code,
+            details: error.details,
+          };
+
+          const envelope = await this.wrapResponse([errorResponse], input, context, {
+            entity: 'estimate_materials',
+            maxRows: 0,
+            pageInfo: {
+              current_page: 1,
+              total_pages: 1,
+              has_more: false,
+              total: 0,
+            },
+          });
+
+          return {
+            ...envelope,
+            query_metadata: {
+              estimate_id: input.estimate_id,
+              error: true,
+              error_message: error.message,
+              error_code: error.code,
+              data_freshness: 'real-time',
+            },
+          } as any;
+        }
+
         throw error;
       }
 
-      throw new MaterialAnalysisError(
+      const genericError = new MaterialAnalysisError(
         `Failed to analyze estimate materials: ${error}`,
         ErrorCode.CALCULATION_ERROR,
         { estimate_id: input.estimate_id, error: String(error) }
       );
+
+      // Use handle-based response for errors if requested
+      if (useHandleResponse) {
+        const errorResponse = {
+          success: false,
+          error: genericError.message,
+          error_code: genericError.code,
+          details: genericError.details,
+        };
+
+        const envelope = await this.wrapResponse([errorResponse], input, context, {
+          entity: 'estimate_materials',
+          maxRows: 0,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: 0,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            estimate_id: input.estimate_id,
+            error: true,
+            error_message: genericError.message,
+            error_code: genericError.code,
+            data_freshness: 'real-time',
+          },
+        } as any;
+      }
+
+      throw genericError;
     }
   }
 }

@@ -174,32 +174,56 @@ export class CacheService {
     }
 
     try {
-      const redisOptions: RedisOptions = {
-        host: this.config.host,
-        port: this.config.port,
-        password: this.config.password,
-        db: this.config.db,
-        maxRetriesPerRequest: this.config.maxRetriesPerRequest,
-        enableReadyCheck: this.config.enableReadyCheck,
-        connectTimeout: this.config.connectTimeout,
-        retryStrategy: (times: number) => {
-          if (times > 10) {
-            this.log('error', 'Max Redis connection retries reached');
-            return null; // Stop retrying
+      // If URL is provided, use it directly (preferred method)
+      // Otherwise fall back to host/port/password
+      const redisOptions: RedisOptions = this.config.url
+        ? {
+            // URL-based connection
+            db: this.config.db,
+            maxRetriesPerRequest: this.config.maxRetriesPerRequest,
+            enableReadyCheck: this.config.enableReadyCheck,
+            connectTimeout: this.config.connectTimeout,
+            retryStrategy: (times: number) => {
+              if (times > 10) {
+                this.log('error', 'Max Redis connection retries reached');
+                return null; // Stop retrying
+              }
+              const delay = Math.min(times * 1000, 5000);
+              this.log('warn', `Redis connection retry ${times} in ${delay}ms`);
+              return delay;
+            },
+            ...(this.config.tls && { tls: this.config.tls }),
           }
-          const delay = Math.min(times * 1000, 5000);
-          this.log('warn', `Redis connection retry ${times} in ${delay}ms`);
-          return delay;
-        },
-        ...(this.config.tls && { tls: this.config.tls }),
-      };
+        : {
+            // Individual params connection
+            host: this.config.host,
+            port: this.config.port,
+            password: this.config.password,
+            db: this.config.db,
+            maxRetriesPerRequest: this.config.maxRetriesPerRequest,
+            enableReadyCheck: this.config.enableReadyCheck,
+            connectTimeout: this.config.connectTimeout,
+            retryStrategy: (times: number) => {
+              if (times > 10) {
+                this.log('error', 'Max Redis connection retries reached');
+                return null; // Stop retrying
+              }
+              const delay = Math.min(times * 1000, 5000);
+              this.log('warn', `Redis connection retry ${times} in ${delay}ms`);
+              return delay;
+            },
+            ...(this.config.tls && { tls: this.config.tls }),
+          };
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.client = new (Redis as any)(redisOptions);
+      this.client = new (Redis as any)(this.config.url || redisOptions);
 
       // Event handlers
       this.client.on('connect', () => {
-        this.log('info', `Redis connected: ${this.config.host}:${this.config.port}`);
+        const connInfo = this.config.url
+          ? 'Redis Cloud'
+          : `${this.config.host}:${this.config.port}`;
+        this.log('info', `Redis connected: ${connInfo}`);
         this.resetCircuitBreaker();
       });
 

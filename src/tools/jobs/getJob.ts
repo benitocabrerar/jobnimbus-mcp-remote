@@ -201,7 +201,7 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
   /**
    * Process job with attachment verification and field formatting
    */
-  private async processJob(job: Job, input: GetJobInput, context: ToolContext): Promise<any> {
+  private async processJob(job: Job, input: GetJobInput, context: ToolContext, useHandleResponse: boolean): Promise<any> {
     const jobJnid = job.jnid || input.job_id;
 
     // Attachment verification logic
@@ -269,7 +269,7 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
     const fullAddress = this.buildAddress(job);
 
     // Format response with all fields explicitly mapped
-    return {
+    const responseData = {
       success: true,
       data: {
         // Identifiers
@@ -364,9 +364,40 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
         },
       },
     };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const envelope = await this.wrapResponse([responseData], input, context, {
+        entity: 'job',
+        maxRows: 1,
+        pageInfo: {
+          current_page: 1,
+          total_pages: 1,
+          has_more: false,
+        },
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          job_id: input.job_id,
+          job_jnid: job.jnid,
+          job_number: job.number || job.display_number || null,
+          job_status: job.status_name || null,
+          attachment_verified: attachmentVerification?.verified || false,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
+    return responseData;
   }
 
   async execute(input: GetJobInput, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     let directLookupError: any = null;
 
     // 1. Try direct JNID lookup first (fast path for valid JNIDs)
@@ -376,7 +407,7 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
         `jobs/${input.job_id}`
       );
       const job: Job = result.data;
-      return await this.processJob(job, input, context);
+      return await this.processJob(job, input, context, useHandleResponse);
     } catch (error: any) {
       directLookupError = error;
       if (error.statusCode !== 404 && error.status !== 404) {
@@ -400,7 +431,7 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
       throw new Error(errorDetails.join('\n'));
     }
 
-    return await this.processJob(job, input, context);
+    return await this.processJob(job, input, context, useHandleResponse);
   }
 }
 

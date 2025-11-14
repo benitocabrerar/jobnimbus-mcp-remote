@@ -299,8 +299,8 @@ export class GetActivitiesTool extends BaseTool<GetActivitiesInput, any> {
     if (needsFullFetch) {
       // Fetch all activities with pagination
       const batchSize = 100;
-      // OPTIMIZED: Reduced from 50 to 20 iterations (max 2000 activities instead of 5000)
-      const maxIterations = 20;
+      // OPTIMIZATION: Reduced from 20 to 5 iterations (max 500 activities = 75% reduction)
+      const maxIterations = 5;
       let allActivities: Activity[] = [];
       let offset = 0;
       let iteration = 0;

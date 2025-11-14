@@ -31,7 +31,10 @@ export class OptimizeMaterialOrdersTool extends BaseTool {
     };
   }
 
-  async execute(input: any) {
+  async execute(input: any, context: any) {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     const optimized = input.materials.map((material: any) => {
       const packaging = roundToPackagingUnit(material.quantity, material.sku);
       const discount = getBulkDiscount('shingles', packaging.rounded_quantity);
@@ -51,17 +54,47 @@ export class OptimizeMaterialOrdersTool extends BaseTool {
     });
 
     const total_savings = optimized.reduce((sum: number, m: any) => sum + (m.savings || 0), 0);
+    const original_cost = input.materials.reduce((sum: number, m: any) => sum + m.quantity * m.unit_cost, 0);
 
-    return {
+    const result = {
       success: true,
       optimized_materials: optimized,
       totals: {
-        original_cost: input.materials.reduce((sum: number, m: any) => sum + m.quantity * m.unit_cost, 0),
+        original_cost,
         optimized_cost: optimized.reduce((sum: number, m: any) => sum + m.optimized.total_cost, 0),
         total_savings,
-        savings_percent: (total_savings / input.materials.reduce((sum: number, m: any) => sum + m.quantity * m.unit_cost, 0) * 100).toFixed(1)
+        savings_percent: (total_savings / original_cost * 100).toFixed(1)
       }
     };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const envelope = await this.wrapResponse([result], input, context, {
+        entity: 'optimized_material_orders',
+        maxRows: optimized.length,
+        pageInfo: {
+          current_page: 1,
+          total_pages: 1,
+          has_more: false,
+          total: optimized.length,
+        },
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          calculation_type: 'material_order_optimization',
+          materials_count: input.materials.length,
+          optimized_count: optimized.length,
+          total_savings: total_savings,
+          savings_percent: result.totals.savings_percent,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
+    return result;
   }
 }
 

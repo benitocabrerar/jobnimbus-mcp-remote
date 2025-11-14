@@ -370,6 +370,9 @@ export class SearchJobsEnhancedTool extends BaseTool<SearchJobsEnhancedInput, an
   }
 
   async execute(input: SearchJobsEnhancedInput, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     const fromIndex = input.from || 0;
     const requestedSize = Math.min(input.size || 50, 100);
     const order = input.order || 'desc';
@@ -487,6 +490,52 @@ export class SearchJobsEnhancedTool extends BaseTool<SearchJobsEnhancedInput, an
         };
       }
 
+      // Build page info
+      const pageInfo = {
+        has_more: fromIndex + paginatedJobs.length < filteredJobs.length,
+        total: filteredJobs.length,
+        current_page: Math.floor(fromIndex / requestedSize) + 1,
+        total_pages: Math.ceil(filteredJobs.length / requestedSize),
+      };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse(paginatedJobs, input, context, {
+          entity: 'jobs',
+          maxRows: requestedSize,
+          pageInfo,
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            count: paginatedJobs.length,
+            total_filtered: filteredJobs.length,
+            total_fetched: allJobs.length,
+            iterations: iteration,
+            from: fromIndex,
+            page_size: requestedSize,
+            filters_applied: {
+              query: input.query,
+              date_filter: !!(input.date_from || input.date_to),
+              schedule_filter: !!(input.scheduled_from || input.scheduled_to || input.has_schedule !== undefined),
+              business_type_filter: input.business_type && input.business_type !== 'all',
+              insurance_filters: !!(input.insurance_has_claim !== undefined ||
+                                   input.insurance_has_adjuster !== undefined ||
+                                   input.insurance_carrier ||
+                                   input.insurance_status),
+              retail_filters: !!(input.retail_has_financing !== undefined ||
+                                input.retail_has_contract !== undefined ||
+                                input.retail_min_commission !== undefined ||
+                                input.retail_payment_method),
+              sorting: !!input.sort_by
+            },
+            categorization_stats: categorizationStats,
+          },
+        };
+      }
+
+      // Fallback to legacy response
       return {
         count: paginatedJobs.length,
         total_filtered: filteredJobs.length,
@@ -494,9 +543,9 @@ export class SearchJobsEnhancedTool extends BaseTool<SearchJobsEnhancedInput, an
         iterations: iteration,
         from: fromIndex,
         size: requestedSize,
-        has_more: fromIndex + paginatedJobs.length < filteredJobs.length,
-        total_pages: Math.ceil(filteredJobs.length / requestedSize),
-        current_page: Math.floor(fromIndex / requestedSize) + 1,
+        has_more: pageInfo.has_more,
+        total_pages: pageInfo.total_pages,
+        current_page: pageInfo.current_page,
 
         // Filter status
         filters_applied: {
@@ -544,6 +593,43 @@ export class SearchJobsEnhancedTool extends BaseTool<SearchJobsEnhancedInput, an
         }));
       }
 
+      // Build page info
+      const pageInfo = {
+        has_more: false,
+        total: processedJobs.length,
+        current_page: Math.floor(fromIndex / requestedSize) + 1,
+        total_pages: Math.ceil(processedJobs.length / requestedSize),
+      };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse(processedJobs, input, context, {
+          entity: 'jobs',
+          maxRows: requestedSize,
+          pageInfo,
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            count: processedJobs.length,
+            total_filtered: processedJobs.length,
+            from: fromIndex,
+            page_size: requestedSize,
+            filters_applied: {
+              query: input.query,
+              date_filter: false,
+              schedule_filter: false,
+              business_type_filter: false,
+              insurance_filters: false,
+              retail_filters: false,
+              sorting: false
+            },
+          },
+        };
+      }
+
+      // Fallback to legacy response
       return {
         count: processedJobs.length,
         total_filtered: processedJobs.length,

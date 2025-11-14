@@ -50,6 +50,9 @@ export class EstimateMaterialsFromJobTool extends BaseTool {
   }
 
   async execute(input: EstimationInput, context: any) {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       let jobData: any = {};
 
@@ -125,8 +128,8 @@ export class EstimateMaterialsFromJobTool extends BaseTool {
         };
       }
 
-      // 7. Return comprehensive result
-      return {
+      // 7. Build comprehensive result
+      const result = {
         success: true,
         job_info: {
           job_id: input.job_id,
@@ -174,14 +177,77 @@ export class EstimateMaterialsFromJobTool extends BaseTool {
           }
         }
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([result], input, context, {
+          entity: 'estimated_materials',
+          maxRows: materials.length,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: materials.length,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            calculation_type: 'ai_estimation',
+            job_id: input.job_id || null,
+            estimate_id: input.estimate_id || null,
+            confidence_overall: result.confidence_scores.overall,
+            confidence_roof_area: roofAreaConfidence,
+            confidence_pitch: pitchConfidence,
+            requires_manual_review: reviewCheck.required,
+            materials_count: materials.length,
+            extraction_source_mix: result.metadata.extraction_sources,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return result;
     } catch (error) {
-      return {
+      const errorResult = {
         success: false,
         error: error instanceof Error ? error.message : 'Estimation failed',
         requires_manual_review: true,
         review_reasons: ['Estimation failed - manual input required'],
         details: error
       };
+
+      // Use handle-based response for errors if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([errorResult], input, context, {
+          entity: 'estimated_materials',
+          maxRows: 0,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+            total: 0,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            calculation_type: 'ai_estimation',
+            job_id: input.job_id || null,
+            estimate_id: input.estimate_id || null,
+            error: true,
+            error_message: error instanceof Error ? error.message : 'Estimation failed',
+            requires_manual_review: true,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy error response
+      return errorResult;
     }
   }
 }

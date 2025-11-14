@@ -56,6 +56,9 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const dashboardType = input.dashboard_type || 'executive';
       const includeForecasts = input.include_forecasts !== false;
@@ -316,7 +319,8 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
       else if (healthScore > 10) overallHealth = 'fair';
       else overallHealth = 'poor';
 
-      return {
+      // Build response data
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         dashboard_timestamp: new Date().toISOString(),
         dashboard_type: dashboardType,
@@ -345,6 +349,34 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
         alerts: this.generateAlerts(kpis, pendingRevenue, activeJobs),
         recommendations: this.generateRecommendations(kpis, revenueGrowth, winRate),
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'profitability_dashboard',
+          maxRows: kpis.length,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            dashboard_type: dashboardType,
+            overall_health: overallHealth,
+            total_revenue: totalRevenue,
+            win_rate: winRate,
+            data_source: useInvoicedAmounts ? 'invoices' : 'estimates',
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

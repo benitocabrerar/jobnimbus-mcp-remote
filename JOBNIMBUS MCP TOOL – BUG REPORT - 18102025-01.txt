@@ -1,0 +1,139 @@
+🧩 JOBNIMBUS MCP TOOL – BUG REPORT & CORRECTIVE ACTIONS (STAMFORD INSTANCE)
+1. Issue: Analytics tools returning zero results
+
+Symptoms:
+
+get_task_management_analytics and get_user_productivity_analytics return 0 in all fields.
+
+Raw task queries (get_tasks) confirm >40 active records.
+
+Root cause:
+
+Overly restrictive filters (requiring due_date and owner_id).
+
+Exclusion of valid record_type values and automated entries created by “Automation (Job)”.
+
+Filtering logic may rely on missing metadata (e.g., date_due null or owner_id undefined).
+
+Required Fix:
+
+Expand the inclusion list to:
+Task, Meeting, Phone Call, Labor Notes, Initial Appointment, Final Walk Through, Lead Follow-Up, Collect ACV Payment, Pull Permit, Project Start Date.
+
+Accept tasks with or without due_date (fallback to date_start or created_at).
+
+Map “owner” using created_by_name if owner_id is null.
+
+Add a fallback condition: if total = 0 → rerun query with minimal filters and log filter_mismatch warning.
+
+2. Issue: get_tasks_by_owner not found
+
+Symptoms:
+
+Function call returns Tool "get_tasks_by_owner" not found.
+
+Required Fix:
+
+Implement or alias the function to query tasks grouped by owner_id or created_by_name.
+
+Provide aggregated output format: { owner_name, task_count, overdue_count, avg_completion_time }.
+
+Ensure compatibility with days_back and include_summary.
+
+3. Issue: Record type and classification mismatches
+
+Symptoms:
+
+“POST A GALERIA”, “POST SEMANAL”, and “VIDEO - SEMANAL” incorrectly classified as Phone Call.
+
+Required Fix:
+
+Add normalization layer: detect recurring names and assign correct logical record_type (Social Post, Video Production, etc.).
+
+Enforce mapping before analytics aggregation.
+
+4. Issue: Missing due dates in tasks
+
+Symptoms:
+
+Tasks #4516, #4515, #4485, #4484, #4509 missing date_end or both dates.
+
+Required Fix:
+
+Implement fallback auto-due logic:
+
+If date_end is null → assign date_start + 3 business days.
+
+Tag fallback as auto_due_generated=true.
+
+Allow analytics modules to include these tasks in “overdue” calculations.
+
+5. Issue: Null time fields
+
+Symptoms:
+
+actual_time and estimated_time are consistently 0.
+
+Required Fix:
+
+Default estimated_time=1 hour if blank (to enable cycle-time metrics).
+
+Support manual updates or automated start/stop timer capture.
+
+6. Issue: Inconsistent linkage (related_count = 0)
+
+Symptoms:
+
+Several tasks lack link to Job/Contact.
+
+Required Fix:
+
+Add post-creation validation: if related_count=0 → auto-link to parent Job by job_id.
+
+Enforce this linkage in templates created by “Automation (Job)”.
+
+✅ Validation Plan (after fixes)
+
+Test A – Analytics consistency
+
+Run get_task_management_analytics → verify that total_tasks > 0 and at least 4 unique record_type_name values are recognized.
+
+Confirm completion_rate, avg_completion_time, and overdue_tasks > 0 when appropriate.
+
+Test B – Productivity metrics
+
+Call get_user_productivity_analytics → ensure at least 5 users detected (e.g., Juan, Ana, Diana, Jonathan, Automation).
+
+Validate that avg_productivity_score > 0.
+
+Test C – Owner grouping
+
+Call new get_tasks_by_owner → confirm aggregated counts and matching with raw task results.
+
+Validate total = count from get_tasks.
+
+Test D – Auto-due fallback
+
+Insert tasks missing date_end → confirm auto-due creation (T+3 days) and analytics inclusion.
+
+Test E – Record normalization
+
+Insert POST SEMANAL as Phone Call → confirm normalization to Social Post record type.
+
+Test F – Related Job enforcement
+
+Create a task without Job relation → confirm automatic linkage.
+
+🔍 Expected Outcome
+
+After applying these corrections:
+
+Analytics tools reflect real operational data (no more 0-values).
+
+Productivity dashboard shows accurate workload distribution per user.
+
+Auto-due logic prevents missed deadlines.
+
+Task classifications and linkages align with real workflows.
+
+Developer logs show fallback triggers only when necessary.

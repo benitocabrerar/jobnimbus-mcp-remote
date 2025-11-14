@@ -150,6 +150,9 @@ export class GetJobTasksTool extends BaseTool<GetJobTasksInput, any> {
   }
 
   async execute(input: GetJobTasksInput, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     const includeActivities = input.include_activities !== false;
     const includeNotes = input.include_notes !== false;
     const parseMentions = input.parse_mentions !== false;
@@ -235,6 +238,40 @@ export class GetJobTasksTool extends BaseTool<GetJobTasksInput, any> {
       }
     }
 
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const totalItems = (response.notes?.parsed_notes?.length || 0) +
+                        (response.activities?.count || 0);
+
+      const envelope = await this.wrapResponse([response], input, context, {
+        entity: 'job_tasks',
+        maxRows: totalItems,
+        pageInfo: {
+          current_page: 1,
+          total_pages: 1,
+          has_more: false,
+        },
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          job_id: input.job_id,
+          job_jnid: job.jnid,
+          job_number: job.number || job.display_number,
+          job_status: job.status_name,
+          notes_count: response.notes?.parsed_notes?.length || 0,
+          activities_count: response.activities?.count || 0,
+          mentions_count: response.all_mentions?.length || 0,
+          includes_activities: includeActivities,
+          includes_notes: includeNotes,
+          parsed_mentions: parseMentions,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
     return response;
   }
 }

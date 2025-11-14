@@ -51,6 +51,9 @@ export class GetSeasonalTrendsTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const yearsToAnalyze = input.years_to_analyze || 2;
       const serviceTypeFilter = input.service_type;
@@ -278,7 +281,8 @@ export class GetSeasonalTrendsTool extends BaseTool<any, any> {
       recommendations.push('Consider implementing seasonal pricing to maximize revenue during peak periods');
       recommendations.push('Schedule preventive maintenance during low seasons to prepare for peak demand');
 
-      return {
+      // Build response data
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         analysis_period: {
@@ -298,6 +302,33 @@ export class GetSeasonalTrendsTool extends BaseTool<any, any> {
           forecasts ? `Trend: ${forecasts.trend}` : 'Insufficient data for trending',
         ],
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'seasonal_trends',
+          maxRows: monthlyTrends.length + seasonalPatterns.length,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            years_analyzed: yearsToAnalyze,
+            service_type: serviceTypeFilter || 'All',
+            total_months: monthlyTrends.length,
+            peak_seasons: peakSeasons.map(s => s.season),
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

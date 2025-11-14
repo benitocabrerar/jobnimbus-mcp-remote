@@ -162,8 +162,8 @@ export class GetContactsTool extends BaseTool<GetContactsInput, any> {
     if (needsFullFetch) {
       // Fetch all contacts with pagination
       const batchSize = 100;
-      // OPTIMIZED: Reduced from 50 to 20 iterations (max 2000 instead of 5000 records)
-      const maxIterations = 20;
+      // OPTIMIZATION: Reduced from 20 to 5 iterations (max 500 contacts = 75% reduction)
+      const maxIterations = 5;
       let allContacts: any[] = [];
       let offset = 0;
       let iteration = 0;

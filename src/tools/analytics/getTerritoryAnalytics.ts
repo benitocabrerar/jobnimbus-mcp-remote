@@ -88,16 +88,18 @@ export class GetTerritoryAnalyticsTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
     const analysisType = input.analysis_type;
 
     try {
       switch (analysisType) {
         case 'routes':
-          return await this.analyzeRoutes(input, context);
+          return await this.analyzeRoutes(input, context, useHandleResponse);
         case 'heatmaps':
-          return await this.analyzeHeatmaps(input, context);
+          return await this.analyzeHeatmaps(input, context, useHandleResponse);
         case 'distribution':
-          return await this.analyzeDistribution(input, context);
+          return await this.analyzeDistribution(input, context, useHandleResponse);
         default:
           return {
             error: `Invalid analysis_type: ${analysisType}. Must be one of: routes, heatmaps, distribution`,
@@ -116,7 +118,7 @@ export class GetTerritoryAnalyticsTool extends BaseTool<any, any> {
   /**
    * Routes Analysis - Door-to-door sales route optimization
    */
-  private async analyzeRoutes(input: any, context: ToolContext): Promise<any> {
+  private async analyzeRoutes(input: any, context: ToolContext, useHandleResponse: boolean): Promise<any> {
     const territory = input.territory;
     const maxRoutes = input.max_routes || 5;
     const targetHours = input.target_hours_per_route || 4;
@@ -298,7 +300,8 @@ export class GetTerritoryAnalyticsTool extends BaseTool<any, any> {
                               routeDensity >= 30 ? 'Good' :
                               routeDensity >= 15 ? 'Fair' : 'Poor';
 
-    return {
+    // Build response data
+    const responseData = {
       analysis_type: 'routes',
       data_source: 'Live JobNimbus API data',
       analysis_timestamp: new Date().toISOString(),
@@ -318,12 +321,39 @@ export class GetTerritoryAnalyticsTool extends BaseTool<any, any> {
         efficiency_rating: efficiencyRating,
       },
     };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const envelope = await this.wrapResponse([responseData], input, context, {
+        entity: 'territory_routes',
+        maxRows: clusters.length + routes.length,
+        pageInfo: {
+          current_page: 1,
+          total_pages: 1,
+          has_more: false,
+        },
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          analysis_type: 'routes',
+          total_clusters: clusters.length,
+          total_routes: routes.length,
+          efficiency_rating: efficiencyRating,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
+    return responseData;
   }
 
   /**
    * Heatmaps Analysis - Territory performance heat maps
    */
-  private async analyzeHeatmaps(input: any, context: ToolContext): Promise<any> {
+  private async analyzeHeatmaps(input: any, context: ToolContext, useHandleResponse: boolean): Promise<any> {
     const groupingLevel = input.grouping_level || 'city';
     const minJobsThreshold = input.min_jobs_threshold || 3;
     const includeOpportunity = input.include_opportunity_analysis !== false;
@@ -416,7 +446,8 @@ export class GetTerritoryAnalyticsTool extends BaseTool<any, any> {
 
     zones.sort((a, b) => b.performance_score - a.performance_score);
 
-    return {
+    // Build response data
+    const responseData = {
       analysis_type: 'heatmaps',
       data_source: 'Live JobNimbus API data',
       analysis_timestamp: new Date().toISOString(),
@@ -432,12 +463,39 @@ export class GetTerritoryAnalyticsTool extends BaseTool<any, any> {
       top_performers: zones.slice(0, 10),
       opportunity_areas: includeOpportunity ? zones.filter(z => z.heat_level === 'Cool' || z.heat_level === 'Warm').slice(0, 10) : [],
     };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const envelope = await this.wrapResponse([responseData], input, context, {
+        entity: 'territory_heatmaps',
+        maxRows: zones.length,
+        pageInfo: {
+          current_page: 1,
+          total_pages: 1,
+          has_more: false,
+        },
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          analysis_type: 'heatmaps',
+          grouping_level: groupingLevel,
+          total_zones: zones.length,
+          hot_zones: zones.filter(z => z.heat_level === 'Hot').length,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
+    return responseData;
   }
 
   /**
    * Distribution Analysis - Geographic job distribution
    */
-  private async analyzeDistribution(input: any, context: ToolContext): Promise<any> {
+  private async analyzeDistribution(input: any, context: ToolContext, useHandleResponse: boolean): Promise<any> {
     const groupingLevel = input.grouping_level || 'city';
     const minJobs = input.min_jobs || 1;
     const identifyGaps = input.identify_gaps !== false;
@@ -513,7 +571,8 @@ export class GetTerritoryAnalyticsTool extends BaseTool<any, any> {
 
     distribution.sort((a, b) => b.job_count - a.job_count);
 
-    return {
+    // Build response data
+    const responseData = {
       analysis_type: 'distribution',
       data_source: 'Live JobNimbus API data',
       analysis_timestamp: new Date().toISOString(),
@@ -528,5 +587,32 @@ export class GetTerritoryAnalyticsTool extends BaseTool<any, any> {
       top_locations: distribution.slice(0, 15),
       expansion_opportunities: identifyGaps ? distribution.filter(d => d.job_count < 10).slice(0, 10) : [],
     };
+
+    // Use handle-based response if requested
+    if (useHandleResponse) {
+      const envelope = await this.wrapResponse([responseData], input, context, {
+        entity: 'territory_distribution',
+        maxRows: distribution.length,
+        pageInfo: {
+          current_page: 1,
+          total_pages: 1,
+          has_more: false,
+        },
+      });
+
+      return {
+        ...envelope,
+        query_metadata: {
+          analysis_type: 'distribution',
+          grouping_level: groupingLevel,
+          total_locations: distribution.length,
+          total_jobs: totalJobs,
+          data_freshness: 'real-time',
+        },
+      };
+    }
+
+    // Fallback to legacy response
+    return responseData;
   }
 }

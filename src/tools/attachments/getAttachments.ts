@@ -258,20 +258,23 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
           const [filesResponse, documentsResponse, ordersResponse] = await Promise.all([
             this.client.get(context.apiKey, 'files', {
               filter: filesFilter,
-              size: fetchSize
+              size: fetchSize,
+              fields: ['jnid', 'filename', 'content_type', 'size', 'date_created', 'related', 'primary', 'is_active', 'is_archived', 'is_private', 'created_by', 'created_by_name', 'sales_rep', 'record_type', 'record_type_name', 'type', 'customer'], // JSONB Field Projection
             }).catch(err => {
               // Graceful degradation - if endpoint fails, return empty array
               return { data: { files: [] }, error: err };
             }),
             this.client.get(context.apiKey, 'documents', {
               filter: documentsFilter,
-              size: fetchSize
+              size: fetchSize,
+              fields: ['jnid', 'filename', 'content_type', 'size', 'date_created', 'related', 'primary', 'is_active', 'is_archived', 'is_private', 'created_by', 'created_by_name', 'sales_rep', 'record_type', 'record_type_name', 'type', 'customer'], // JSONB Field Projection
             }).catch(err => {
               return { data: { documents: [] }, error: err };
             }),
             this.client.get(context.apiKey, 'orders', {
               filter: ordersFilter,
-              size: fetchSize
+              size: fetchSize,
+              fields: ['jnid', 'filename', 'content_type', 'size', 'date_created', 'related', 'primary', 'is_active', 'is_archived', 'is_private', 'created_by', 'created_by_name', 'sales_rep', 'record_type', 'record_type_name', 'type', 'customer'], // JSONB Field Projection
             }).catch(err => {
               return { data: { orders: [] }, error: err };
             }),

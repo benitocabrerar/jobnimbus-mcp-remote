@@ -19,6 +19,9 @@ export class GetPerformanceMetricsTool extends BaseTool<any, any> {
   }
 
   async execute(_input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(_input);
+
     try {
       // Fetch data from JobNimbus API
       const [jobsResponse, estimatesResponse, activitiesResponse] = await Promise.all([
@@ -95,7 +98,8 @@ export class GetPerformanceMetricsTool extends BaseTool<any, any> {
       const averageEstimateValue =
         totalEstimates > 0 ? (totalEstimateValue / totalEstimates).toFixed(2) : '0.00';
 
-      return {
+      // Build response data
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         metrics: {
@@ -134,6 +138,33 @@ export class GetPerformanceMetricsTool extends BaseTool<any, any> {
           totalActivities
         ),
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const envelope = await this.wrapResponse([responseData], _input, context, {
+          entity: 'performance_metrics',
+          maxRows: totalJobs + totalEstimates + totalActivities,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            total_jobs: totalJobs,
+            total_estimates: totalEstimates,
+            total_activities: totalActivities,
+            conversion_rate: conversionRate,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',

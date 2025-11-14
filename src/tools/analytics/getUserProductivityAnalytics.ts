@@ -111,6 +111,9 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
   }
 
   async execute(input: any, context: ToolContext): Promise<any> {
+    // Check if using new handle-based parameters for response optimization
+    const useHandleResponse = this.hasNewParams(input);
+
     try {
       const userFilter = input.user_filter;
       const includePatterns = input.include_activity_patterns !== false;
@@ -509,7 +512,7 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
         recommendations.push(`🤝 ${lowCollaborators} team member(s) with low collaboration - encourage team interaction`);
       }
 
-      return {
+      const responseData = {
         data_source: 'Live JobNimbus API data',
         analysis_timestamp: new Date().toISOString(),
         analysis_period_days: daysBack,
@@ -527,6 +530,44 @@ export class GetUserProductivityAnalyticsTool extends BaseTool<any, any> {
           `Average ${teamMetrics.avg_activities_per_member.toFixed(0)} activities per member`,
         ],
       };
+
+      // Use handle-based response if requested
+      if (useHandleResponse) {
+        const totalRecords = userProductivityMetrics.length +
+                            (activityPatterns?.length || 0) +
+                            (collaborationMetrics?.length || 0) +
+                            (workloadDistribution?.length || 0) +
+                            performanceComparison.length;
+
+        const envelope = await this.wrapResponse([responseData], input, context, {
+          entity: 'user_productivity',
+          maxRows: totalRecords,
+          pageInfo: {
+            current_page: 1,
+            total_pages: 1,
+            has_more: false,
+          },
+        });
+
+        return {
+          ...envelope,
+          query_metadata: {
+            days_back: daysBack,
+            total_team_members: teamMetrics.total_team_members,
+            active_members: teamMetrics.active_members,
+            avg_productivity_score: teamMetrics.avg_productivity_score,
+            top_performer: teamMetrics.top_performer_name,
+            user_filter: userFilter || 'all',
+            include_activity_patterns: includePatterns,
+            include_collaboration_metrics: includeCollaboration,
+            include_workload_analysis: includeWorkload,
+            data_freshness: 'real-time',
+          },
+        };
+      }
+
+      // Fallback to legacy response
+      return responseData;
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',
