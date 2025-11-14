@@ -152,7 +152,9 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
       const monthlyRevenue = new Map<string, { revenue: number; count: number }>();
 
       // MODE 1: INVOICE-BASED REVENUE (uses actual invoiced amounts with NET calculations)
+      console.log(`[DEBUG] useInvoicedAmounts=${useInvoicedAmounts}, consolidatedTool=${!!consolidatedTool}`);
       if (useInvoicedAmounts && consolidatedTool) {
+        console.log(`[DEBUG] Processing ${jobs.length} jobs for revenue calculation`);
         for (const job of jobs) {
           if (!job.jnid) continue;
 
@@ -161,6 +163,7 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
           const jobDate = job.date_created || 0;
 
           try {
+            console.log(`[DEBUG] Calling getConsolidatedFinancials for job ${job.jnid} (number: ${job.number})`);
             // Query consolidated financials for this job
             const financialsResponse = await consolidatedTool.execute(
               {
@@ -175,6 +178,7 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
               context
             );
 
+            console.log(`[DEBUG] Financial response for job ${job.number}: net_invoiced=${financialsResponse.summary?.net_invoiced}, invoice_count=${financialsResponse.summary?.invoice_count}`);
             // Extract NET invoiced amount (invoiced - credit_memos - refunds)
             const netInvoiced = financialsResponse.summary?.net_invoiced || 0;
             const totalInvoiced = financialsResponse.summary?.total_invoiced || 0;
