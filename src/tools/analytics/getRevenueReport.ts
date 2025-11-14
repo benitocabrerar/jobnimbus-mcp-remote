@@ -93,6 +93,9 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
       let offset = 0;
       let iterations = 0;
 
+      console.log(`[DEBUG] Starting job fetch for period ${input.period}`);
+      console.log(`[DEBUG] Period bounds: ${periodStart?.toISOString()} to ${periodEnd.toISOString()}`);
+
       while (iterations < maxIterations) {
         const params = {
           size: batchSize,
@@ -101,6 +104,8 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
         };
         const response = await this.client.get(context.apiKey, 'jobs', params);
         const batch = response.data?.results || [];
+
+        console.log(`[DEBUG] Batch ${iterations + 1}: Fetched ${batch.length} jobs`);
 
         if (batch.length === 0) {
           break;
@@ -115,13 +120,25 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
         }
       }
 
+      console.log(`[DEBUG] Total jobs fetched: ${allJobs.length}`);
+
       // Filter jobs by period in-memory (date_created is in Unix seconds)
       const periodStartSec = periodStart ? Math.floor(periodStart.getTime() / 1000) : 0;
       const periodEndSec = Math.floor(periodEnd.getTime() / 1000);
+
+      console.log(`[DEBUG] Period bounds in seconds: ${periodStartSec} to ${periodEndSec}`);
+      console.log(`[DEBUG] Sample job dates (first 5):`, allJobs.slice(0, 5).map(j => ({
+        number: j.number,
+        date_created: j.date_created,
+        date_str: j.date_created ? new Date(j.date_created * 1000).toISOString() : 'none'
+      })));
+
       const jobs = allJobs.filter(job => {
         const dateCreated = job.date_created || 0;
         return dateCreated >= periodStartSec && dateCreated <= periodEndSec;
       });
+
+      console.log(`[DEBUG] Jobs after date filter: ${jobs.length}`);
 
       // Analyze revenue
       let totalRevenue = 0;
