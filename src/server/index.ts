@@ -36,7 +36,7 @@ app.use(cors({
 app.use(compression({
   level: 6, // Balanced compression (1-9, higher = more compression but slower)
   threshold: 1024, // Only compress responses > 1KB
-  filter: (req, res) => {
+  filter: (req: express.Request, res: express.Response) => {
     if (req.headers['x-no-compression']) {
       return false;
     }
