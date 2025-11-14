@@ -99,8 +99,8 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
       while (iterations < maxIterations) {
         const params = {
           size: batchSize,
-          from: offset,
-          fields: ['jnid', 'number', 'date_created', 'record_type_name', 'sales_rep']
+          from: offset
+          // NOTE: Removed 'fields' parameter - JobNimbus API returns 0 results when using it
         };
         const response = await this.client.get(context.apiKey, 'jobs', params);
         const batch = response.data?.results || [];
