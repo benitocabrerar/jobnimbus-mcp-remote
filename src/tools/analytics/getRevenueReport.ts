@@ -320,7 +320,8 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
             repStats.count += 1;
 
             // By month
-            const monthKey = new Date(jobDate).toISOString().substring(0, 7); // YYYY-MM
+            // FIX 2025-11-14: jobDate is in Unix seconds, must convert to milliseconds for Date()
+            const monthKey = jobDate > 0 ? new Date(jobDate * 1000).toISOString().substring(0, 7) : 'Unknown'; // YYYY-MM
             if (!monthlyRevenue.has(monthKey)) {
               monthlyRevenue.set(monthKey, { revenue: 0, count: 0 });
             }
