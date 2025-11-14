@@ -379,8 +379,8 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
               this.client
                 .get(context.apiKey, 'invoices', {
                   filter: invoicesFilter,
-                  size: fetchSize,
-                  fields: ['jnid', 'type', 'total', 'date_created', 'related', 'primary', 'sales_rep', 'number', 'invoice_no'], // JSONB Field Projection
+                  size: fetchSize
+                  // NOTE: Removed 'fields' parameter - JobNimbus API returns 0 results when using it
                 })
                 .catch((err) => ({ data: [], error: err, source: 'invoices' }))
             );
@@ -391,8 +391,8 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
               this.client
                 .get(context.apiKey, 'credit_memos', {
                   filter: creditMemosFilter,
-                  size: fetchSize,
-                  fields: ['jnid', 'type', 'total', 'amount', 'date_created', 'related', 'primary', 'invoice_id'], // JSONB Field Projection
+                  size: fetchSize
+                  // NOTE: Removed 'fields' parameter - JobNimbus API returns 0 results when using it
                 })
                 .catch((err) => ({ data: [], error: err, source: 'credit_memos' }))
             );
@@ -403,8 +403,8 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
               this.client
                 .get(context.apiKey, 'payments', {
                   filter: paymentsFilter,
-                  size: fetchSize,
-                  fields: ['jnid', 'type', 'amount', 'date_created', 'date_payment', 'related', 'primary', 'sales_rep'], // JSONB Field Projection
+                  size: fetchSize
+                  // NOTE: Removed 'fields' parameter - JobNimbus API returns 0 results when using it
                 })
                 .catch((err) => ({ data: [], error: err, source: 'payments' }))
             );
@@ -415,8 +415,8 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
               this.client
                 .get(context.apiKey, 'refunds', {
                   filter: refundsFilter,
-                  size: fetchSize,
-                  fields: ['jnid', 'type', 'amount', 'total', 'date_created', 'related', 'primary', 'reference'], // JSONB Field Projection
+                  size: fetchSize
+                  // NOTE: Removed 'fields' parameter - JobNimbus API returns 0 results when using it
                 })
                 .catch((err) => ({ data: [], error: err, source: 'refunds' }))
             );
