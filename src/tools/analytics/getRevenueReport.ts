@@ -178,11 +178,13 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
               context
             );
 
-            console.log(`[DEBUG] Financial response for job ${job.number}: net_invoiced=${financialsResponse.summary?.net_invoiced}, invoice_count=${financialsResponse.summary?.invoice_count}`);
+            console.log(`[DEBUG] Financial response for job ${job.number}: net_invoiced=${financialsResponse.financial_summary?.net_invoiced}, invoice_count=${financialsResponse.record_counts?.invoices}`);
             // Extract NET invoiced amount (invoiced - credit_memos - refunds)
-            const netInvoiced = financialsResponse.summary?.net_invoiced || 0;
-            const totalInvoiced = financialsResponse.summary?.total_invoiced || 0;
-            const hasPendingInvoices = financialsResponse.summary?.invoice_count === 0 && includePending;
+            // NOTE: Use financial_summary (not summary) - this is the NEW handle-based response format
+            const netInvoiced = parseFloat(financialsResponse.financial_summary?.net_invoiced || 0);
+            const totalInvoiced = parseFloat(financialsResponse.financial_summary?.total_invoiced || 0);
+            const invoiceCount = financialsResponse.record_counts?.invoices || 0;
+            const hasPendingInvoices = invoiceCount === 0 && includePending;
 
             let jobRevenue = netInvoiced;
             let jobHasRevenue = netInvoiced > 0;
