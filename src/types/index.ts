@@ -151,6 +151,11 @@ export interface HealthCheckResponse {
   version: string;
   uptime: number;
   timestamp: string;
+  build?: {
+    phase: string;
+    tools_migrated: number;
+    commit: string;
+  };
   checks?: {
     [key: string]: boolean;
   };

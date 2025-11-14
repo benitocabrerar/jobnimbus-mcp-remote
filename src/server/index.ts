@@ -75,6 +75,11 @@ app.get('/health', (_req, res) => {
     version: '1.0.0',
     uptime,
     timestamp: new Date().toISOString(),
+    build: {
+      phase: 'Phase 3 Migration',
+      tools_migrated: 43,
+      commit: process.env.RENDER_GIT_COMMIT?.substring(0, 7) || 'unknown',
+    },
   };
 
   res.json(health);
