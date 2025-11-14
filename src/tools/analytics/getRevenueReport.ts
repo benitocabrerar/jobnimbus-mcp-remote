@@ -47,9 +47,8 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
         properties: {
           period: {
             type: 'string',
-            enum: ['current_month', 'last_month', 'current_quarter', 'last_quarter', 'ytd', 'all_time'],
             default: 'current_month',
-            description: 'Time period for analysis',
+            description: 'Time period for analysis. Accepts predefined periods (current_month, last_month, current_quarter, last_quarter, ytd, all_time) or specific month in YYYY-MM format (e.g., "2025-10" for October 2025)',
           },
           use_invoiced_amounts: {
             type: 'boolean',
@@ -78,6 +77,7 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
       // Calculate period boundaries
       const now = new Date();
       const periodStart = this.getPeriodStart(period, now);
+      const periodEnd = this.getPeriodEnd(period, now);
 
       // Initialize consolidated financials tool for invoice-based mode
       const consolidatedTool = useInvoicedAmounts ? new GetConsolidatedFinancialsTool() : null;
@@ -327,7 +327,7 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
         period: {
           selected: period,
           start_date: periodStart?.toISOString() || null,
-          end_date: now.toISOString(),
+          end_date: periodEnd.toISOString(),
         },
         summary: {
           total_revenue: totalRevenue,
@@ -392,6 +392,25 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
   }
 
   private getPeriodStart(period: string, now: Date): Date | null {
+    // Check if period is in YYYY-MM format (e.g., "2025-10")
+    const yearMonthPattern = /^(\d{4})-(\d{2})$/;
+    const match = period.match(yearMonthPattern);
+
+    if (match) {
+      // Parse the specific month requested
+      const requestedYear = parseInt(match[1], 10);
+      const requestedMonth = parseInt(match[2], 10);
+
+      // Validate month range (1-12)
+      if (requestedMonth < 1 || requestedMonth > 12) {
+        throw new Error(`Invalid month in period "${period}". Month must be between 01 and 12.`);
+      }
+
+      // Return first day of the requested month (month is 0-indexed in JavaScript)
+      return new Date(requestedYear, requestedMonth - 1, 1);
+    }
+
+    // Handle predefined period enums
     const year = now.getFullYear();
     const month = now.getMonth();
     const quarter = Math.floor(month / 3);
@@ -410,8 +429,28 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
       case 'all_time':
         return null;
       default:
+        // For unrecognized formats, default to current month
         return new Date(year, month, 1);
     }
+  }
+
+  private getPeriodEnd(period: string, now: Date): Date {
+    // Check if period is in YYYY-MM format (e.g., "2025-10")
+    const yearMonthPattern = /^(\d{4})-(\d{2})$/;
+    const match = period.match(yearMonthPattern);
+
+    if (match) {
+      // Parse the specific month requested
+      const requestedYear = parseInt(match[1], 10);
+      const requestedMonth = parseInt(match[2], 10);
+
+      // Return last day of the requested month at 23:59:59.999
+      // nextMonth with day 0 gives us the last day of the previous month
+      return new Date(requestedYear, requestedMonth, 0, 23, 59, 59, 999);
+    }
+
+    // For predefined periods or unrecognized formats, return current time
+    return now;
   }
 
   private generateInsights(
