@@ -85,11 +85,13 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
       // OPTIMIZATION (Week 2-3): Query Delegation Pattern
       // Filter jobs by period at server-side instead of fetching all
       // Reduces token usage by 90-95% by delegating filtering to JobNimbus API
+      // Build query filter with both start and end boundaries for YYYY-MM periods
       const queryFilter = periodStart ? JSON.stringify({
         must: [{
           range: {
             date_created: {
-              gte: Math.floor(periodStart.getTime() / 1000) // Unix timestamp in seconds
+              gte: Math.floor(periodStart.getTime() / 1000), // Unix timestamp in seconds
+              lte: Math.floor(periodEnd.getTime() / 1000) // Include upper boundary for YYYY-MM periods
             }
           }
         }]
@@ -119,7 +121,9 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
           if (!job.jnid) continue;
 
           const jobDate = job.date_created || 0;
+          // Filter jobs outside the period range
           if (periodStart && jobDate < periodStart.getTime()) continue;
+          if (jobDate > periodEnd.getTime()) continue;
 
           try {
             // Query consolidated financials for this job
@@ -228,7 +232,9 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
           if (!job.jnid) continue;
 
           const jobDate = job.date_created || 0;
+          // Filter jobs outside the period range
           if (periodStart && jobDate < periodStart.getTime()) continue;
+          if (jobDate > periodEnd.getTime()) continue;
 
           const jobEstimates = estimatesByJob.get(job.jnid) || [];
           let jobRevenue = 0;
