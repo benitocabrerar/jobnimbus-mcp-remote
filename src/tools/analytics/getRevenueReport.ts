@@ -120,10 +120,9 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
         for (const job of jobs) {
           if (!job.jnid) continue;
 
+          // Note: Jobs are already filtered by queryFilter at API level (lines 89-98)
+          // No need for additional in-memory filtering
           const jobDate = job.date_created || 0;
-          // Filter jobs outside the period range
-          if (periodStart && jobDate < periodStart.getTime()) continue;
-          if (jobDate > periodEnd.getTime()) continue;
 
           try {
             // Query consolidated financials for this job
@@ -231,10 +230,9 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
         for (const job of jobs) {
           if (!job.jnid) continue;
 
+          // Note: Jobs are already filtered by queryFilter at API level (lines 89-98)
+          // No need for additional in-memory filtering
           const jobDate = job.date_created || 0;
-          // Filter jobs outside the period range
-          if (periodStart && jobDate < periodStart.getTime()) continue;
-          if (jobDate > periodEnd.getTime()) continue;
 
           const jobEstimates = estimatesByJob.get(job.jnid) || [];
           let jobRevenue = 0;
