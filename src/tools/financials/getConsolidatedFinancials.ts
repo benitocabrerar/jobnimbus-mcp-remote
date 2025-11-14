@@ -434,14 +434,17 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
           if (includeInvoices) {
             const invoicesResponse = responses[queryIndex++];
             invoicesArray = invoicesResponse.data?.results || invoicesResponse.data || [];
+            console.log(`[DEBUG] Invoices response: ${invoicesArray.length} records`);
           }
           if (includeCreditMemos) {
             const creditMemosResponse = responses[queryIndex++];
             creditMemosArray = creditMemosResponse.data?.results || creditMemosResponse.data || [];
+            console.log(`[DEBUG] Credit memos response: ${creditMemosArray.length} records`);
           }
           if (includePayments) {
             const paymentsResponse = responses[queryIndex++];
             paymentsArray = paymentsResponse.data?.results || paymentsResponse.data || [];
+            console.log(`[DEBUG] Payments response (before filter): ${paymentsArray.length} records`);
 
             // FILTER: Remove zero-value payment placeholders (QuickBooks sync artifacts)
             // Only keep payments with actual credit amounts > 0
@@ -453,6 +456,7 @@ export class GetConsolidatedFinancialsTool extends BaseTool<GetConsolidatedFinan
           if (includeRefunds) {
             const refundsResponse = responses[queryIndex++];
             refundsArray = refundsResponse.data?.results || refundsResponse.data || [];
+            console.log(`[DEBUG] Refunds response: ${refundsArray.length} records`);
           }
 
           // Track source counts for metadata
