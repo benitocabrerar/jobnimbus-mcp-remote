@@ -141,7 +141,7 @@ export class GetJobTool extends BaseTool<GetJobInput, any> {
    */
   private async searchJobByNumber(jobNumber: string, context: ToolContext): Promise<Job | null> {
     const batchSize = 100;
-    const maxIterations = 50; // Maximum 5,000 jobs
+    const maxIterations = 5; // Maximum 500 jobs (OPTIMIZED: reduced from 5,000 for token optimization)
     let offset = 0;
 
     try {

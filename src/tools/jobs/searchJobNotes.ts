@@ -172,9 +172,9 @@ export class SearchJobNotesTool extends BaseTool<SearchJobNotesInput, any> {
     const requestedSize = Math.min(input.size || 50, 200);
     const startFrom = input.from || 0;
 
-    // Fetch all jobs in batches
+    // Fetch all jobs in batches (OPTIMIZED: Reduced from 100 to 5 iterations)
     const batchSize = 100;
-    const maxIterations = 100; // Maximum 10,000 jobs
+    const maxIterations = 5; // Maximum 500 jobs (reduced from 10,000 for token optimization)
     let allJobs: any[] = [];
     let offset = 0;
     let iteration = 0;

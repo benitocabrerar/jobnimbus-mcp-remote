@@ -50,9 +50,9 @@ export class SearchJobsByStatusTool extends BaseTool<SearchJobsByStatusInput, an
     const limit = Math.min(input.limit || 20, 50);
     const searchStatus = input.status.toLowerCase().trim();
 
-    // Fetch jobs efficiently
+    // Fetch jobs efficiently (OPTIMIZED: Reduced from 20 to 5 iterations)
     const batchSize = 100;
-    const maxIterations = 20; // Max 2000 jobs
+    const maxIterations = 5; // Max 500 jobs (reduced from 2000 for token optimization)
     let allJobs: Job[] = [];
     let matchingJobs: Job[] = [];
     let iteration = 0;

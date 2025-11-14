@@ -126,7 +126,7 @@ export class GetWorkOrdersTool extends BaseTool<GetWorkOrdersInput, any> {
 
   async execute(input: GetWorkOrdersInput, context: ToolContext): Promise<any> {
     const fromIndex = input.from || 0;
-    const fetchSize = Math.min(input.size || 1000, 10000);
+    const fetchSize = Math.min(input.size || 100, 1000); // OPTIMIZED: reduced default from 1000 to 100, max from 10000 to 1000
     const includeFullDetails = input.include_full_details || false;
 
     // Generate cache identifier

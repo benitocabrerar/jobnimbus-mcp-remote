@@ -217,7 +217,7 @@ export class GetAttachmentsTool extends BaseTool<GetAttachmentsInput, any> {
     // Determine page size - prefer page_size (new) over size (legacy)
     const pageSize = input.page_size || input.size || 100;
     const fromIndex = input.from || 0;
-    const fetchSize = Math.min(pageSize, 500);
+    const fetchSize = Math.min(pageSize, 100); // OPTIMIZED: reduced max from 500 to 100 for token optimization
 
     // Generate cache identifier
     const cacheIdentifier = generateCacheIdentifier(input);

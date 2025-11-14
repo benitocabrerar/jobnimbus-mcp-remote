@@ -142,7 +142,7 @@ export class GetMaterialOrdersTool extends BaseTool<GetMaterialOrdersInput, any>
 
   async execute(input: GetMaterialOrdersInput, context: ToolContext): Promise<any> {
     const fromIndex = input.from || 0;
-    const fetchSize = Math.min(input.size || 100, 500);
+    const fetchSize = Math.min(input.size || 100, 100); // OPTIMIZED: reduced max from 500 to 100 for token optimization
     const includeFullDetails = input.include_full_details || false;
 
     // Generate cache identifier

@@ -400,9 +400,9 @@ export class SearchJobsEnhancedTool extends BaseTool<SearchJobsEnhancedInput, an
       input.retail_payment_method;
 
     if (needsFullFetch) {
-      // Fetch all jobs with pagination
+      // Fetch all jobs with pagination (OPTIMIZED: Reduced from 50 to 5 iterations)
       const batchSize = 100;
-      const maxIterations = 50;
+      const maxIterations = 5; // Maximum 500 jobs (reduced from 5,000 for token optimization)
       let allJobs: EnhancedJob[] = [];
       let offset = 0;
       let iteration = 0;
