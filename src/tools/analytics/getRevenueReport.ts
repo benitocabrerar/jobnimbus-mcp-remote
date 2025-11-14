@@ -82,27 +82,46 @@ export class GetRevenueReportTool extends BaseTool<any, any> {
       // Initialize consolidated financials tool for invoice-based mode
       const consolidatedTool = useInvoicedAmounts ? new GetConsolidatedFinancialsTool() : null;
 
-      // OPTIMIZATION (Week 2-3): Query Delegation Pattern
-      // Filter jobs by period at server-side instead of fetching all
-      // Reduces token usage by 90-95% by delegating filtering to JobNimbus API
-      // Build query filter with both start and end boundaries for YYYY-MM periods
-      const queryFilter = periodStart ? JSON.stringify({
-        must: [{
-          range: {
-            date_created: {
-              gte: Math.floor(periodStart.getTime() / 1000), // Unix timestamp in seconds
-              lte: Math.floor(periodEnd.getTime() / 1000) // Include upper boundary for YYYY-MM periods
-            }
-          }
-        }]
-      }) : undefined;
+      // FIX 2025-11-14: JobNimbus Elasticsearch filter with date_created doesn't work correctly
+      // The API returns 0 results when using queryFilter, even for valid date ranges
+      // Solution: Fetch all jobs and filter in-memory (same approach as get_jobs tool)
 
-      const jobsResponse = await this.client.get(context.apiKey, 'jobs', {
-        size: 50, // OPTIMIZED: Reduced from 100 for token efficiency
-        filter: queryFilter,
-        fields: ['jnid', 'number', 'date_created', 'record_type_name', 'sales_rep'], // JSONB Field Projection
+      // Fetch jobs with pagination (up to 500 jobs = 5 iterations of 100)
+      const batchSize = 100;
+      const maxIterations = 5;
+      let allJobs: any[] = [];
+      let offset = 0;
+      let iterations = 0;
+
+      while (iterations < maxIterations) {
+        const params = {
+          size: batchSize,
+          from: offset,
+          fields: ['jnid', 'number', 'date_created', 'record_type_name', 'sales_rep']
+        };
+        const response = await this.client.get(context.apiKey, 'jobs', params);
+        const batch = response.data?.results || [];
+
+        if (batch.length === 0) {
+          break;
+        }
+
+        allJobs = allJobs.concat(batch);
+        offset += batchSize;
+        iterations++;
+
+        if (batch.length < batchSize) {
+          break;
+        }
+      }
+
+      // Filter jobs by period in-memory (date_created is in Unix seconds)
+      const periodStartSec = periodStart ? Math.floor(periodStart.getTime() / 1000) : 0;
+      const periodEndSec = Math.floor(periodEnd.getTime() / 1000);
+      const jobs = allJobs.filter(job => {
+        const dateCreated = job.date_created || 0;
+        return dateCreated >= periodStartSec && dateCreated <= periodEndSec;
       });
-      const jobs = jobsResponse.data?.results || [];
 
       // Analyze revenue
       let totalRevenue = 0;
