@@ -26,7 +26,12 @@
       "mcp__jobnimbus-stamford__get_attachments",
       "mcp__jobnimbus-stamford__get_job",
       "mcp__jobnimbus-guilford__get_tasks",
-      "mcp__firecrawl-mcp__firecrawl_scrape"
+      "mcp__firecrawl-mcp__firecrawl_scrape",
+      "Bash(node test-create-estimate-schema.js:*)",
+      "Bash(node validate-schema.js:*)",
+      "Bash(node -e:*)",
+      "Bash(npm run build:*)",
+      "Bash(node test-mcp-response.js:*)"
     ],
     "deny": [],
     "ask": []
