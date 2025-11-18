@@ -103,6 +103,7 @@ export class UpdateMaterialOrderTool extends BaseTool<UpdateMaterialOrderInput, 
               properties: {
                 id: { type: 'string', description: 'User JNID' },
               },
+              required: ['id'],
             },
           },
           related: {
@@ -116,6 +117,7 @@ export class UpdateMaterialOrderTool extends BaseTool<UpdateMaterialOrderInput, 
                 number: { type: 'string', description: 'Entity number' },
                 type: { type: 'string', description: 'Entity type' },
               },
+              required: ['id'],
             },
           },
           sales_rep: {

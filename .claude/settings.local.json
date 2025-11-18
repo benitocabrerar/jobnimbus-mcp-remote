@@ -31,7 +31,9 @@
       "Bash(node validate-schema.js:*)",
       "Bash(node -e:*)",
       "Bash(npm run build:*)",
-      "Bash(node test-mcp-response.js:*)"
+      "Bash(node test-mcp-response.js:*)",
+      "Bash(curl:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
