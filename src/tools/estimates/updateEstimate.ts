@@ -95,7 +95,7 @@ export class UpdateEstimateTool extends BaseTool<UpdateEstimateInput, any> {
                 category: { type: 'string', description: 'Category' },
                 sku: { type: 'string', description: 'SKU' },
                 color: { type: 'string', description: 'Color' },
-                photos: { type: 'array', description: 'Photos' },
+                photos: { type: 'array', description: 'Photos', items: { type: 'string' } },
                 tax_rate: { type: 'number', description: 'Tax rate' },
                 tax_name: { type: 'string', description: 'Tax name' },
               },
@@ -167,6 +167,7 @@ export class UpdateEstimateTool extends BaseTool<UpdateEstimateInput, any> {
           sections: {
             type: 'array',
             description: 'Sections',
+            items: { type: 'object' },
           },
           template_id: {
             type: 'string',
