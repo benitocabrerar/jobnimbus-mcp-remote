@@ -33,7 +33,12 @@
       "Bash(npm run build:*)",
       "Bash(node test-mcp-response.js:*)",
       "Bash(curl:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(/tmp/tools.json)",
+      "Bash(tools-temp.json)",
+      "Bash(del tools-temp.json)",
+      "Bash(server-tools.json)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []
