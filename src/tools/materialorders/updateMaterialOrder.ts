@@ -127,7 +127,10 @@ export class UpdateMaterialOrderTool extends BaseTool<UpdateMaterialOrderInput, 
           sections: {
             type: 'array',
             description: 'Array of sections',
-            items: { type: 'object' },
+            items: {
+              type: 'object',
+              additionalProperties: true,
+            },
           },
           status: {
             type: 'number',
