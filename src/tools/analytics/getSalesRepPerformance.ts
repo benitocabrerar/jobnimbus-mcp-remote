@@ -6,6 +6,7 @@
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { validate_conversion_real } from '../../utils/conversionValidation.js';
+import { isWonStatus, isLostStatus } from '../../utils/statusMapping.js';
 
 interface SalesRepPerformance {
   rep_id: string;
@@ -106,20 +107,12 @@ export class GetSalesRepPerformanceTool extends BaseTool<any, any> {
         const rep = repPerformance.get(salesRep)!;
         rep.jobs_count += 1;
 
-        // Categorize job status
-        const statusName = (job.status_name || '').toLowerCase();
-        if (
-          statusName.includes('complete') ||
-          statusName.includes('won') ||
-          statusName.includes('sold') ||
-          statusName.includes('approved')
-        ) {
+        // Categorize job status using centralized status mapping (FIX: expanded patterns)
+        const statusName = job.status_name || '';
+        if (isWonStatus(statusName)) {
+          // Uses 14+ patterns including "Job Completed", "Signed Contract", "Paid & Closed", etc.
           rep.won_jobs += 1;
-        } else if (
-          statusName.includes('lost') ||
-          statusName.includes('cancelled') ||
-          statusName.includes('declined')
-        ) {
+        } else if (isLostStatus(statusName)) {
           rep.lost_jobs += 1;
         } else {
           rep.pending_jobs += 1;

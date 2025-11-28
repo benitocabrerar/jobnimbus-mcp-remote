@@ -5,6 +5,7 @@
 
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
+import { isWonStatus, isLostStatus, isActiveStatus } from '../../utils/statusMapping.js';
 
 interface SalesVelocityMetrics {
   overall_velocity: number;
@@ -168,22 +169,23 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
         return value >= minDealSize;
       });
 
-      // Categorize deals
+      // Categorize deals using centralized status mapping (FIX: expanded status patterns)
       const wonDeals = deals.filter((job: any) => {
-        const status = (job.status_name || '').toLowerCase();
+        const status = job.status_name || '';
         const completedDate = job.date_status_change || job.date_updated || 0;
-        return (status.includes('complete') || status.includes('won')) && completedDate >= cutoffDate;
+        // Use centralized isWonStatus with 14+ patterns including "Job Completed", "Signed Contract", etc.
+        return isWonStatus(status) && completedDate >= cutoffDate;
       });
 
       const lostDeals = deals.filter((job: any) => {
-        const status = (job.status_name || '').toLowerCase();
-        return status.includes('lost') || status.includes('cancelled') || status.includes('rejected');
+        const status = job.status_name || '';
+        return isLostStatus(status);
       });
 
       const activeDeals = deals.filter((job: any) => {
-        const status = (job.status_name || '').toLowerCase();
-        return !status.includes('complete') && !status.includes('won') &&
-               !status.includes('lost') && !status.includes('cancelled');
+        const status = job.status_name || '';
+        // Active = not won and not lost
+        return !isWonStatus(status) && !isLostStatus(status);
       });
 
       // Calculate sales cycle duration

@@ -10,6 +10,7 @@
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { GetConsolidatedFinancialsTool } from '../financials/getConsolidatedFinancials.js';
+import { isWonStatus, isLostStatus } from '../../utils/statusMapping.js';
 
 interface KPIMetric {
   name: string;
@@ -110,10 +111,11 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
           const jobDate = job.date_created || 0;
           const statusName = (job.status_name || '').toLowerCase();
 
-          // Categorize jobs
-          if (statusName.includes('complete') || statusName.includes('won') || statusName.includes('sold')) {
+          // Categorize jobs using centralized status mapping (FIX: expanded patterns)
+          // Uses 14+ patterns including "Job Completed", "Signed Contract", "Paid & Closed", etc.
+          if (isWonStatus(statusName)) {
             wonJobs += 1;
-          } else if (statusName.includes('lost') || statusName.includes('cancelled')) {
+          } else if (isLostStatus(statusName)) {
             lostJobs += 1;
           } else {
             activeJobs += 1;
@@ -184,10 +186,11 @@ export class GetProfitabilityDashboardTool extends BaseTool<any, any> {
           const jobDate = job.date_created || 0;
           const statusName = (job.status_name || '').toLowerCase();
 
-          // Categorize jobs
-          if (statusName.includes('complete') || statusName.includes('won') || statusName.includes('sold')) {
+          // Categorize jobs using centralized status mapping (FIX: expanded patterns)
+          // Uses 14+ patterns including "Job Completed", "Signed Contract", "Paid & Closed", etc.
+          if (isWonStatus(statusName)) {
             wonJobs += 1;
-          } else if (statusName.includes('lost') || statusName.includes('cancelled')) {
+          } else if (isLostStatus(statusName)) {
             lostJobs += 1;
           } else {
             activeJobs += 1;
