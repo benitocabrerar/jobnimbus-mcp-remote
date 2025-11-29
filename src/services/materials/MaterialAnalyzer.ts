@@ -42,8 +42,31 @@ export class MaterialAnalyzer {
     includeLabor: boolean = false,
     includeCostAnalysis: boolean = false
   ): Promise<GetEstimateMaterialsOutput> {
-    // Fetch estimate
-    const estimate = await materialDataRepository.getEstimate(apiKey, estimateId);
+    // Fetch estimate with graceful error handling
+    let estimate;
+    try {
+      estimate = await materialDataRepository.getEstimate(apiKey, estimateId);
+    } catch (error: any) {
+      // Return graceful error response instead of throwing
+      return {
+        estimate_id: estimateId,
+        estimate_number: '',
+        estimate_status: 'not_found',
+        materials: [],
+        summary: {
+          total_materials: 0,
+          total_quantity: 0,
+          total_cost: 0,
+          total_revenue: 0,
+          total_margin: 0,
+          avg_margin_percent: 0,
+          material_breakdown: [],
+        },
+        error: true,
+        error_message: error.message || `Estimate not found: ${estimateId}`,
+        error_code: error.code || 'ESTIMATE_NOT_FOUND',
+      } as GetEstimateMaterialsOutput;
+    }
 
     // Transform to material records
     let materials = materialDataRepository.transformToMaterialRecords(estimate);
