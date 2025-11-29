@@ -178,7 +178,15 @@ export class GetLeadScoringAnalyticsTool extends BaseTool<any, any> {
 
         // Calculate scores
         const engagementScore = this.calculateEngagementScore(engagement.activities, engagement.jobs, engagement.estimates);
-        const recencyScore = this.calculateRecencyScore(engagement.lastContact, now);
+
+        // FIX Bug #3: Use contact's date_updated or date_created as fallback when no activity exists
+        // JobNimbus returns Unix seconds, convert to milliseconds
+        const lastContactFromActivity = engagement.lastContact;
+        const contactDateUpdated = (contact.date_updated || 0) * 1000;
+        const contactDateCreated = (contact.date_created || 0) * 1000;
+        const effectiveLastContact = lastContactFromActivity || contactDateUpdated || contactDateCreated;
+
+        const recencyScore = this.calculateRecencyScore(effectiveLastContact, now);
         const valueScore = this.calculateValueScore(engagement.totalValue);
 
         // Overall lead score (weighted average)

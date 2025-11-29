@@ -134,7 +134,8 @@ export class AnalyzeServicesRepairPipelineTool extends BaseTool<any, any> {
       }>();
 
       for (const job of serviceJobs) {
-        const jobDate = job.date_created || 0;
+        // FIX: JobNimbus returns Unix seconds, convert to milliseconds for comparison
+        const jobDate = (job.date_created || 0) * 1000;
         if (jobDate < cutoffDate) continue;
 
         const statusName = (job.status_name || '').toLowerCase();
@@ -155,8 +156,9 @@ export class AnalyzeServicesRepairPipelineTool extends BaseTool<any, any> {
           completedJobs++;
 
           // Calculate completion time
-          const startDate = job.date_start || job.date_created || 0;
-          const endDate = job.date_end || job.date_updated || now;
+          // FIX: JobNimbus returns Unix seconds, convert to milliseconds
+          const startDate = (job.date_start || job.date_created || 0) * 1000;
+          const endDate = (job.date_end || job.date_updated || 0) * 1000 || now;
           if (startDate > 0 && endDate > startDate) {
             const completionDays = (endDate - startDate) / (24 * 60 * 60 * 1000);
             totalCompletionTime += completionDays;

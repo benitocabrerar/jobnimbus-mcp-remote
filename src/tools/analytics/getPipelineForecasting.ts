@@ -6,6 +6,7 @@
 import { BaseTool } from '../baseTool.js';
 import { MCPToolDefinition, ToolContext } from '../../types/index.js';
 import { validate_conversion_real } from '../../utils/conversionValidation.js';
+import { isWonStatus } from '../../utils/statusMapping.js';
 
 interface StageForecast {
   stage_name: string;
@@ -93,13 +94,13 @@ export class GetPipelineForecastingTool extends BaseTool<any, any> {
       let totalConversions = 0;
 
       for (const job of jobs) {
-        const jobDate = job.date_created || 0;
+        // FIX: JobNimbus returns Unix seconds, convert to milliseconds for comparison
+        const jobDate = (job.date_created || 0) * 1000;
         if (jobDate < ninetyDaysAgo) continue;
 
         const statusName = job.status_name || 'Unknown';
-        const isWon = (statusName.toLowerCase().includes('complete') ||
-                      statusName.toLowerCase().includes('won') ||
-                      statusName.toLowerCase().includes('sold'));
+        // FIX: Use centralized isWonStatus for consistent status recognition
+        const isWon = isWonStatus(statusName);
 
         if (!stageData.has(statusName)) {
           stageData.set(statusName, {
@@ -138,8 +139,9 @@ export class GetPipelineForecastingTool extends BaseTool<any, any> {
             totalConversions++;
 
             // Calculate time to convert (only for validated conversions)
-            const startDate = job.date_created || 0;
-            const endDate = job.date_updated || now;
+            // FIX: JobNimbus returns Unix seconds, convert to milliseconds
+            const startDate = (job.date_created || 0) * 1000;
+            const endDate = (job.date_updated || 0) * 1000 || now;
             if (startDate > 0 && endDate > startDate) {
               const daysToConvert = (endDate - startDate) / (24 * 60 * 60 * 1000);
               stage.avgDaysToConvert += daysToConvert;

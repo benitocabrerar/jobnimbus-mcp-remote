@@ -125,7 +125,8 @@ export class AnalyzeRevenueLeakageTool extends BaseTool<any, any> {
       for (const job of jobs) {
         if (!job.jnid) continue;
 
-        const jobDate = job.date_created || 0;
+        // FIX: JobNimbus returns Unix seconds, convert to milliseconds for comparison
+        const jobDate = (job.date_created || 0) * 1000;
         if (jobDate < lookbackStart) continue;
 
         const jobEstimates = estimatesByJob.get(job.jnid) || [];
@@ -183,7 +184,8 @@ export class AnalyzeRevenueLeakageTool extends BaseTool<any, any> {
 
         // 2. Estimates Sent But Not Approved (Conversion Delays)
         else if (oldestPendingEstimate && includeActive) {
-          const daysPending = Math.floor((now - oldestPendingEstimate.date_sent) / (1000 * 60 * 60 * 24));
+          // FIX: JobNimbus returns Unix seconds, convert to milliseconds
+          const daysPending = Math.floor((now - (oldestPendingEstimate.date_sent * 1000)) / (1000 * 60 * 60 * 24));
 
           let delayCategory: 'Extreme' | 'High' | 'Medium';
 
@@ -199,7 +201,7 @@ export class AnalyzeRevenueLeakageTool extends BaseTool<any, any> {
             job_id: job.jnid,
             job_number: job.number || 'Unknown',
             customer_name: job.display_name || job.first_name || 'Unknown',
-            estimate_sent_date: new Date(oldestPendingEstimate.date_sent).toISOString(),
+            estimate_sent_date: new Date(oldestPendingEstimate.date_sent * 1000).toISOString(),
             days_pending: daysPending,
             estimate_value: jobValue,
             status: job.status_name || 'Unknown',
@@ -214,8 +216,9 @@ export class AnalyzeRevenueLeakageTool extends BaseTool<any, any> {
 
         // 3. No Estimate Sent (Inactive Opportunities)
         else if (jobEstimates.length === 0 && !hasApprovedEstimate && includeActive) {
+          // FIX: JobNimbus returns Unix seconds, convert to milliseconds
           const lastActivity = jobActivities.length > 0
-            ? Math.max(...jobActivities.map(a => a.date_created || 0))
+            ? Math.max(...jobActivities.map(a => (a.date_created || 0) * 1000))
             : jobDate;
           const daysSinceActivity = Math.floor((now - lastActivity) / (1000 * 60 * 60 * 24));
 

@@ -172,7 +172,8 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
       // Categorize deals using centralized status mapping (FIX: expanded status patterns)
       const wonDeals = deals.filter((job: any) => {
         const status = job.status_name || '';
-        const completedDate = job.date_status_change || job.date_updated || 0;
+        // FIX: Convert JobNimbus timestamp (seconds) to milliseconds for comparison
+        const completedDate = (job.date_status_change || job.date_updated || 0) * 1000;
         // Use centralized isWonStatus with 14+ patterns including "Job Completed", "Signed Contract", etc.
         return isWonStatus(status) && completedDate >= cutoffDate;
       });
@@ -193,8 +194,9 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
       let totalRevenueWon = 0;
 
       for (const job of wonDeals) {
-        const createdDate = job.date_created || 0;
-        const closedDate = job.date_status_change || job.date_updated || 0;
+        // FIX: Convert JobNimbus timestamps (seconds) to milliseconds
+        const createdDate = (job.date_created || 0) * 1000;
+        const closedDate = (job.date_status_change || job.date_updated || 0) * 1000;
 
         if (createdDate > 0 && closedDate > 0) {
           const cycleDays = Math.max(1, Math.floor((closedDate - createdDate) / (24 * 60 * 60 * 1000)));
@@ -220,8 +222,9 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
 
       // Velocity trend (compare first half vs second half)
       const midpoint = cutoffDate + ((now - cutoffDate) / 2);
-      const firstHalfDeals = wonDeals.filter((j: any) => (j.date_status_change || j.date_updated || 0) < midpoint);
-      const secondHalfDeals = wonDeals.filter((j: any) => (j.date_status_change || j.date_updated || 0) >= midpoint);
+      // FIX: Convert JobNimbus timestamps (seconds) to milliseconds for midpoint comparison
+      const firstHalfDeals = wonDeals.filter((j: any) => ((j.date_status_change || j.date_updated || 0) * 1000) < midpoint);
+      const secondHalfDeals = wonDeals.filter((j: any) => ((j.date_status_change || j.date_updated || 0) * 1000) >= midpoint);
 
       const firstHalfVelocity = firstHalfDeals.length / Math.max(avgSalesCycle, 1);
       const secondHalfVelocity = secondHalfDeals.length / Math.max(avgSalesCycle, 1);
@@ -259,8 +262,9 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
         const stageData = stageMap.get(stage)!;
         stageData.deals++;
 
-        const createdDate = job.date_created || 0;
-        const updatedDate = job.date_updated || 0;
+        // FIX: Convert JobNimbus timestamps (seconds) to milliseconds
+        const createdDate = (job.date_created || 0) * 1000;
+        const updatedDate = (job.date_updated || 0) * 1000;
         if (createdDate > 0 && updatedDate > 0) {
           const duration = Math.max(1, Math.floor((updatedDate - createdDate) / (24 * 60 * 60 * 1000)));
           stageData.durations.push(duration);
@@ -406,10 +410,11 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
           const user = users.find((u: any) => u.id === repId);
           const repName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : repId;
 
+          // FIX: Convert JobNimbus timestamps (seconds) to milliseconds for cycle calculation
           const repCycleTimes = data.deals
             .map((j: any) => {
-              const created = j.date_created || 0;
-              const closed = j.date_status_change || j.date_updated || 0;
+              const created = (j.date_created || 0) * 1000;
+              const closed = (j.date_status_change || j.date_updated || 0) * 1000;
               return created > 0 && closed > 0 ? (closed - created) / (24 * 60 * 60 * 1000) : 0;
             })
             .filter((d: number) => d > 0);
@@ -464,7 +469,8 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
       const monthlyData = new Map<string, { deals: number; revenue: number; cycleTimes: number[] }>();
 
       for (const job of wonDeals) {
-        const closedDate = job.date_status_change || job.date_updated || 0;
+        // FIX: Convert JobNimbus timestamps (seconds) to milliseconds
+        const closedDate = (job.date_status_change || job.date_updated || 0) * 1000;
         if (closedDate === 0) continue;
 
         const monthKey = new Date(closedDate).toISOString().slice(0, 7);
@@ -475,7 +481,8 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
         monthData.deals++;
         monthData.revenue += parseFloat(job.total || job.value || 0);
 
-        const created = job.date_created || 0;
+        // FIX: Convert created timestamp (seconds) to milliseconds
+        const created = (job.date_created || 0) * 1000;
         if (created > 0) {
           const cycleDays = (closedDate - created) / (24 * 60 * 60 * 1000);
           monthData.cycleTimes.push(cycleDays);
@@ -526,10 +533,11 @@ export class GetSalesVelocityAnalyticsTool extends BaseTool<any, any> {
           });
 
           const segRevenue = segDeals.reduce((sum: number, j: any) => sum + parseFloat(j.total || j.value || 0), 0);
+          // FIX: Convert JobNimbus timestamps (seconds) to milliseconds for segment cycle calculation
           const segCycleTimes = segDeals
             .map((j: any) => {
-              const created = j.date_created || 0;
-              const closed = j.date_status_change || j.date_updated || 0;
+              const created = (j.date_created || 0) * 1000;
+              const closed = (j.date_status_change || j.date_updated || 0) * 1000;
               return created > 0 && closed > 0 ? (closed - created) / (24 * 60 * 60 * 1000) : 0;
             })
             .filter((d: number) => d > 0);
