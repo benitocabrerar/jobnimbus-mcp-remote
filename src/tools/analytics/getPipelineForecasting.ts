@@ -17,6 +17,28 @@ interface StageForecast {
   confidence_level: 'high' | 'medium' | 'low';
 }
 
+// Bug #2 Fix: Interface for estimate-based pipeline tracking
+interface EstimatePipelineStage {
+  stage: string;
+  status_code: number;
+  count: number;
+  total_value: number;
+  average_value: number;
+}
+
+// Estimate status names from SumoQuote
+const ESTIMATE_STATUS_NAMES: Record<number, string> = {
+  1: 'Draft (Borrador)',
+  2: 'Sent (Enviado)',
+  3: 'Viewed (Visto)',
+  4: 'Approved (Aprobado)',
+  5: 'Invoiced (Facturado)',
+  6: 'Declined (Rechazado)',
+};
+
+// Active pipeline = estimates NOT yet invoiced or declined
+const ACTIVE_PIPELINE_STATUSES = [1, 2, 3, 4];
+
 export class GetPipelineForecastingTool extends BaseTool<any, any> {
   get definition(): MCPToolDefinition {
     return {
@@ -76,6 +98,49 @@ export class GetPipelineForecastingTool extends BaseTool<any, any> {
           }
         }
       }
+
+      // Bug #2 Fix: Group ALL estimates by status for pipeline value calculation
+      const estimatePipeline = new Map<number, EstimatePipelineStage>();
+      let totalPipelineValue = 0;
+      let totalInvoicedValue = 0;
+
+      for (const estimate of estimates) {
+        const status = estimate.status || 0;
+        const total = parseFloat(estimate.total || 0);
+
+        if (!estimatePipeline.has(status)) {
+          estimatePipeline.set(status, {
+            stage: ESTIMATE_STATUS_NAMES[status] || `Status ${status}`,
+            status_code: status,
+            count: 0,
+            total_value: 0,
+            average_value: 0,
+          });
+        }
+
+        const stage = estimatePipeline.get(status)!;
+        stage.count++;
+        stage.total_value += total;
+
+        // Calculate pipeline value from active statuses only (Draft, Sent, Viewed, Approved)
+        if (ACTIVE_PIPELINE_STATUSES.includes(status)) {
+          totalPipelineValue += total;
+        }
+
+        // Track invoiced separately
+        if (status === 5) {
+          totalInvoicedValue += total;
+        }
+      }
+
+      // Calculate averages for each stage
+      for (const stage of estimatePipeline.values()) {
+        stage.average_value = stage.count > 0 ? stage.total_value / stage.count : 0;
+      }
+
+      // Build estimate pipeline array sorted by status code
+      const estimatePipelineArray: EstimatePipelineStage[] = Array.from(estimatePipeline.values())
+        .sort((a, b) => a.status_code - b.status_code);
 
       // Analyze historical data (last 90 days)
       const now = Date.now();
@@ -269,6 +334,19 @@ export class GetPipelineForecastingTool extends BaseTool<any, any> {
           start_date: new Date().toISOString(),
           end_date: new Date(now + (forecastMonths * 30 * 24 * 60 * 60 * 1000)).toISOString(),
         },
+        // Bug #2 Fix: Estimate-based pipeline value (CEO Dashboard KPI)
+        pipeline_value: {
+          total_active_pipeline: totalPipelineValue,
+          total_invoiced: totalInvoicedValue,
+          active_statuses: 'Draft, Sent, Viewed, Approved',
+          note: 'Pipeline value calculated from estimates in active statuses (1-4)',
+        },
+        estimate_pipeline: estimatePipelineArray,
+        invoiced_summary: {
+          total_invoiced: totalInvoicedValue,
+          estimates_count: estimatePipelineArray.find(s => s.status_code === 5)?.count || 0,
+          average_invoice_value: (estimatePipelineArray.find(s => s.status_code === 5)?.average_value || 0),
+        },
         historical_baseline: {
           period_days: 90,
           total_jobs: totalHistoricalJobs,
@@ -289,6 +367,8 @@ export class GetPipelineForecastingTool extends BaseTool<any, any> {
         recommendations: recommendations,
         risk_factors: riskFactors,
         insights: [
+          `💰 Total Pipeline Value: $${totalPipelineValue.toFixed(2)} (active estimates)`,
+          `📊 Total Invoiced: $${totalInvoicedValue.toFixed(2)}`,
           `Current conversion rate: ${(overallConversionRate * 100).toFixed(1)}%`,
           `Average deal size: $${avgJobValue.toFixed(2)}`,
           `Expected quarterly revenue: $${expectedRevenueNextQuarter.toFixed(2)}`,
