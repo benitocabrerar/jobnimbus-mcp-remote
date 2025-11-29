@@ -55,11 +55,11 @@ export class MaterialAnalyzer {
 
     ensureDataAvailable(materials, 'estimate materials');
 
-    // Calculate summary
+    // Calculate summary with null-safe aggregations
     const totalMaterials = materials.length;
-    const totalQuantity = materials.reduce((sum, m) => sum + m.quantity, 0);
-    const totalCost = materials.reduce((sum, m) => sum + m.total_cost, 0);
-    const totalRevenue = materials.reduce((sum, m) => sum + m.total_price, 0);
+    const totalQuantity = materials.reduce((sum, m) => sum + (m.quantity ?? 0), 0);
+    const totalCost = materials.reduce((sum, m) => sum + (m.total_cost ?? 0), 0);
+    const totalRevenue = materials.reduce((sum, m) => sum + (m.total_price ?? 0), 0);
     const totalMargin = totalRevenue - totalCost;
     const avgMarginPercent = totalRevenue > 0 ? (totalMargin / totalRevenue) * 100 : 0;
 
@@ -67,8 +67,8 @@ export class MaterialAnalyzer {
     const categoryGroups = materialStatistics.groupByCategory(materials);
     const materialBreakdown = Array.from(categoryGroups.entries()).map(
       ([category, records]) => {
-        const catCost = records.reduce((sum, r) => sum + r.total_cost, 0);
-        const catRevenue = records.reduce((sum, r) => sum + r.total_price, 0);
+        const catCost = records.reduce((sum, r) => sum + (r.total_cost ?? 0), 0);
+        const catRevenue = records.reduce((sum, r) => sum + (r.total_price ?? 0), 0);
         const catMargin = catRevenue - catCost;
 
         return {

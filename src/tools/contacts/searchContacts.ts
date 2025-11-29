@@ -93,7 +93,7 @@ export class SearchContactsTool extends BaseTool<SearchContactsInput, any> {
         if (dateFrom) params.date_from = dateFrom;
         if (dateTo) params.date_to = dateTo;
 
-        const result = await this.client.get(context.apiKey, 'contacts/search', params);
+        const result = await this.client.get(context.apiKey, 'contacts', params);
         return result.data;
       }
     );

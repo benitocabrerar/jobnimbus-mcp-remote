@@ -178,6 +178,12 @@ export class MaterialDataRepository {
     const job = related.find(r => r.type === 'job');
 
     for (const item of estimate.items) {
+      // Safe defaults: use 0 for null/undefined numeric values to prevent NaN
+      const safeAmount = item.amount ?? 0;
+      const safeCost = item.cost ?? 0;
+      const safePrice = item.price ?? 0;
+      const safeQuantity = item.quantity ?? 0;
+
       const record: MaterialRecord = {
         // Copy all item fields
         ...item,
@@ -189,12 +195,12 @@ export class MaterialDataRepository {
         job_id: job?.id,
         job_name: job?.name,
         job_type: undefined, // Would need to fetch job details
-        // Calculate derived fields
+        // Calculate derived fields with null safety
         margin_percent:
-          item.amount > 0 ? ((item.amount - item.cost) / item.amount) * 100 : 0,
-        margin_amount: item.amount - item.cost,
-        total_cost: item.cost * item.quantity,
-        total_price: item.price * item.quantity,
+          safeAmount > 0 ? ((safeAmount - safeCost) / safeAmount) * 100 : 0,
+        margin_amount: safeAmount - safeCost,
+        total_cost: safeCost * safeQuantity,
+        total_price: safePrice * safeQuantity,
         // Add dates
         date_created: estimate.date_created || 0,
         date_approved: estimate.date_approved,

@@ -3,7 +3,7 @@
  */
 
 import { BaseTool } from '../baseTool.js';
-import { ROOFING_MATERIAL_SPECS } from '../../constants/roofing.constants.js';
+import { ROOFING_MATERIAL_SPECS, ROOFING_ACCESSORIES } from '../../constants/roofing.constants.js';
 
 export class CompareMaterialAlternativesTool extends BaseTool {
   get definition() {
@@ -29,10 +29,16 @@ export class CompareMaterialAlternativesTool extends BaseTool {
     // Check if using new handle-based parameters for response optimization
     const useHandleResponse = this.hasNewParams(input);
 
-    const allMaterials = Object.values(ROOFING_MATERIAL_SPECS);
-    const baseMaterial: any = allMaterials.find((m: any) =>
-      m.sku === input.base_material || m.name.includes(input.base_material)
-    );
+    const allMaterials = [
+      ...Object.values(ROOFING_MATERIAL_SPECS),
+      ...Object.values(ROOFING_ACCESSORIES)
+    ];
+    const searchTerm = (input.base_material || '').toLowerCase().trim();
+    const baseMaterial: any = allMaterials.find((m: any) => {
+      const sku = (m.sku || '').toLowerCase();
+      const name = (m.name || '').toLowerCase();
+      return sku === searchTerm || name.includes(searchTerm);
+    });
 
     if (!baseMaterial) {
       const errorResult = { success: false, error: 'Base material not found' };
