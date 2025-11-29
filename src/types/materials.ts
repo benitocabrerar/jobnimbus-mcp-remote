@@ -181,6 +181,7 @@ export interface GetEstimateMaterialsOutput {
   estimate_number: string;
   estimate_status: string;
   materials: MaterialRecord[];
+  message?: string; // Optional message for empty results or additional context
   summary: {
     total_materials: number;
     total_quantity: number;

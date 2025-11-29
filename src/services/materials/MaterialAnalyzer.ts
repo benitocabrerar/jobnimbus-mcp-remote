@@ -53,7 +53,27 @@ export class MaterialAnalyzer {
       materials = materials.filter(m => m.item_type === 'material');
     }
 
-    ensureDataAvailable(materials, 'estimate materials');
+    // Return empty result gracefully instead of throwing when no materials found
+    if (materials.length === 0) {
+      return {
+        estimate_id: estimate.jnid,
+        estimate_number: estimate.number || '',
+        estimate_status: estimate.status_name || '',
+        materials: [],
+        summary: {
+          total_materials: 0,
+          total_quantity: 0,
+          total_cost: 0,
+          total_revenue: 0,
+          total_margin: 0,
+          avg_margin_percent: 0,
+          material_breakdown: [],
+        },
+        message: includeLabor
+          ? 'No items found in this estimate'
+          : 'No material items found in this estimate. Try with filter_by_type="all" or include_labor=true to see labor items.',
+      };
+    }
 
     // Calculate summary with null-safe aggregations
     const totalMaterials = materials.length;
