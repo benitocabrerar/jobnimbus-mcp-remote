@@ -391,6 +391,39 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
     };
   }
 
+  /**
+   * Search for job by number when direct JNID lookup fails
+   * @param jobNumber - Job number to search for
+   * @param context - Tool context with API key
+   * @returns Job object if found, null otherwise
+   */
+  private async searchJobByNumber(jobNumber: string, context: ToolContext): Promise<any | null> {
+    const batchSize = 100;
+    const maxIterations = 5;
+    let offset = 0;
+
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      const response = await this.client.get(context.apiKey, 'jobs', {
+        size: batchSize,
+        from: offset
+      });
+
+      const jobs = response.data?.results || [];
+      if (jobs.length === 0) break;
+
+      const found = jobs.find((j: any) =>
+        String(j.number) === String(jobNumber) ||
+        String(j.display_number) === String(jobNumber)
+      );
+
+      if (found) return found;
+
+      offset += batchSize;
+      if (jobs.length < batchSize) break;
+    }
+    return null;
+  }
+
   async execute(input: GetJobAttachmentsDistributionInput, context: ToolContext): Promise<any> {
     const pageSize = Math.min(input.page_size || 200, 500);
     const maxPages = input.max_pages || 10;
@@ -405,13 +438,37 @@ export class GetJobAttachmentsDistributionTool extends BaseTool<GetJobAttachment
       // Step 1: Resolve job metadata
       notes.push(`Tool accepts job NUMBER (e.g., "1820") and automatically resolves internal IDs`);
       notes.push(`Resolving metadata for job_id=${input.job_id}`);
-      const jobResponse = await this.client.get(context.apiKey, `jobs/${input.job_id}`);
-      const job = jobResponse.data;
+
+      let job: any = null;
+
+      // Strategy 1: Try direct JNID lookup
+      try {
+        const jobResponse = await this.client.get(context.apiKey, `jobs/${input.job_id}`);
+        job = jobResponse.data;
+        if (job) {
+          notes.push(`Found job via direct JNID lookup`);
+        }
+      } catch (directError) {
+        notes.push(`Direct JNID lookup failed, trying search by job number...`);
+      }
+
+      // Strategy 2: Fallback to search by job number
+      if (!job) {
+        job = await this.searchJobByNumber(input.job_id, context);
+        if (job) {
+          notes.push(`Found job via number search: ${job.jnid}`);
+        }
+      }
 
       if (!job) {
         return {
-          error: `Job not found: ${input.job_id}`,
+          error: `Job not found: ${input.job_id}. Tried both direct JNID lookup and job number search.`,
           job_id: input.job_id,
+          suggestions: [
+            'Verify the job number exists in JobNimbus',
+            'Try using the full JNID if you have it',
+            'Check if the job is active (not deleted)'
+          ]
         };
       }
 
