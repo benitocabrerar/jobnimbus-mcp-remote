@@ -96,7 +96,7 @@ export class MaterialDataRepository {
 
     try {
       // Primary attempt: direct API call with provided ID
-      const response = await jobNimbusClient.get(apiKey, `estimates/${id}`);
+      const response = await jobNimbusClient.get(apiKey, `v2/estimates/${id}`);
       const estimate = response.data as Estimate;
 
       if (!estimate || !estimate.jnid) {
