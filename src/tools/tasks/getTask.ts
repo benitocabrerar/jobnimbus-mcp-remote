@@ -71,13 +71,13 @@ interface Task {
   // Relationships
   customer?: string;
   primary?: any;
-  owners: TaskOwner[];
-  subcontractors: any[];
-  related: TaskRelated[];
+  owners?: TaskOwner[];        // FIXED: Made optional to match API reality
+  subcontractors?: any[];      // FIXED: Made optional to match API reality
+  related?: TaskRelated[];     // FIXED: Made optional to match API reality
   location: TaskLocation;
 
   // Additional
-  tags: any[];
+  tags?: any[];                // FIXED: Made optional to match API reality
   rules?: any[];
   external_id?: string | null;
 }
@@ -98,6 +98,33 @@ export class GetTaskTool extends BaseTool<GetTaskInput, any> {
         required: ['jnid'],
       },
     };
+  }
+
+  /**
+   * Safely extract array from task, returning empty array if undefined/null
+   */
+  private safeArrayExtract<T>(value: T[] | undefined | null): T[] {
+    if (value === undefined || value === null) {
+      return [];
+    }
+    if (Array.isArray(value)) {
+      return value;
+    }
+    // Defensive: if not an array, return empty array
+    return [];
+  }
+
+  /**
+   * Safely get array length, returning 0 if undefined/null
+   */
+  private safeArrayLength<T>(value: T[] | undefined | null): number {
+    if (value === undefined || value === null) {
+      return 0;
+    }
+    if (Array.isArray(value)) {
+      return value.length;
+    }
+    return 0;
   }
 
   async execute(input: GetTaskInput, context: ToolContext): Promise<any> {
@@ -125,6 +152,13 @@ export class GetTaskTool extends BaseTool<GetTaskInput, any> {
             if (!timestamp || timestamp === 0) return null;
             return new Date(timestamp * 1000).toISOString();
           };
+
+          // Safely extract arrays before using them
+          const owners = this.safeArrayExtract(task.owners);
+          const subcontractors = this.safeArrayExtract(task.subcontractors);
+          const related = this.safeArrayExtract(task.related);
+          const tags = this.safeArrayExtract(task.tags);
+          const rules = this.safeArrayExtract(task.rules);
 
           return {
             success: true,
@@ -167,14 +201,14 @@ export class GetTaskTool extends BaseTool<GetTaskInput, any> {
               hide_from_calendarview: task.hide_from_calendarview,
               hide_from_tasklist: task.hide_from_tasklist,
 
-              // Ownership & Relationships
+              // Ownership & Relationships (using safe extraction)
               customer_id: task.customer || null,
-              owners: task.owners,
-              owners_count: task.owners.length,
-              subcontractors: task.subcontractors,
-              subcontractors_count: task.subcontractors.length,
-              related_entities: task.related,
-              related_count: task.related.length,
+              owners: owners,
+              owners_count: owners.length,
+              subcontractors: subcontractors,
+              subcontractors_count: subcontractors.length,
+              related_entities: related,
+              related_count: related.length,
               location: task.location,
 
               // Metadata
@@ -185,12 +219,12 @@ export class GetTaskTool extends BaseTool<GetTaskInput, any> {
               date_updated: formatDate(task.date_updated),
               date_updated_unix: task.date_updated,
 
-              // Additional
-              tags: task.tags,
-              tags_count: task.tags.length,
+              // Additional (using safe extraction)
+              tags: tags,
+              tags_count: tags.length,
               external_id: task.external_id || null,
               primary: task.primary || null,
-              rules: task.rules || [],
+              rules: rules,
               date_sort: task.date_sort || null,
 
               _metadata: {

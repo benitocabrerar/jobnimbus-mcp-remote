@@ -29,14 +29,74 @@ export class MaterialDataRepository {
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
   /**
-   * Get a single estimate by ID
+   * Normalize estimate ID - detect format and convert if needed
+   * @param estimateId - Raw estimate ID (could be JNID or number)
+   * @returns Object with normalized ID and detected format
+   */
+  private normalizeEstimateId(estimateId: string): { id: string; format: 'jnid' | 'number' } {
+    const trimmedId = estimateId.trim();
+
+    // JNID format: alphanumeric with hyphens (e.g., "abc123-def456")
+    if (/^[a-zA-Z0-9]+-[a-zA-Z0-9-]+$/.test(trimmedId)) {
+      return { id: trimmedId, format: 'jnid' };
+    }
+
+    // Number format: pure digits (e.g., "12345")
+    if (/^\d+$/.test(trimmedId)) {
+      return { id: trimmedId, format: 'number' };
+    }
+
+    // Default: assume JNID if contains any letters
+    return { id: trimmedId, format: 'jnid' };
+  }
+
+  /**
+   * Search for estimate by number when JNID lookup fails
    * @param apiKey - JobNimbus API key
-   * @param estimateId - Estimate ID to fetch
+   * @param estimateNumber - Estimate number to search
+   * @returns Estimate data or null
+   */
+  private async searchEstimateByNumber(
+    apiKey: string,
+    estimateNumber: string
+  ): Promise<Estimate | null> {
+    try {
+      // Fetch recent estimates and search for matching number
+      const params = { size: 100 };
+      const response = await jobNimbusClient.get(apiKey, 'estimates', params);
+      const estimates = (response.data as any)?.results || [];
+
+      const match = estimates.find(
+        (est: Estimate) => est.number === estimateNumber
+      );
+
+      return match || null;
+    } catch (error) {
+      // Search failed, return null to let main error handler take over
+      return null;
+    }
+  }
+
+  /**
+   * Get a single estimate by ID with fallback strategy
+   * @param apiKey - JobNimbus API key
+   * @param estimateId - Estimate ID to fetch (JNID or number)
    * @returns Estimate data
    */
   async getEstimate(apiKey: string, estimateId: string): Promise<Estimate> {
+    if (!estimateId || estimateId.trim().length === 0) {
+      throw new MaterialAnalysisError(
+        'Estimate ID is required',
+        ErrorCode.INVALID_INPUT,
+        { estimate_id: estimateId }
+      );
+    }
+
+    const { id, format } = this.normalizeEstimateId(estimateId);
+
     try {
-      const response = await jobNimbusClient.get(apiKey, `estimates/${estimateId}`);
+      // Primary attempt: direct API call with provided ID
+      const response = await jobNimbusClient.get(apiKey, `estimates/${id}`);
       const estimate = response.data as Estimate;
 
       if (!estimate || !estimate.jnid) {
@@ -49,14 +109,32 @@ export class MaterialDataRepository {
 
       return estimate;
     } catch (error) {
+      // Fallback strategy: if ID looks like a number, try searching by number
+      if (format === 'number') {
+        const searchResult = await this.searchEstimateByNumber(apiKey, id);
+        if (searchResult) {
+          return searchResult;
+        }
+      }
+
+      // Enhanced error message with helpful context
       if (error instanceof MaterialAnalysisError) {
         throw error;
       }
 
+      const errorMessage = format === 'jnid'
+        ? `Estimate not found with JNID: ${estimateId}. Verify the estimate exists and you have access to it.`
+        : `Estimate not found with number: ${estimateId}. Try using the estimate's JNID instead (format: abc123-def456).`;
+
       throw new MaterialAnalysisError(
-        `Failed to fetch estimate: ${estimateId}`,
-        ErrorCode.API_ERROR,
-        { estimate_id: estimateId, error: String(error) }
+        errorMessage,
+        ErrorCode.ESTIMATE_NOT_FOUND,
+        {
+          estimate_id: estimateId,
+          detected_format: format,
+          error: String(error),
+          hint: 'Use get_estimates tool to list available estimates and their IDs'
+        }
       );
     }
   }

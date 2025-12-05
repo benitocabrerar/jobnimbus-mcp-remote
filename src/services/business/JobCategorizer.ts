@@ -294,11 +294,14 @@ export class JobCategorizer {
 
   // Secondary Indicators
   private analyzeStatus(job: Job): { insurance: number; retail: number } {
-    if (!job.status && !job.status_name) {
+    // Safe extraction with type checking
+    const statusValue = this.toSafeString(job.status || job.status_name);
+
+    if (!statusValue || statusValue.trim().length === 0) {
       return { insurance: 0, retail: 0 };
     }
 
-    const status = (job.status || job.status_name || '').toLowerCase();
+    const status = statusValue.toLowerCase();
 
     for (const pattern of this.INSURANCE_STATUS_PATTERNS) {
       if (status.includes(pattern)) {
@@ -315,14 +318,37 @@ export class JobCategorizer {
     return { insurance: 0, retail: 0 };
   }
 
+  // Helper function: Convert any value to safe string
+  private toSafeString(value: any): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    return String(value);
+  }
+
   // Tertiary Indicators - Keywords
   private analyzeKeywords(job: Job): { insurance: number; retail: number } {
-    const searchText = [
-      job.notes || '',
-      job.description || '',
-      job.display_name || '',
-      ...(job.tags || [])
-    ].join(' ').toLowerCase();
+    // Construct searchText safely with explicit type checking
+    const textParts: string[] = [];
+
+    // Add text fields with validation
+    if (job.notes) textParts.push(this.toSafeString(job.notes));
+    if (job.description) textParts.push(this.toSafeString(job.description));
+    if (job.display_name) textParts.push(this.toSafeString(job.display_name));
+
+    // Add tags safely - ensure each tag is a string
+    if (Array.isArray(job.tags)) {
+      for (const tag of job.tags) {
+        if (tag) {
+          textParts.push(this.toSafeString(tag));
+        }
+      }
+    }
+
+    const searchText = textParts.join(' ').toLowerCase();
 
     if (!searchText.trim()) {
       return { insurance: 0, retail: 0 };
@@ -351,11 +377,14 @@ export class JobCategorizer {
 
   // Job Type Analysis
   private analyzeJobType(job: Job): { insurance: number; retail: number } {
-    const type = (job.type || job.sub_type || '').toLowerCase();
+    // Safe extraction with type checking
+    const typeValue = this.toSafeString(job.type || job.sub_type);
 
-    if (!type) {
+    if (!typeValue || typeValue.trim().length === 0) {
       return { insurance: 0, retail: 0 };
     }
+
+    const type = typeValue.toLowerCase();
 
     // Insurance type patterns
     const insuranceTypes = ['storm', 'hail', 'wind', 'water', 'damage', 'claim'];
@@ -407,7 +436,7 @@ export class JobCategorizer {
       });
     });
 
-    stats.averageConfidence = totalConfidence / categories.size;
+    stats.averageConfidence = categories.size > 0 ? totalConfidence / categories.size : 0;
 
     // Sort indicators by frequency
     const sortedIndicators = Array.from(stats.topIndicators.entries())
@@ -424,10 +453,10 @@ export class JobCategorizer {
           unknown: stats.unknown
         },
         percentages: {
-          insurance: (stats.insurance / stats.total * 100).toFixed(1) + '%',
-          retail: (stats.retail / stats.total * 100).toFixed(1) + '%',
-          hybrid: (stats.hybrid / stats.total * 100).toFixed(1) + '%',
-          unknown: (stats.unknown / stats.total * 100).toFixed(1) + '%'
+          insurance: (stats.total > 0 ? (stats.insurance / stats.total * 100) : 0).toFixed(1) + '%',
+          retail: (stats.total > 0 ? (stats.retail / stats.total * 100) : 0).toFixed(1) + '%',
+          hybrid: (stats.total > 0 ? (stats.hybrid / stats.total * 100) : 0).toFixed(1) + '%',
+          unknown: (stats.total > 0 ? (stats.unknown / stats.total * 100) : 0).toFixed(1) + '%'
         },
         averageConfidence: stats.averageConfidence.toFixed(1),
         topIndicators: sortedIndicators
